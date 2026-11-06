@@ -1,9 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, readFileSync } from 'node:fs';
+import { DatabaseSync } from 'node:sqlite';
 import { resolve } from 'node:path';
-import { AppError, day, metadata, totals, validateAnalysis, validateImage } from '../lib/domain.mjs';
+import { AppError, day, metadata, totals, analysisContext, analysisReport, validateAnalysis, validateImage } from '../lib/domain.mjs';
+import { FOOD_REFERENCE } from '../lib/food-reference.mjs';
+import { aiPayloadFor, visualInventory } from './fixtures.mjs';
 import { analyze, cloudinary, cloudinarySignature } from '../lib/providers.mjs';
 import { api } from '../lib/api.mjs';
 import { openDatabase, createApp } from '../server.mjs';
@@ -14,13 +17,13 @@ const analysis = { name: 'Csirkés rizs', confidence: 'medium', assumptions: 'Az
   { name: 'Rizs', grams: 120, calories: 130, protein: 2.7, carbs: 28, fat: .3, fiber: null, sugar: 0, sodium: null },
 ] };
 const env = { OPENCODE_API_KEY: 'test-only-opencode', CLOUDINARY_CLOUD_NAME: 'test-cloud', CLOUDINARY_API_KEY: 'test-only-key', CLOUDINARY_API_SECRET: 'test-only-secret' };
-function mockProviders({ cloudFailure = false, destroyFailure = false, aiPayload = null } = {}) {
+function mockProviders({ cloudFailure = false, destroyFailure = false, aiPayload = null, inventory = visualInventory(analysis) } = {}) {
   const calls = [];
   const fetcher = async (url, options) => {
     calls.push({ url, options });
-    if (url.startsWith('https://opencode.ai/')) return Response.json(aiPayload || { candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify({ isFood: true, ...analysis }) }] } }], usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 50 } });
+    if (url.startsWith('https://opencode.ai/')) return Response.json(aiPayload || aiPayloadFor(analysis, options, inventory));
     const form = options.body;
-    if (url.endsWith('/upload')) return cloudFailure ? Response.json({ error: 'sensitive provider error' }, { status: 500 }) : Response.json({ public_id: form.get('public_id'), secure_url: `https://res.cloudinary.com/test-cloud/image/upload/v1/${form.get('public_id')}.jpg`, width: 1000, height: 800, bytes: 1234, version: 1, format: 'jpg' });
+    if (url.endsWith('/upload')) return cloudFailure === true || cloudFailure === 'angle' && form.get('public_id').endsWith('-angle') ? Response.json({ error: 'sensitive provider error' }, { status: 500 }) : Response.json({ public_id: form.get('public_id'), secure_url: `https://res.cloudinary.com/test-cloud/image/upload/v1/${form.get('public_id')}.jpg`, width: 1000, height: 800, bytes: 1234, version: 1, format: 'jpg' });
     if (url.endsWith('/destroy')) return destroyFailure ? Response.json({}, { status: 503 }) : Response.json({ result: 'ok' });
     assert.fail(`Unexpected external URL ${url}`);
   };
@@ -76,13 +79,82 @@ test('Cloudinary signatures sort parameters, upload and delete are signed', asyn
   await cloudinary('destroy', 'yumetrics/a', env, null, mock.fetcher);
   assert.equal(mock.calls[1].options.body.get('invalidate'), 'true');
 });
+
+test('reference-backed nutrients come from the fixed USDA records, not the model', async () => {
+  const inventory = visualInventory(analysis);
+  inventory.ingredients[0].referenceKey = 'fdc-171477';
+  inventory.ingredients[1].referenceKey = 'fdc-168878';
+  const mock = mockProviders({ inventory });
+  const result = await analyze(image, '', env, mock.fetcher);
+  assert.equal(mock.calls.length, 1, 'No second AI call when all nutrients are grounded');
+  assert.deepEqual(Object.fromEntries(Object.keys(FOOD_REFERENCE['fdc-171477'].nutrients).map(key => [key, result.analysis.ingredients[0][key]])), FOOD_REFERENCE['fdc-171477'].nutrients);
+  assert.equal(result.analysis.ingredients[0].sourceType, 'reference');
+  assert.equal(result.analysis.ingredients[0].sourceConfirmed, false, 'AI pairing is not user confirmation');
+  assert.equal(result.analysis.reportVersion, 2);
+  assert.equal(analysisReport(result.analysis).referenceCount, 2);
+  assert.equal(result.usage.passes.length, 1);
+});
+test('measured total and eaten fraction are applied once; two views do not double the food', async () => {
+  const mock = mockProviders();
+  const result = await analyze(image, '', env, mock.fetcher, { secondImage: image, context: { totalWeightG: 500, consumedPercent: 50, plateDiameterCm: 26 } });
+  assert.equal(analysisReport(result.analysis).weight, 250);
+  assert.equal(JSON.parse(mock.calls[0].options.body).contents[0].parts.filter(p => p.inlineData).length, 2);
+  assert.equal(mock.calls.length, 2);
+  assert.equal(result.usage.passes.length, 2);
+  assert.ok(result.analysis.ingredients.every(item => item.gramsMin <= item.grams && item.gramsMax >= item.grams && item.weightBasis === 'measured_total'));
+  assert.ok(analysisReport(result.analysis).energyRange.min < analysisReport(result.analysis).total.calories);
+  assert.ok(result.analysis.assumptions.includes('50%'));
+});
+test('poor images, invented reference IDs and invalid portion ranges are rejected early', async () => {
+  const badQuality = visualInventory(analysis); badQuality.imageQuality.level = 'poor';
+  const poor = mockProviders({ inventory: badQuality });
+  await assert.rejects(analyze(image, '', env, poor.fetcher), e => e.status === 422); assert.equal(poor.calls.length, 1);
+  const invented = visualInventory(analysis); invented.ingredients[0].referenceKey = 'fdc-FAKE';
+  await assert.rejects(analyze(image, '', env, mockProviders({ inventory: invented }).fetcher), e => e.status === 502);
+  const range = visualInventory(analysis); range.ingredients[0].gramsMin = 200;
+  await assert.rejects(analyze(image, '', env, mockProviders({ inventory: range }).fetcher), e => e.status === 502);
+  for (const context of [{ consumedPercent: 0 }, { consumedPercent: 101 }, { totalWeightG: -10 }, { plateDiameterCm: '26' }]) assert.throws(() => analysisContext(context), AppError);
+});
+test('database provenance is removed when a value is edited; impossible macro relationships are flagged', () => {
+  const reference = FOOD_REFERENCE['fdc-171705'];
+  const ingredient = { name: 'Avokádó', grams: 100, ...reference.nutrients, referenceKey: 'fdc-171705', sourceType: 'reference', sourceConfirmed: true };
+  const valid = validateAnalysis({ ...analysis, ingredients: [ingredient] });
+  assert.equal(valid.ingredients[0].sourceType, 'reference');
+  ingredient.protein += 1;
+  const changed = validateAnalysis({ ...analysis, ingredients: [ingredient] });
+  assert.equal(changed.ingredients[0].sourceType, 'user'); assert.equal(changed.ingredients[0].referenceKey, null); assert.equal(changed.ingredients[0].sourceConfirmed, false);
+  const inconsistent = structuredClone(changed); inconsistent.ingredients[0].calories = 0; inconsistent.ingredients[0].sugar = 100; inconsistent.ingredients[0].saturatedFat = 100;
+  assert.equal(analysisReport(inconsistent).warnings.length, 3);
+  const mass = { ...changed, ingredients: [{ ...changed.ingredients[0], protein: 60, carbs: 60, fat: 0, fiber: 0, calories: 480, sugar: 0, saturatedFat: 0 }] };
+  assert.equal(analysisReport(mass).warnings.length, 1, 'Impossible mass composition is flagged even when energy matches');
+  assert.equal(analysisReport({ ...analysis, ingredients: [{ ...analysis.ingredients[0], saturatedFat: null }] }).unknown.includes('saturatedFat'), true);
+});
+test('nutrient fallback must return exactly the requested component indices', async () => {
+  const mock = mockProviders(); let calls = 0;
+  const fetcher = (url, options) => ++calls === 1 ? mock.fetcher(url, options) : Promise.resolve(Response.json({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify({ ingredients: [{ ...analysis.ingredients[0], index: 0 }, { ...analysis.ingredients[1], index: 0 }] }) }] } }] }));
+  await assert.rejects(analyze(image, '', env, fetcher), e => e.status === 502);
+});
+test('both Cloudinary views are tracked, saved and deleted; old analysis records still load', async t => {
+  const f = fixture(); t.after(() => f.db.close()); const input = { ...f.input(), secondImage: image, context: { consumedPercent: 50 } };
+  const created = await f.invoke('/api/analyze', 'POST', input); assert.equal(created.status, 201);
+  assert.equal(created.body.meal.context.additionalView, true);
+  assert.ok(created.body.meal.photo.additional.publicId.endsWith('-angle'));
+  assert.equal((await f.invoke(`/api/meals/${input.id}`, 'PATCH', created.body.meal)).status, 200);
+  assert.equal((await f.invoke(`/api/meals/${input.id}`, 'DELETE')).status, 200);
+  const destroyed = f.calls.filter(call => call.url.endsWith('/destroy')).map(call => call.options.body.get('public_id'));
+  assert.deepEqual(destroyed, [`yumetrics/${input.id}`, `yumetrics/${input.id}-angle`]);
+  const legacyInput = f.input(); await f.invoke('/api/analyze', 'POST', legacyInput);
+  await f.db.prepare('UPDATE meals SET analysis=? WHERE id=?').bind(JSON.stringify(analysis), legacyInput.id).run();
+  const legacy = await f.invoke(`/api/meals/${legacyInput.id}`);
+  assert.equal(legacy.status, 200); assert.equal(legacy.body.meal.totals.saturatedFat, null); assert.equal(legacy.body.meal.report.referenceCount, 0);
+});
 test('analyze → persistent draft → corrected saved meal → calendar → deletion', async t => {
   const f = fixture(); t.after(() => f.db.close()); const input = f.input();
   const created = await f.invoke('/api/analyze', 'POST', input);
   assert.equal(created.status, 201); assert.equal(created.body.meal.status, 'draft'); assert.equal(created.body.meal.totals.calories, 403.5);
-  assert.equal(f.calls.length, 2);
-  const repeat = await f.invoke('/api/analyze', 'POST', input); assert.equal(repeat.status, 200); assert.equal(f.calls.length, 2);
-  const changed = created.body.meal; changed.analysis.ingredients[0].grams = 200;
+  assert.equal(f.calls.length, 3);
+  const repeat = await f.invoke('/api/analyze', 'POST', input); assert.equal(repeat.status, 200); assert.equal(f.calls.length, 3);
+  const changed = created.body.meal; Object.assign(changed.analysis.ingredients[0], { grams: 200, gramsMin: 200, gramsMax: 200, weightBasis: 'user' });
   const saved = await f.invoke(`/api/meals/${input.id}`, 'PATCH', changed);
   assert.equal(saved.status, 200); assert.equal(saved.body.meal.status, 'saved'); assert.equal(saved.body.meal.totals.calories, 486);
   const original = await f.db.prepare('SELECT original_analysis,analysis FROM meals WHERE id=?').bind(input.id).first();
@@ -117,6 +189,14 @@ test('hourly cost limit is atomic and cannot be reset by deleting meals', async 
   for (let i = 0; i < 20; i++) await f.db.prepare('INSERT INTO analysis_attempts(id,user_id,created_at) VALUES(?,?,?)').bind(randomUUID(), 'alice', new Date().toISOString()).run();
   assert.equal((await f.invoke('/api/analyze', 'POST', f.input())).status, 429); assert.equal(f.calls.length, 0);
 });
+test('failed second-view upload leaves both IDs recoverable for cleanup', async t => {
+  const f = fixture({ cloudFailure: 'angle' }); t.after(() => f.db.close()); const input = { ...f.input(), secondImage: image };
+  assert.equal((await f.invoke('/api/analyze', 'POST', input)).status, 502);
+  const failed = await f.invoke(`/api/meals/${input.id}`);
+  assert.equal(failed.body.meal.status, 'failed'); assert.equal(failed.body.meal.context.additionalView, true); assert.equal(failed.body.meal.photo, null);
+  assert.equal((await f.invoke(`/api/meals/${input.id}`, 'DELETE')).status, 200);
+  assert.deepEqual(f.calls.filter(call => call.url.endsWith('/destroy')).map(call => call.options.body.get('public_id')), [`yumetrics/${input.id}`, `yumetrics/${input.id}-angle`]);
+});
 test('missing credentials, invalid month and malformed JSON fail clearly', async t => {
   const f = fixture(); t.after(() => f.db.close());
   assert.equal((await f.invoke('/api/meals?month=2026-99')).status, 400);
@@ -132,6 +212,21 @@ test('SQLite records survive a restart and migrations do not overwrite data', as
     db = openDatabase(path); await db.prepare('INSERT INTO analysis_attempts VALUES(?,?,?)').bind('persisted', 'alice', '2026-11-06').run(); db.close();
     db = openDatabase(path); assert.equal((await db.prepare('SELECT * FROM analysis_attempts WHERE id=?').bind('persisted').first()).user_id, 'alice');
   } finally { db?.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+test('v1 SQLite database upgrades without rewriting saved meals', async () => {
+  const directory = mkdtempSync(resolve('.test-data-')), path = resolve(directory, 'legacy.sqlite');
+  let database;
+  try {
+    const old = new DatabaseSync(path);
+    old.exec(readFileSync(new URL('../drizzle/0000_initial.sql', import.meta.url), 'utf8'));
+    old.exec(readFileSync(new URL('../drizzle/0001_timezone.sql', import.meta.url), 'utf8'));
+    old.exec("CREATE TABLE schema_migrations(name TEXT PRIMARY KEY); INSERT INTO schema_migrations VALUES('0000_initial'),('0001_timezone');");
+    old.prepare("INSERT INTO meals(id,user_id,day,time,type,public_id,created_at,updated_at,status,analysis,original_analysis) VALUES(?,?,?,?,?,?,?,?,?,?,?)").run('legacy', 'alice', '2026-11-06', '12:00', 'Ebéd', 'yumetrics/legacy', '2026-11-06', '2026-11-06', 'saved', JSON.stringify(analysis), JSON.stringify(analysis));
+    old.close();
+    database = openDatabase(path);
+    const row = await database.prepare('SELECT * FROM meals WHERE id=?').bind('legacy').first();
+    assert.equal(row.analysis, JSON.stringify(analysis)); assert.equal(row.original_analysis, JSON.stringify(analysis)); assert.equal(row.analysis_context, null); assert.equal(row.status, 'saved');
+  } finally { database?.close(); rmSync(directory, { recursive: true, force: true }); }
 });
 test('HTTP login, session, security headers and static file allowlist', async t => {
   const db = openDatabase(':memory:'); const server = createApp({ db, env: { APP_PASSWORD: 'test-password' } });

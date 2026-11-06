@@ -30,7 +30,7 @@ Az értékelést külön kell futtatni csak fotóval és felhasználó által me
 
 ## Miért nem csak LLM-ből származó tápérték?
 
-A jelenlegi implementáció teljes, javítható **LLM-becslés**, adatbázis-forrással nem igazolt tápértékekkel. A következő pontossági fejlesztésben az LLM azonosítaná az ételt és az elkészítést, majd ellenőrzött tápértékadatbázis és lemért tömeg adná az értékeket. Az USDA FoodData Central hivatalos API-ja ilyen strukturált tápértékadatokat biztosít; a rekordadat típusa és az elkészített/nyers állapot fontos. Magyar recepteknél forrásolt receptadatok is szükségesek. Nincs automatikusan hozzáadott USDA-találat vagy kitalált FDC-azonosító. [USDA API-útmutató](https://fdc.nal.usda.gov/api-guide/), [Foundation Foods dokumentáció](https://fdc.nal.usda.gov/Foundation_Foods_Documentation/).
+A `food-v2-grounded` implementáció már külön választja a vizuális leltárt és a tápértékszámítást. A megfelelően párosítható összetevőknél 20 rögzített, hivatalos USDA-rekord tápértékeit használja, egyébként jelölt LLM-becslést kér. A párosítás ellenőrizhető és kézzel javítható; a referenciatár nem teljes ételadatbázis. A részletes kutatás, korlátok és megvalósítás a **[PHOTO-ASSESSMENT.md](PHOTO-ASSESSMENT.md)** dokumentumban található. [USDA API-útmutató](https://fdc.nal.usda.gov/api-guide/), [Foundation Foods dokumentáció](https://fdc.nal.usda.gov/Foundation_Foods_Documentation/).
 
 ## Pontosan tárolt adatok
 
@@ -58,7 +58,7 @@ Az étkezés a tartós tárolás egysége; az összetevők egy bounded JSON-töm
 
 A napi és étkezési összesítéseket **számoljuk**, nem tároljuk újra. Képlet: `100 g-ra adott érték × összetevő grammja / 100`; az összetevőket összeadjuk, majd egy tizedesre kerekítünk. Ha az adott tápanyagnál bármelyik összetevő ismeretlen, az étkezési összesítés is `null`. Nem tárolunk mesterséges kalóriapontossági százalékot, kitalált vitaminokat, kikövetkeztetett allergénmentességet, testsúlyt, egészségügyi előzményt vagy GPS-helyzetet.
 
-Későbbi adatbázisos tápértékszámításhoz érdemes hozzáadni az összetevő forrását (`llm_estimate` / `database` / `user`), adatbázisrekord-azonosítóját, adatverzióját és az elkészítési állapotot. Ezek most nincsenek megbízható külső adathoz kötve, ezért a kód nem állítja, hogy ellenőrzött adatforrásból származnak. A jelenlegi eredmények értelmezése mindenhol LLM-becslés.
+A v2 már tárolja a tápérték forrását (`reference` / `ai` / `user`), a rögzített referenciakulcsot és a párosítás felhasználói megerősítését. A katalógus a tényleges FDC ID-t, rekordleírást, adattípust és letöltési dátumot tartalmazza; az összetevő tárolja az elkészítést és az adagtartományt is. A fotóhoz párosítás továbbra is becslés, amíg nincs megfelelően ellenőrizve.
 
 ## Tárolás, adatvédelem és Free keret
 

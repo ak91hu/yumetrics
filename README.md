@@ -1,6 +1,16 @@
 # Yumetrics
 
-Magyar, reszponzív ételfotó-elemző és étkezési napló. Kép → OpenCode-on elért Gemini → ellenőrizhető piszkozat → naptár. A képek a saját Cloudinary Free-fiókodban, az étkezések SQLite-ban vagy a hosztolt változat D1-adatbázisában vannak.
+Magyar, reszponzív ételfotó-elemző és étkezési napló. Kép és támpontok → vizuális összetevő-leltár → forrásolt tápértékszámítás → ellenőrizhető piszkozat → naptár. A képek a saját Cloudinary Free-fiókodban, az étkezések SQLite-ban vagy a hosztolt változat D1-adatbázisában vannak.
+
+## Részletesebb elemzés: v2
+
+A `food-v2-grounded` folyamat külön elemzi a képen látható összetevőket, azok elkészítését és adagját. A megfelelő ételekhez 20, hivatalos USDA API-ból rögzített rekord tápértékeit veszi át; a többi összetevőhöz külön AI-kérés készít jelölt becslést. Az adatbázisrekord és a fénykép párosítása továbbra is ellenőrzendő, nem bizonyított azonosság. [A kutatás, a megvalósított gyakorlatok és korlátok](docs/PHOTO-ASSESSMENT.md).
+
+Opcionálisan második képet, lemért teljes ételtömeget, tányérátmérőt és elfogyasztott százalékot is megadhatsz. A két kép ugyanarról az adagról készüljön. Az elfogyasztott százalék minden összetevőre azonos arányban és csak egyszer vonatkozik. Az eredményben megjelenik a kép minősége, a feltételezett összetevők, az elkészítés, a tömegforgatókönyvek és a pontosítandó kérdések.
+
+Összetevőnként látható az **USDA-referencia / AI-becslés / Saját értékek** jelölés. A referencia linkkel visszakereshető, cserélhető és jóváhagyható. Kézi név- vagy tápértékmódosítás után az adott adat nem marad USDA-értékként megjelölve. A telített zsír és a számolt sóegyenérték is megjelenik; az ismeretlen érték „—”. Az energia-forgatókönyv nem statisztikai konfidenciaintervallum, csak az adagtartomány hatását szemlélteti.
+
+Referenciák frissítése, kizárólag fejlesztői műveletként: `node scripts/update-food-reference.mjs`. A program a dokumentált nyilvános USDA DEMO_KEY segítségével újratölti a rögzített FDC ID-ket; futás közben az alkalmazás nem kér további USDA-kulcsot. A forrásrekordok metaadatai és a letöltés dátuma a `lib/food-reference.mjs` fájlban vannak.
 
 ## Gyors indítás
 
@@ -86,7 +96,7 @@ A SQLite-adatbázis `data/yumetrics.sqlite`, WAL módban. Teljes, egyszerű fáj
 
 Az eredeti AI-elemzés változatlan marad a felhasználó által javított értékek mellett. Revíziószám akadályozza a másik ablakból történő véletlen felülírást. A műveletazonosító ismételt küldése nem indít új elemzést. 20/óra és 50/nap felhasználónkénti próbálkozási korlát védi az AI-keretet; a bejegyzés törlése nem nullázza a korlátot.
 
-Az elemzés indulásakor bejegyzés készül, így Cloudinary-hiba vagy megszakadt kérés után is megmarad a törléshez szükséges képazonosító. A félbemaradt, sikertelen és még be nem mentett elemzések külön megjelennek. Aktív elemzést 2 percig nem lehet törölni. Hálózati bizonytalanság után érdemes frissíteni és ellenőrizni a piszkozatot, mielőtt új elemzést indítasz. Cloudinary cloud name váltásakor előbb rendezd a régi képek költöztetését/törlését; az app egyetlen aktív Cloudinary-fiókkal működik.
+Az elemzés indulásakor bejegyzés készül, így Cloudinary-hiba vagy megszakadt kérés után is megmarad a törléshez szükséges képazonosító. A második kép is előre ismert `-angle` utótagú azonosítót kap; a kontextus a feltöltés előtt elmentésre kerül. A félbemaradt, sikertelen és még be nem mentett elemzések külön megjelennek. Aktív elemzést 5 percig nem lehet törölni. Hálózati bizonytalanság után érdemes frissíteni és ellenőrizni a piszkozatot, mielőtt új elemzést indítasz. Cloudinary cloud name váltásakor előbb rendezd a régi képek költöztetését/törlését; az app egyetlen aktív Cloudinary-fiókkal működik.
 
 ## Hosztolt Sites / Cloudflare-változat
 
@@ -110,7 +120,7 @@ node scripts/browser-check.mjs
 
 Az automatikus Node-tesztek lefedik a dátumokat, tápértékszámítást, bemenetellenőrzést, natív Gemini-kérést, Cloudinary-aláírást, az elemzés–piszkozat–javítás–mentés–naptár–törlés folyamatot, tulajdonosi határokat, költségkorlátot, SQLite-újraindítást és HTTP-belépést. A szolgáltatókat ezek a tesztek helyettesítik, nem használnak valódi kulcsot.
 
-2026-11-06-án mind a 12 Node-teszt és a headless Chrome folyamatellenőrzés sikeres volt. A reszponzív felületet 320, 390, 768, 1024 és 1440 pixel szélességen ellenőriztük; az ételkártyák és a mobilos szerkesztő űrlap vízszintes túlfutás nélkül megjelennek. A böngészős teszt a fénykép JPEG-be alakításától a piszkozat ellenőrzésén és az adag javításán át a mentésig, újratöltésig és törlésig végigment. A képernyőképeket vizuálisan is ellenőriztük.
+2026-11-06-án a Node-tesztek és a headless Chrome folyamatellenőrzés sikeres volt. A reszponzív felületet 320, 390, 768, 1024 és 1440 pixel szélességen ellenőriztük; az ételkártyák és a mobilos szerkesztő űrlap vízszintes túlfutás nélkül megjelennek. A böngészős teszt a két fotó JPEG-be alakításától a piszkozat ellenőrzésén, az elfogyasztott hányad és az adag javításán, valamint az USDA-referencia kiválasztásán át a mentésig, újratöltésig és mindkét kép törléséig végigment. A régi adatbázis migrációját és a korábbi elemzések olvashatóságát külön teszt ellenőrzi. A képernyőképeket vizuálisan is ellenőriztük.
 
 A `browser-check.mjs` telepített Chrome-mal, headless módban ellenőrzi az asztali és mobilfelületet, külön memóriabeli tesztadatbázissal és helyettesített szolgáltatókkal. Windows alapértelmezett Chrome-útvonallal indul; máshol a `CHROME_PATH` környezeti változót állítsd be. Külön, csak a teszthez létrehozott böngészőprofilt használ az `outputs/` alatt; nem nyitja meg a személyes Chrome-profilt. Siker esetén a `outputs/browser-check.json` és a képernyőképek igazolják az eredményt. GPU/renderer-indítási jogosultsághibánál a teszt hibával leáll, és `outputs/chrome-stderr.log` készül. A böngésző sandboxát nem kapcsolja ki.
 

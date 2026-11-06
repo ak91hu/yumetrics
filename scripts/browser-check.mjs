@@ -4,6 +4,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import assert from 'node:assert/strict';
 import { createApp, openDatabase } from '../server.mjs';
+import { aiPayloadFor } from '../tests/fixtures.mjs';
 
 const chrome = process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const out = resolve('outputs'); mkdirSync(out, { recursive: true });
@@ -15,7 +16,7 @@ let providerCalls = 0;
 const db = openDatabase(':memory:');
 const server = createApp({ db, env: { OPENCODE_API_KEY: 'browser-test', CLOUDINARY_CLOUD_NAME: 'test-cloud', CLOUDINARY_API_KEY: 'browser-test', CLOUDINARY_API_SECRET: 'browser-test' }, fetcher: async (url, options) => {
   providerCalls++;
-  if (url.startsWith('https://opencode.ai/')) return Response.json({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify({ isFood: true, name: 'Tesztétkezés', confidence: 'medium', assumptions: 'Automatizált teszt: nem valódi AI-elemzés.', ingredients: [ingredient] }) }] } }] });
+  if (url.startsWith('https://opencode.ai/')) return Response.json(aiPayloadFor({ name: 'Tesztétkezés', confidence: 'medium', assumptions: 'Automatizált teszt: nem valódi AI-elemzés.', ingredients: [ingredient] }, options));
   if (url.endsWith('/upload')) return Response.json({ public_id: options.body.get('public_id'), secure_url: `https://res.cloudinary.com/test-cloud/image/upload/v1/${options.body.get('public_id')}.jpg`, width: 1, height: 1, bytes: 68, version: 1, format: 'jpg' });
   if (url.endsWith('/destroy')) return Response.json({ result: 'ok' });
   throw new Error('Unexpected provider URL');
@@ -94,14 +95,31 @@ try {
   await send('DOM.setFileInputFiles', { nodeId: fileInput.nodeId, files: [photoFile] });
   await waitFor("!document.querySelector('#photo-preview').hidden");
   assert.ok((await evaluate("document.querySelector('#photo-preview').src")).startsWith('data:image/jpeg;base64,'));
+  await evaluate("document.querySelector('#context-panel').open = true; document.querySelector('#context-weight').value='100'; document.querySelector('#context-consumed').value='50'");
+  const angleInput = await send('DOM.querySelector', { nodeId: doc.root.nodeId, selector: '#second-photo-input' });
+  await send('DOM.setFileInputFiles', { nodeId: angleInput.nodeId, files: [photoFile] });
+  await waitFor("!document.querySelector('.second-preview-wrap').hidden");
   await evaluate("document.querySelector('#upload-form').requestSubmit()");
   await waitFor("document.querySelector('#meal-dialog').open");
-  assert.equal(await evaluate("document.querySelector('#detail-calories').textContent"), '160');
+  assert.equal(await evaluate("document.querySelector('#detail-calories').textContent"), '80');
+  assert.ok(await evaluate("document.querySelector('.analysis-report') && document.querySelector('.additional-view')"));
   await evaluate("document.querySelector('[name=i-0-grams]').value='200'; document.querySelector('[name=i-0-grams]').dispatchEvent(new Event('input',{bubbles:true}))");
   assert.equal(await evaluate("document.querySelector('#detail-calories').textContent"), '320');
+  await evaluate("document.querySelector('[data-reference-index=\"0\"]').value='fdc-171705'; document.querySelector('[data-reference-index=\"0\"]').dispatchEvent(new Event('change',{bubbles:true}))");
+  await evaluate("document.querySelector('#ingredient-list .source-picker').open=true; document.querySelector('#ingredient-list .nutrient-inputs').closest('details').open=true");
+  for (const width of [320, 390]) {
+    await viewport(width, 844, true);
+    assert.ok(await evaluate("document.querySelector('#meal-detail').scrollWidth <= document.querySelector('#meal-detail').clientWidth"), `Expanded source and nutrient controls fit at ${width}px`);
+  }
+  assert.equal(await evaluate("document.querySelector('[data-source-label=\"0\"]').textContent"), 'USDA-referencia');
+  await evaluate("document.querySelector('[name=i-0-protein]').value='3'; document.querySelector('[name=i-0-protein]').dispatchEvent(new Event('input',{bubbles:true}))");
+  assert.equal(await evaluate("document.querySelector('[data-source-label=\"0\"]').textContent"), 'Saját értékek');
+  await evaluate("document.querySelector('[data-reference-index=\"0\"]').value='fdc-171705'; document.querySelector('[data-reference-index=\"0\"]').dispatchEvent(new Event('change',{bubbles:true}))");
   const reviewWidth = await evaluate("({scroll:document.querySelector('#meal-detail').scrollWidth,client:document.querySelector('#meal-detail').clientWidth})");
   assert.ok(reviewWidth.scroll <= reviewWidth.client, `Review form fits mobile dialog: ${JSON.stringify(reviewWidth)}`);
   await screenshot('mobile-review.png', false);
+  await evaluate("document.querySelector('#ingredient-list .source-picker').open=true; document.querySelector('#ingredient-list').scrollIntoView({block:'start'})");
+  await screenshot('mobile-ingredients.png', false);
   await evaluate("document.querySelector('#detail-form').requestSubmit()");
   await waitFor("document.querySelector('#meal-count').textContent === '1' && !document.querySelector('#meal-dialog').open");
   assert.equal(await evaluate("document.querySelector('#calorie-total').textContent"), '320');
@@ -109,8 +127,8 @@ try {
   await evaluate("document.querySelector('#meal-list [data-meal]').click()");
   await evaluate("document.querySelector('#delete-meal').click(); document.querySelector('#confirm-delete').click()");
   await waitFor("document.querySelector('#meal-count').textContent === '0' && !document.querySelector('#meal-dialog').open");
-  assert.equal(providerCalls, 3); assert.deepEqual(errors, []);
-  const result = { passed: true, desktop: '1440×1100', mobile: '390×844', checkedWidths: [320, 390, 768, 1024, 1440], checks: ['no horizontal overflow', 'meal cards fit at every breakpoint', 'demo isolation', 'readonly sample details', 'mobile navigation', 'calendar selection', 'photo decode and JPEG conversion', 'mock AI and signed Cloudinary upload', 'live portion scaling', 'review form fits mobile', 'save', 'reload persistence', 'delete'], providerMode: 'mocked; no real credentials or external API requests', screenshots: ['desktop.png', 'mobile.png', 'mobile-review.png'] };
+  assert.equal(providerCalls, 6); assert.deepEqual(errors, []);
+  const result = { passed: true, desktop: '1440×1100', mobile: '390×844', checkedWidths: [320, 390, 768, 1024, 1440], checks: ['no horizontal overflow', 'meal cards fit at every breakpoint', 'demo isolation', 'readonly sample details', 'mobile navigation', 'calendar selection', 'photo decode and JPEG conversion', 'two-view upload', 'measured weight and consumed fraction', 'two-stage mocked AI and signed Cloudinary upload', 'live portion scaling', 'USDA reference selection', 'manual edit invalidates reference provenance', 'expanded source and nutrient controls fit at 320px', 'review form fits mobile', 'save', 'reload persistence', 'both views deleted'], providerMode: 'mocked; no real credentials or external API requests', screenshots: ['desktop.png', 'mobile.png', 'mobile-review.png', 'mobile-ingredients.png'] };
   writeFileSync(resolve(out, 'browser-check.json'), JSON.stringify(result, null, 2)); console.log(JSON.stringify(result, null, 2));
 } catch (error) {
   writeFileSync(resolve(out, 'browser-check.json'), JSON.stringify({ passed: false, status: 'failed', error: error.message }, null, 2));

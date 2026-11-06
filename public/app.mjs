@@ -1,4 +1,6 @@
-import { totals, NUTRIENTS, TYPES, validateAnalysis, metadata } from '/domain.mjs';
+import { totals, NUTRIENTS, OPTIONAL_NUTRIENTS, TYPES, validateAnalysis, metadata } from '/domain.mjs';
+import { FOOD_REFERENCE } from '/food-reference.mjs';
+import { installAnalysisUI, reportMarkup, ingredientMarkup, refreshReport } from '/analysis-ui.mjs';
 
 const $ = selector => document.querySelector(selector);
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -22,16 +24,18 @@ const paths = {
 const icon = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.info}</svg>`;
 function icons(root = document) { root.querySelectorAll('[data-icon]').forEach(el => { el.innerHTML = icon(el.dataset.icon); }); }
 icons();
+installAnalysisUI();
 const dayKey = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 const asDate = day => new Date(`${day}T12:00:00`);
 const today = () => dayKey(new Date());
 const number = n => n === null || !Number.isFinite(n) ? '—' : new Intl.NumberFormat('hu-HU', { maximumFractionDigits: 1 }).format(n);
+const saltNumber = n => n === null || !Number.isFinite(n) ? '—' : new Intl.NumberFormat('hu-HU', { maximumFractionDigits: 2 }).format(n);
 const integer = n => new Intl.NumberFormat('hu-HU', { maximumFractionDigits: 0 }).format(n);
 const dateLabel = day => new Intl.DateTimeFormat('hu-HU', { month: 'short', day: 'numeric', weekday: 'short' }).format(asDate(day));
 let goal = 2000;
 try { const stored = Number(localStorage.getItem('yumetrics-goal')); if (stored >= 500 && stored <= 10000) goal = Math.round(stored); } catch { /* Preferences are optional in private browsing. */ }
-const state = { selected: today(), month: today().slice(0, 7), meals: [], demo: false, status: null, goal, photo: null, busy: false, edit: null, dirty: false, deleting: null, loadVersion: 0 };
-let toastTimer, photoVersion = 0;
+const state = { selected: today(), month: today().slice(0, 7), meals: [], demo: false, status: null, goal, photo: null, secondPhoto: null, busy: false, edit: null, dirty: false, deleting: null, loadVersion: 0 };
+let toastTimer, photoVersion = 0, secondPhotoVersion = 0, processingPhotos = 0;
 function toast(message) { $('#toast').textContent = message; $('#toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('#toast').hidden = true; }, 5000); }
 function errorAt(id, error) { $(id).textContent = error?.message || String(error); $(id).hidden = false; }
 async function request(path, options = {}) {
@@ -73,7 +77,15 @@ function demoMeals() {
     { id: 'demo-breakfast', day: today(), time: '08:30', type: 'Reggeli', analysis: { name: 'Avokádós pirítós tojással', confidence: 'medium', assumptions: 'Mintaadat: két szelet kenyér, fél avokádó és egy tojás. A tápértékek szemléltető becslések.', ingredients: [ingredient('Teljes kiőrlésű kenyér', 80, 247, 13, 35, 4.2, 7, 4, 400), ingredient('Avokádó', 70, 160, 2, 1.8, 14.7, 6.7, .7, 7), ingredient('Főtt tojás', 55, 155, 12.6, 1.1, 10.6, 0, 1.1, 124)] }, photo: { url: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=500&q=80' } },
     { id: 'demo-lunch', day: today(), time: '12:45', type: 'Ebéd', analysis: { name: 'Mediterrán csirkés tál', confidence: 'medium', assumptions: 'Mintaadat: a főtt rizs és a sült csirke tápértékei elkészített állapotra vonatkoznak. Az öntet mennyisége becsült.', ingredients: [ingredient('Sült csirkemell', 140, 165, 31, 0, 3.6, 0, 0, 74), ingredient('Főtt barna rizs', 150, 123, 2.7, 24, 1, 1.6, .2, 4), ingredient('Vegyes saláta', 150, 25, 1.5, 3, .3, 2, 2, null), ingredient('Olívaolaj', 10, 884, 0, 0, 100, 0, 0, 0)] }, photo: { url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=500&q=80' } },
     { id: 'demo-yesterday', day: dayKey(new Date(asDate(today()).setDate(asDate(today()).getDate() - 1))), time: '18:30', type: 'Vacsora', analysis: { name: 'Zöldséges tál', confidence: 'low', assumptions: 'Szemléltető mintaadat.', ingredients: [ingredient('Zöldséges gabonatál', 350, 130, 4, 20, 3, 3, null, null)] }, photo: { url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=500&q=80' } },
-  ].map(meal => ({ ...meal, status: 'saved', notes: '', revision: 0, totals: totals(meal.analysis.ingredients) }));
+  ].map(meal => {
+    const keys = { 'Teljes kiőrlésű kenyér': 'fdc-172688', 'Avokádó': 'fdc-171705', 'Főtt tojás': 'fdc-173424', 'Sült csirkemell': 'fdc-171477', 'Olívaolaj': 'fdc-171413' };
+    Object.assign(meal.analysis, { reportVersion: 2, summary: 'Bemutatóelemzés: a látható összetevők külön adagokkal és ellenőrizhető tápértékforrásokkal szerepelnek. A grammok szemléltető becslések.', observations: ['A fő összetevők és a köret külön szerepelnek.', 'Az elkészítés és az adag pontosítása befolyásolja az összesítést.'], questions: ['Mennyi olaj vagy öntet került az ételbe?'], imageQuality: { level: 'limited', issues: ['Mintaadat: nincs valódi mérés vagy AI-feldolgozás.'] } });
+    meal.analysis.ingredients = meal.analysis.ingredients.map(item => {
+      const key = keys[item.name], ref = FOOD_REFERENCE[key];
+      return { ...item, ...(ref?.nutrients || { saturatedFat: null }), gramsMin: item.grams * .85, gramsMax: item.grams * 1.15, preparation: ref?.label || 'Elkészítve, becsült összetétellel', sourceType: ref ? 'reference' : 'ai', referenceKey: key || null, sourceConfirmed: false, weightBasis: 'visual', visibility: item.name === 'Olívaolaj' ? 'inferred' : 'visible', portionNote: 'Szemléltető minta: az adagtartomány nem mért hibahatár.', alternatives: [] };
+    });
+    return { ...meal, status: 'saved', notes: '', revision: 0, totals: totals(meal.analysis.ingredients) };
+  });
 }
 const visibleMeals = () => state.demo ? demoMeals() : state.meals;
 function render() {
@@ -83,6 +95,8 @@ function render() {
   $('#selected-day-label').textContent = dateLabel(state.selected);
   $('#daily-title').textContent = state.selected === today() ? 'Mai áttekintés' : 'Napi áttekintés';
   $('#meal-count').textContent = selected.length;
+  const optionalSum = key => !selected.length || selected.some(meal => meal.totals[key] == null) ? null : selected.reduce((total, meal) => total + meal.totals[key], 0);
+  $('#daily-details').innerHTML = `<span><b>${selected.length}</b> megörökített étkezés</span><span>Rost: <b>${number(optionalSum('fiber'))}${optionalSum('fiber') === null ? '' : ' g'}</b></span><span>Sóegyenérték: <b>${saltNumber(optionalSum('sodium') === null ? null : optionalSum('sodium') * 2.5 / 1000)}${optionalSum('sodium') === null ? '' : ' g'}</b></span>`;
   $('#calorie-total').textContent = integer(sum('calories'));
   $('#energy-caption').textContent = selected.length ? `${integer(state.goal)} kcal választott napi keret` : 'Egy új nap, egy tiszta lap.';
   const percent = Math.round(sum('calories') / state.goal * 100);
@@ -162,17 +176,20 @@ $('#logout-button').addEventListener('click', async () => {
 });
 function openUpload() {
   if (state.busy) { show('#upload-dialog'); return; }
-  state.photo = null; photoVersion++;
+  state.photo = null; state.secondPhoto = null; photoVersion++; secondPhotoVersion++;
   $('#upload-form').reset(); $('#upload-day').value = state.selected; $('#upload-time').value = new Date().toTimeString().slice(0, 5);
   const hour = new Date().getHours(); $('#upload-type').value = hour < 11 ? 'Reggeli' : hour < 16 ? 'Ebéd' : hour < 22 ? 'Vacsora' : 'Kisétkezés';
   $('#photo-preview').hidden = true; $('#upload-zone').hidden = false; $('#change-photo').hidden = true; $('#upload-error').hidden = true; $('#analysis-progress').hidden = true;
+  $('.second-preview-wrap').hidden = true;
   $('#analyze-button').disabled = false; $('#analyze-button').innerHTML = `${icon('sparkles')}Étel elemzése`;
   if (!state.status?.ai || !state.status?.photos) errorAt('#upload-error', new Error('Az elemzéshez még be kell állítani az OpenCode- és Cloudinary-kapcsolatot. A Beállításokban láthatod az állapotukat.'));
   show('#upload-dialog');
 }
-async function choosePhoto(file) {
+async function choosePhoto(file, secondary = false) {
   if (!file || state.busy) return;
-  const version = ++photoVersion; state.photo = null; $('#upload-error').hidden = true; $('#analyze-button').disabled = true;
+  const version = secondary ? ++secondPhotoVersion : ++photoVersion;
+  if (secondary) state.secondPhoto = null; else state.photo = null;
+  processingPhotos++; $('#upload-error').hidden = true; $('#analyze-button').disabled = true;
   const objectUrl = URL.createObjectURL(file);
   try {
     if (file.size > 25 * 1024 * 1024) throw new Error('A kiválasztott kép legfeljebb 25 MB lehet.');
@@ -185,11 +202,14 @@ async function choosePhoto(file) {
     const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL('image/jpeg', .86);
     if (dataUrl.length > 5_590_000) throw new Error('A tömörített kép túl nagy. Válassz kisebb fotót.');
-    if (version !== photoVersion) return;
-    state.photo = dataUrl; $('#photo-preview').src = dataUrl; $('#photo-preview').hidden = false; $('#upload-zone').hidden = true; $('#change-photo').hidden = false;
-  } catch (error) { if (version === photoVersion) errorAt('#upload-error', error); }
-  finally { URL.revokeObjectURL(objectUrl); if (version === photoVersion) $('#analyze-button').disabled = false; }
+    if (version !== (secondary ? secondPhotoVersion : photoVersion)) return;
+    if (secondary) { state.secondPhoto = dataUrl; $('#second-photo-preview').src = dataUrl; $('.second-preview-wrap').hidden = false; }
+    else { state.photo = dataUrl; $('#photo-preview').src = dataUrl; $('#photo-preview').hidden = false; $('#upload-zone').hidden = true; $('#change-photo').hidden = false; }
+  } catch (error) { if (version === (secondary ? secondPhotoVersion : photoVersion)) errorAt('#upload-error', error); }
+  finally { URL.revokeObjectURL(objectUrl); processingPhotos--; $('#analyze-button').disabled = state.busy || processingPhotos > 0; }
 }
+$('#second-photo-input').addEventListener('change', event => choosePhoto(event.target.files[0], true));
+$('#remove-second-photo').addEventListener('click', () => { if (state.busy) return; state.secondPhoto = null; secondPhotoVersion++; $('#second-photo-input').value = ''; $('.second-preview-wrap').hidden = true; });
 $('#photo-input').addEventListener('change', event => choosePhoto(event.target.files[0]));
 $('#camera-input').addEventListener('change', event => choosePhoto(event.target.files[0]));
 $('#camera-button').addEventListener('click', () => { if (!state.busy) { $('#camera-input').value = ''; $('#camera-input').click(); } });
@@ -203,7 +223,7 @@ $('#upload-form').addEventListener('submit', async event => {
   state.busy = true; $('#analyze-button').disabled = true; $('#analysis-progress').hidden = false;
   let id = crypto.randomUUID();
   try {
-    const payload = { id, image: state.photo, day: $('#upload-day').value, time: $('#upload-time').value, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, type: $('#upload-type').value, notes: $('#upload-notes').value };
+    const payload = { id, image: state.photo, secondImage: state.secondPhoto, context: { totalWeightG: $('#context-weight').value ? Number($('#context-weight').value) : null, plateDiameterCm: $('#context-diameter').value ? Number($('#context-diameter').value) : null, consumedPercent: Number($('#context-consumed').value) || 100 }, day: $('#upload-day').value, time: $('#upload-time').value, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, type: $('#upload-type').value, notes: $('#upload-notes').value };
     const { meal } = await request('/api/analyze', { method: 'POST', body: JSON.stringify(payload) });
     if (state.demo) state.demo = false;
     state.meals = [...state.meals.filter(item => item.id !== meal.id), meal];
@@ -213,7 +233,7 @@ $('#upload-form').addEventListener('submit', async event => {
   finally { state.busy = false; $('#analyze-button').disabled = false; $('#analysis-progress').hidden = true; }
 });
 const field = (label, name, value, attrs = '') => `<label>${label}<input name="${name}" value="${escape(value)}" ${attrs}></label>`;
-const nutrientNames = { calories: 'Energia (kcal)', protein: 'Fehérje (g)', carbs: 'Szénhidrát (g)', fat: 'Zsír (g)', fiber: 'Rost (g)', sugar: 'Cukor (g)', sodium: 'Nátrium (mg)' };
+const nutrientNames = { calories: 'Energia (kcal)', protein: 'Fehérje (g)', carbs: 'Szénhidrát (g)', fat: 'Zsír (g)', fiber: 'Rost (g)', sugar: 'Cukor (g)', sodium: 'Nátrium (mg)', saturatedFat: 'Telített zsír (g)' };
 function openMeal(id) {
   const meal = visibleMeals().find(item => item.id === id);
   if (!meal) { toast('A bejegyzés még nem tölthető be. Frissítsd a naplót.'); return; }
@@ -228,14 +248,29 @@ function renderDetail() {
   }
   const total = totals(analysis.ingredients);
   $('#meal-detail').innerHTML = `${readOnly ? '<p class="read-only-note">Mintaadat · Ezt az étkezést csak megtekinteni lehet. A saját elemzéseid minden adata módosítható.</p>' : ''}<form id="detail-form"><div class="detail-top"><img src="${escape(meal.photo.url)}" alt="${escape(analysis.name)}"><div class="detail-summary"><strong id="detail-calories">${integer(total.calories)}</strong><small> kcal</small><div class="detail-totals" id="detail-macros"></div><span class="confidence ${analysis.confidence}">AI önértékelés: ${{ low: 'bizonytalan', medium: 'közepes', high: 'magas' }[analysis.confidence]}</span></div></div><fieldset ${readOnly ? 'disabled' : ''} class="detail-fields">${field('Az étel neve', 'name', analysis.name, 'required maxlength="160"')}<div class="form-grid">${field('Dátum', 'day', meal.day, 'type="date" required min="1900-01-01" max="2100-12-31"')}${field('Időpont', 'time', meal.time, 'type="time" required')}<label class="full-width">Étkezés<select name="type">${TYPES.map(type => `<option ${type === meal.type ? 'selected' : ''}>${type}</option>`).join('')}</select></label></div><div class="ingredient-heading"><h3>Összetevők és adagok</h3><button type="button" class="text-button" id="add-ingredient">${icon('plus')}Hozzáadás</button></div><div id="ingredient-list">${analysis.ingredients.map((item, index) => `<div class="ingredient-row" data-ingredient="${index}"><div class="ingredient-main">${field('Összetevő', `i-${index}-name`, item.name, 'required maxlength="160"')}${field('Adag (g)', `i-${index}-grams`, item.grams, 'type="number" step="any" min="0.1" max="5000" required')}<button class="icon-button" type="button" data-remove="${index}" aria-label="Összetevő törlése">${icon('x')}</button></div><details><summary>Tápértékek szerkesztése · 100 g-ra</summary><div class="nutrient-inputs">${NUTRIENTS.map(key => field(nutrientNames[key], `i-${index}-${key}`, item[key] ?? '', `type="number" step="any" min="0" max="${key === 'calories' ? 1000 : key === 'sodium' ? 100000 : 100}" ${['fiber', 'sugar', 'sodium'].includes(key) ? 'placeholder="Ismeretlen"' : 'required'}`)).join('')}</div></details></div>`).join('')}</div><div class="detail-extra" id="detail-extra"></div><label>Megjegyzés<textarea name="notes" rows="2" maxlength="2000">${escape(meal.notes)}</textarea></label></fieldset><div class="assumptions"><strong>A becslés bizonytalanságai</strong>${escape(analysis.assumptions || 'Az adag és a rejtett összetevők egy fotóból nem mérhetők pontosan.')}</div><p class="form-error" id="detail-error" role="alert" hidden></p><div class="detail-footer">${readOnly ? '' : `<button type="button" class="delete-button" id="delete-meal">${icon('trash')}Törlés</button><button type="submit" class="button primary" id="save-meal">${meal.status === 'draft' ? 'Mentés a naplómba' : 'Módosítások mentése'}</button>`}</div><p class="detail-provenance">${readOnly ? 'Szemléltető mintaadat' : `Modell: ${escape(meal.model)} · ${escape(meal.promptVersion)} · Az eredeti AI-becslés külön megőrizve.`}</p></form>`;
+  $('#detail-form fieldset').insertAdjacentHTML('beforebegin', reportMarkup(meal));
+  $('#ingredient-list').querySelectorAll('[data-ingredient]').forEach(row => {
+    const index = Number(row.dataset.ingredient);
+    row.querySelector('.ingredient-main').insertAdjacentHTML('afterend', ingredientMarkup(analysis.ingredients[index], index));
+    row.querySelector(`[name="i-${index}-grams"]`).min = '.001';
+    const saturated = row.querySelector(`[name="i-${index}-saturatedFat"]`); saturated.required = false; saturated.placeholder = 'Ismeretlen';
+  });
+  $('#ingredient-list').addEventListener('change', event => {
+    const select = event.target.closest('[data-reference-index]'); if (!select || readOnly) return;
+    syncDetail(); const item = state.edit.analysis.ingredients[Number(select.dataset.referenceIndex)], reference = FOOD_REFERENCE[select.value];
+    Object.assign(item, reference ? { ...reference.nutrients, referenceKey: select.value, sourceType: 'reference', sourceConfirmed: true, preparation: reference.label } : { referenceKey: null, sourceType: 'user', sourceConfirmed: false });
+    state.dirty = true; renderDetail(); toast(reference ? 'A tápértékeket a kiválasztott USDA-referenciából számoljuk.' : 'A megadott tápértékeket saját értékként tartjuk meg.');
+  });
   $('#detail-form').addEventListener('input', () => { if (!readOnly) { state.dirty = true; syncDetail(); updateDetailTotals(); } });
   $('#detail-form').addEventListener('submit', saveMeal);
   $('#add-ingredient').addEventListener('click', () => {
     syncDetail();
     if (state.edit.analysis.ingredients.length >= 40) { toast('Legfeljebb 40 összetevő adható meg.'); return; }
-    state.edit.analysis.ingredients.push({ name: '', grams: 100, calories: 0, protein: 0, carbs: 0, fat: 0, fiber: null, sugar: null, sodium: null }); state.dirty = true; renderDetail();
+    state.edit.analysis.ingredients.push({ name: '', grams: 100, gramsMin: 100, gramsMax: 100, weightBasis: 'user', sourceType: 'user', visibility: 'visible', preparation: 'Saját megadás', calories: 0, protein: 0, carbs: 0, fat: 0, fiber: null, sugar: null, sodium: null, saturatedFat: null }); state.dirty = true; renderDetail();
   });
   $('#ingredient-list').addEventListener('click', event => {
+    const confirmSource = event.target.closest('[data-confirm-source]');
+    if (confirmSource && !readOnly) { syncDetail(); state.edit.analysis.ingredients[Number(confirmSource.dataset.confirmSource)].sourceConfirmed = true; state.dirty = true; confirmSource.textContent = '✓ A párosítást ellenőriztem'; return; }
     const remove = event.target.closest('[data-remove]'); if (!remove || readOnly) return;
     if (state.edit.analysis.ingredients.length === 1) { toast('Legalább egy összetevő szükséges.'); return; }
     syncDetail(); state.edit.analysis.ingredients.splice(Number(remove.dataset.remove), 1); state.dirty = true; renderDetail();
@@ -247,16 +282,19 @@ function syncDetail() {
   const data = new FormData(form), meal = state.edit;
   meal.analysis.name = String(data.get('name')); meal.day = String(data.get('day')); meal.time = String(data.get('time')); meal.type = String(data.get('type')); meal.notes = String(data.get('notes'));
   meal.analysis.ingredients = meal.analysis.ingredients.map((item, index) => {
-    const updated = { name: String(data.get(`i-${index}-name`)), grams: Number(data.get(`i-${index}-grams`)) };
-    NUTRIENTS.forEach(key => { const value = data.get(`i-${index}-${key}`); updated[key] = value === '' && ['fiber', 'sugar', 'sodium'].includes(key) ? null : Number(value); }); return updated;
+    const updated = { ...item, name: String(data.get(`i-${index}-name`)), grams: Number(data.get(`i-${index}-grams`)) };
+    NUTRIENTS.forEach(key => { const value = data.get(`i-${index}-${key}`); updated[key] = value === '' && OPTIONAL_NUTRIENTS.includes(key) ? null : Number(value); });
+    if (updated.grams !== item.grams) Object.assign(updated, { gramsMin: updated.grams, gramsMax: updated.grams, weightBasis: 'user' });
+    if (updated.name !== item.name || NUTRIENTS.some(key => updated[key] !== (item[key] ?? null))) Object.assign(updated, { sourceType: 'user', referenceKey: null, sourceConfirmed: false });
+    return updated;
   });
 }
 function updateDetailTotals() {
   if (!state.edit?.analysis || !$('#detail-macros')) return;
-  const total = totals(state.edit.analysis.ingredients);
+  const report = refreshReport(state.edit), total = report.total;
   $('#detail-calories').textContent = integer(total.calories);
   $('#detail-macros').innerHTML = `<span>${number(total.protein)} g fehérje</span><span>${number(total.carbs)} g szénh.</span><span>${number(total.fat)} g zsír</span>`;
-  $('#detail-extra').innerHTML = [['Rost', total.fiber, 'g'], ['Cukor', total.sugar, 'g'], ['Nátrium', total.sodium, 'mg']].map(([label, value, unit]) => `<span>${label}<strong>${number(value)}${value === null ? '' : ` ${unit}`}</strong></span>`).join('');
+  $('#detail-extra').innerHTML = [['Rost', total.fiber, 'g'], ['Cukor', total.sugar, 'g'], ['Telített zsír', total.saturatedFat, 'g'], ['Nátrium', total.sodium, 'mg'], ['Sóegyenérték', report.salt, 'g']].map(([label, value, unit]) => `<span>${label}<strong>${label === 'Sóegyenérték' ? saltNumber(value) : number(value)}${value === null ? '' : ` ${unit}`}</strong></span>`).join('');
 }
 async function saveMeal(event) {
   event.preventDefault(); if (state.demo) return;
