@@ -1,50 +1,47 @@
-# Képalapú ételértékelés: kutatás és a megvalósított módszer
+# A megvalósított ételértékelés
 
-Ellenőrzés: 2026-11-06. Az alábbi módszertan működik a `food-v2-grounded` elemzésben. A saját, lemért étkezéseken végzett pontossági benchmark továbbra is szükséges; a tudományos források eredményeit nem tekintjük a Yumetrics igazolt pontosságának.
+Verzió: `food-v5-full-image-portion`, 2026-11-07. A JSON-riport formátuma visszafelé kompatibilis v2; a korábbi étkezések olvashatók. A magyar piaci fókusz és forrásai: [HUNGARIAN-POSITIONING.md](HUNGARIAN-POSITIONING.md).
 
-## Mit támasztanak alá a források?
+## A számítás menete
 
-1. **Ételazonosítás és tápértékszámítás külön lépésben.** A CVPR 2025 Workshop tanulmánya külön bontja fel az ételt összetevőkre, adagokra és elkészítési információra, majd ezekből becsüli a tápértékeket. Saját vizsgált adathalmazain jobb eredményt közöl az egylépéses lekérdezésnél. Ezt a felbontást vettük át, nem az adott tanulmány pontossági számait. [Khlaisamniang és mtsai., 2025](https://openaccess.thecvf.com/content/CVPR2025W/MTF/html/Khlaisamniang_Decomposing_Food_Images_for_Better_Nutrition_Analysis_A_Nutritionist-Inspired_Two-Step_CVPRW_2025_paper.html).
-2. **A tömeg külön probléma a felismeréstől.** A Nutrition5k lemért összetevő-tömegeket, több nézetet és rendelkezésre álló mélységi adatokat tartalmaz. A sima telefonos RGB-fotó nem ilyen mérőrendszer. Ez indokolja a lemért tömeg bekérését, az opcionális második nézetet és a bizonytalanság bemutatását; a második kép nem állít elő valódi mélységmérést. [Nutrition5k, a szerzők adatkészlete és módszertana](https://github.com/google-research-datasets/Nutrition5k).
-3. **A tápérték legyen visszakereshető és állapothoz kötött.** Az USDA FoodData Central megkülönbözteti az ételek és adagok adatait. A mennyiségi számítás alapja a 100 g-ra adott tápérték és az ehető rész grammja. A nyers és főtt változat nem felcserélhető. [USDA Foundation Foods dokumentáció](https://fdc.nal.usda.gov/Foundation_Foods_Documentation/), [hivatalos API és CC0 licenc](https://fdc.nal.usda.gov/api-guide/).
-4. **Mértékegységek és értelmezés.** A felületen kcal, gramm és nátriumnál mg szerepel. A sóegyenérték a nátrium tömegének 2,5-szerese; a milligramm → gramm átváltást is elvégezzük. [EU 1169/2011, só definíciója](https://eur-lex.europa.eu/eli/reg/2011/1169/oj/eng). Az app nem állít elő hivatalos termékcímkét.
+1. A böngésző újrarajzolja a képet JPEG-ként. Legfeljebb két kép adható ugyanarról az adagról; nem két adagként számoljuk.
+2. A szerver előre menti az étkezés tulajdonosát, metaadatait, képazonosítóit és a tartós feladatot; majd feltölti a képeket Cloudinaryba. Csak ezután ad elfogadott választ. Az elemző worker innen tölti vissza a képeket.
+3. Az első AI-hívás vizuális leltár: látható/feltételezett összetevők, elkészítés, ehető grammok, alsó/felső adag, alternatívák, kérdések, képminőség. Nem megfelelő kép vagy nem étel esetén nincs tápértékbecslés; a feltöltött kép a hibás bejegyzésben megmarad és törölhető.
+4. A 44 rögzített USDA-referenciához való párosításnál a szerver a tényleges rekord tápértékét másolja be, az AI nem találhat ki hozzá számokat. Referencia nélküli összetevőknél második hívás ad jelölt AI-becslést, kizárólag 100 g-ra.
+5. Ismert teljes tömegnél a szerver levonja a lemért csont/héj tömegét, az ehető összetevőket ehhez arányosítja, és a teljes képen látható ehető mennyiség 100%-ával számol. Az összetevőarányok továbbra is becslések.
+6. A felhasználó javíthatja a teljes képadag ehető grammjait és a tápértékeket; a külön lemért összetevőket megjelölheti. A beépített források mellett USDA-kulccsal angol keresésből választhat Foundation/SR Legacy rekordot. A választás nem bizonyítja automatikusan, hogy a fotón ugyanaz az étel van.
+7. A szerver mentéskor újra ellenőrzi a forrást a saját rögzített katalógusából/adatbázisából. Kézi tápértékmódosítás elveszi az USDA-címkét. Az eredeti AI-riport külön megmarad.
 
-## Konkrétan mi változott?
+A v4 a magyar ételcsoportot és az ismert elkészítést is eltárolja. Az AI minden összetevőnél nyers/elkészített/változatlan termék/ismeretlen állapotot ad. A beépített referenciák állapota külön, kézzel ellenőrzött metaadat; eltérésnél a modell által javasolt referenciát nem vesszük át. A második becslési lépés megkapja az elkészítési kontextust is. Ez egy ismert hibatípust kizár, de a fotón látható étel tényleges azonosságát nem bizonyítja.
 
-| Gyakorlat | Megvalósítás |
-| --- | --- |
-| Vizuális leltár először | Első, strukturált multimodális kérés: az összes étel, köret, öntet és ital; elkészítés, látható/feltételezett összetevők |
-| Ehető rész, dupla számolás elkerülése | Az egész látható adag becslése, étel és alapanyagainak párhuzamos számlálása nélkül; külön kezelt olaj/öntet jelzése |
-| Nem megfelelő fotó elutasítása | Nem étel vagy `poor` képminőség esetén nincs második tápértékkérés és képfeltöltés |
-| Hasznos bemeneti kontextus | Lemért ételtömeg tányér nélkül, ismert tányérátmérő, elfogyasztott százalék, megjegyzés és opcionális második nézet |
-| Több nézet ugyanarról az adagról | Maximum két kép; egy étkezés, egyszeres számolás; mindkét kép Cloudinaryba kerül, és mindkettő törölhető |
-| Determinisztikus referenciaszámítás | 20, hivatalos USDA API-ból rögzített SR Legacy rekord; a modell a kulcsot javasolja, a tápértékeket a szerver a tényleges rekordból másolja |
-| Őszinte visszaesési út | Referencia nélküli összetevőknél külön második AI-hívás, kizárólag 100 g-ra adott tápértékekre; az eredmény `ai`, nem adatbázisérték |
-| Ellenőrizhető párosítás | Összetevőnként USDA-link, angol rekordnév, FDC ID, adattípus és letöltési dátum; kézi forráscsere és megerősítés |
-| Javítások eredete | Kézi tápérték- vagy névváltoztatáskor `user` forrás; a megváltozott adat nem őrzi meg az USDA-címkét |
-| Adag és fogyasztás | Lemért teljes tömegnél arányos felosztás; az elfogyasztott százalékot egyszer alkalmazzuk. A később javított grammok már az elfogyasztott mennyiséget jelentik |
-| Bizonytalanság | Összetevőnként alsó/pont/felső tömeg, alternatív azonosítások, képi korlátok és legfeljebb néhány lényegi pontosító kérdés |
-| Kézi grammkorrekció | A megadott új tömeg lesz az adag, a tömegforgatókönyv erre az értékre szűkül; az összetétel bizonytalansága ettől nem tűnik el |
-| További tápértékek | Rost, cukor, telített zsír, nátrium és számolt sóegyenérték; hiányzó adat `null`, soha nem automatikus nulla |
-| Következetesség | Tartományok és mértékegységek ellenőrzése; energia–makró eltérés, 100 g-ot meghaladó fő tápanyagösszeg, cukor > szénhidrát és telített zsír > összes zsír jelzése |
-| Visszakövethetőség | Eredeti és javított elemzés külön; modell, promptverzió, kérési lépések tokenhasználata és összesített AI-késleltetés |
+## Saját recept: teljes fazékból elfogyasztott adag
 
-Az energia-forgatókönyv számítása: az egyes összetevők 100 g-os energiáját az alsó és felső tömegükkel szorozzuk. Ez nem 95%-os konfidenciaintervallum, és nem tartalmazza a tápértékadat, a téves ételazonosítás vagy a rejtett összetevők minden hibáját. Ismert teljes tömegnél az összetevők szélső tömegeinek összege eltérhet a lemért össztömegtől: a sáv konzervatív adag-forgatókönyv, nem egyetlen biztos recept.
+Az ismert recept rögzítéséhez a felhasználó a teljes ételben maradt alapanyagokat és hozzájuk illő nyers/főtt forrást adja meg, majd a teljes kész tömeget és a képen látható teljes kész adagot. A szerver a receptet újraszámolja: `alapanyagok összes tápanyaga × a teljes képadag kész grammja / teljes recept kész grammja`. Nem a nyers grammok összegével oszt. A képadag a recept egy része lehet, de a képen látható mennyiséget mindig 100%-ban számolja. A `recipe.eatenWeightG` mező történeti neve megmaradt; új receptnél a teljes képadag tömegét jelenti.
 
-## A referenciatár pontos korlátja
+A `recipe.ingredients` az eredeti batch mennyiségeket őrzi. Az `analysis.ingredients` az adagra eső alapanyag-egyenértéket tartalmazza, ezért e grammok összege eltérhet az elfogyasztott kész tömegtől. A riport utóbbinak a megadott `recipe.eatenWeightG` értékét mutatja. A receptet csak a saját szerkesztőjében lehet átírni; mentéskor a szerver ismét a batchből számol, a kliens által küldött hamis származtatott érték nem írja felül.
 
-A `lib/food-reference.mjs` 20 konkrét étel adatait tartalmazza. Ez nem teljes ételadatbázis és nem márka-/receptfelismerő. A `scripts/update-food-reference.mjs` a rögzített FDC-azonosítókat a hivatalos API-n keresztül kéri le; a nyilvános, dokumentált DEMO_KEY csak ehhez az explicit fejlesztői frissítéshez kell. Az alkalmazás futás közben nem használ DEMO_KEY-t és nem fogyaszt USDA API-keretet.
+A felhasználónak meg kell erősítenie az ételben maradt mennyiségek és az elöntött zsiradék/szaft kezelését. A kész tömeg a vízváltozást veszi figyelembe; általános tápanyagretenciót nem modellezünk automatikusan. Ez külön jelölt receptbecslés. Az eredeti AI-elemzés nem módosul, nincs új AI-hívás.
 
-A rögzített rekord tápértéke ellenőrizhető adat, de **a fotón szereplő ételhez párosítása AI-javaslat**, amíg a felhasználó nem ellenőrzi. A nyers/főtt állapot egyezését a modell kéri és a felület megmutatja; ezt nem tekintjük géppel bizonyított azonosságnak. Más márka, fűszerezés vagy elkészítés eltérhet. Az USDA szénhidrát-by-difference értékéből kivonjuk a rostot az elérhető szénhidrát közelítéséhez; ezt nem állítjuk az összes termékre alkalmazható laboratóriumi EU-címkeértéknek.
+**Csülök példa:** 600 g mért teljes képadag, ebből 200 g csont → 400 g ehető mennyiség. A számítás mind a 400 grammra vonatkozik; nem szorozzuk fogyasztási hányaddal. A bőr/zsír aránya és a sütéskori zsiradékveszteség külön bizonytalanság.
 
-## Adatok és migráció
+## Források és egységek
 
-Az új `analysis_context` mező az eredetileg megadott teljes tömeget, tányérátmérőt, elfogyasztott százalékot és a második nézet meglétét őrzi. Az `analysis` JSON-ban `reportVersion=2`, `summary`, `observations`, `questions`, `imageQuality` és összetevőnként `preparation`, `visibility`, `portionNote`, `alternatives`, `gramsMin`, `gramsMax`, `weightBasis`, `sourceType`, `referenceKey`, `sourceConfirmed`, illetve `saturatedFat` kerül eltárolásra. Az eredeti AI-eredmény változatlanul megmarad.
+Az energia kcal, a fehérje/zsír/szénhidrát/rost/cukor/telített zsír gramm, a nátrium mg, minden referencia 100 g-ra vonatkozik. Az adagérték `gramm × referencia / 100`. A nátriumból számolt sóegyenérték `nátrium mg × 2,5 / 1000`, gramm. A 4/4/9 és rostnál 2 kcal/g képlet csak durva következetességi ellenőrzés; nem írja felül a közölt referenciaenergiát.
 
-A `photo.additional` a második kép metaadatait tartalmazza. A képazonosító determinisztikus `-angle` utótagja és az előre mentett kontextus sikertelen feltöltésnél is lehetővé teszi a képek takarítását. A korábbi elemzések külön újrafuttatás és átírás nélkül olvashatók; az új SQL-migráció egy nullable oszlopot ad hozzá.
+A szénhidrát az elérhető szénhidrát közelítése: a USDA carbohydrate-by-difference értékéből kivonjuk a rostot. Ez nem minden terméknél azonos a laboratóriumi EU-címkeértékkel. Olyan élő USDA-rekordot, amelynél ehhez nincs adat, nem importálunk automatikusan. Márkás terméknél a saját címke értékeit kell megadni. Az élő rekord import az Atwater specific energiát részesíti előnyben, aztán a kcal energiarekordot, végül az Atwater general értéket; kJ-t nem értelmez kcal-ként.
 
-## Milyen ellenőrzés bizonyítja a működést?
+Ismeretlen opcionális érték `null`. Ha egy összetevőnél ismeretlen, az étkezés és a napi összesítés sem jelzi biztos nullaként. A forrás tartalmazza az FDC ID-t, leírást, adattípust, URL-t és letöltési dátumot. A részletes élő rekord 24 óráig gyorsítótárazott PostgreSQL-ben, tartalmi kulcsa változatlan másolatot azonosít. Új lekérés nem írja át a korábbi napló forrását.
 
-Automatikus tesztek ellenőrzik a referenciaértékek szerveroldali átvételét, a rossz kép és kitalált referenciakulcs elutasítását, az adagtartományt, a lemért tömeg/elfogyasztott százalék egyszeres alkalmazását, a két kép egyszeres számolását, mindkét kép törlését, a forrásjelölés érvénytelenítését kézi módosításkor és a régi rekordok olvashatóságát. A headless Chrome-teszt a teljes folyamatot és a kézi USDA-forrásválasztást is végigjárja.
+## Mit nem bizonyít a riport?
 
-Ezek szoftver- és folyamatellenőrzések. A tényleges táplálkozási pontossághoz külön, lemért magyar és nemzetközi ételeken végzett vakteszt kell, egységes fotókkal, recepttel, nyers/főtt állapottal és szakértő által ellenőrzött tápértékekkel. Nem vezettünk be kitalált vitaminokat, allergénmentességet, glikémiás indexet, személyre szabott terápiát vagy látszólag objektív „egészségpontszámot”.
+A `confidence` kizárólag AI-önértékelés; nincs belőle pontossági százalék. Mérleg nélkül a magas önértékelést is legfeljebb közepesként tároljuk. Az energia-forgatókönyv ismeretlen össztömegnél a kisebb/nagyobb adagot mutatja. Ha minden összetevő mért össztömeghez arányosított, az össztömeg rögzített: a szerver a megadott összetevőhatárokon belül a kis/nagy energiasűrűségű elemekhez osztja a fennmaradó tömeget. Ez a rögzített tömegű keverék minimális/maximális energiája a megadott határok mellett; nem konfidenciaintervallum, és nem tartalmaz minden rejtett összetevő- vagy forráshibát. A kézzel megadott grammok a tömegforgatókönyvet szűkítik, az étel összetételének bizonytalanságát nem.
+
+A saját recept pontosabb rögzítéséhez ismert alapanyagok és tényleges készétel-kihozatal szükséges. Mérd az alapanyagokat, az olajat és a kész ételt; kezeld a visszamaradt zsiradékot és a veszteséget. Nyers adatot kész összetevő grammjával ne párosíts. A kihozatalt a felhasználó lemért kész tömege adja, nem egy kitalált átlagfaktor. Általános tápanyagretenció-modell nincs beépítve; bizonytalan összetételt a rendszer nem változtat igazolt receptté.
+
+A szoftvertesztek a képleteket, csontlevonást, forrásellenőrzést, mértékegységeket és a folyamatot bizonyítják. A tényleges fotós kalóriahiba méréséhez a [kutatási terv](RESEARCH.md) szerinti külön vakteszt szükséges. A generált csülökkép dekoráció; nem tesztelési etalon és nem mért étkezés.
+
+A futtatható mérési eszköz: [BENCHMARK.md](BENCHMARK.md). Nem keveri a sikeres eredmények hibáját az elutasított esetekkel, és ismeretlen adatnál külön darabszámot ad. Jelenleg nincs éles mért pontossági eredmény.
+
+## Kompatibilitás
+
+Az új elemzések `portionScope=full_image` jelölést kapnak. A régi `consumedPercent` bemenetből csak a numerikus 100 fogadható el, és ezt sem tároljuk új fogyasztási beállításként. Más részarány 400-as hibát ad a képfeltöltés vagy AI-hívás előtt. A korábban mentett részadagokat nem számoljuk újra; a riport történeti jelzést ad hozzájuk. Régi részadagos, be nem fejezett feladat az új módszerrel nem folytatható féladagként, és megőrzött bejegyzésként hibát jelezhet.

@@ -1,6 +1,8 @@
+import { t, html, initializeLanguage, getLanguage, locale, messageSource } from '/localization.mjs';
 import { totals, NUTRIENTS, OPTIONAL_NUTRIENTS, TYPES, validateAnalysis, metadata } from '/domain.mjs';
 import { FOOD_REFERENCE } from '/food-reference.mjs';
-import { installAnalysisUI, reportMarkup, ingredientMarkup, refreshReport } from '/analysis-ui.mjs';
+import { REFERENCE_STATES } from '/hungarian-food.mjs';
+import { installAnalysisUI, dishGuidance, reportMarkup, ingredientMarkup, refreshReport, recipeMarkup } from '/analysis-ui.mjs';
 
 const $ = selector => document.querySelector(selector);
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -25,41 +27,31 @@ const icon = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
 function icons(root = document) { root.querySelectorAll('[data-icon]').forEach(el => { el.innerHTML = icon(el.dataset.icon); }); }
 icons();
 installAnalysisUI();
+initializeLanguage();
 const dayKey = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 const asDate = day => new Date(`${day}T12:00:00`);
 const today = () => dayKey(new Date());
-const number = n => n === null || !Number.isFinite(n) ? '—' : new Intl.NumberFormat('hu-HU', { maximumFractionDigits: 1 }).format(n);
-const saltNumber = n => n === null || !Number.isFinite(n) ? '—' : new Intl.NumberFormat('hu-HU', { maximumFractionDigits: 2 }).format(n);
-const integer = n => new Intl.NumberFormat('hu-HU', { maximumFractionDigits: 0 }).format(n);
-const dateLabel = day => new Intl.DateTimeFormat('hu-HU', { month: 'short', day: 'numeric', weekday: 'short' }).format(asDate(day));
-let goal = 2000;
-try { const stored = Number(localStorage.getItem('yumetrics-goal')); if (stored >= 500 && stored <= 10000) goal = Math.round(stored); } catch { /* Preferences are optional in private browsing. */ }
-const state = { selected: today(), month: today().slice(0, 7), meals: [], demo: false, status: null, goal, photo: null, secondPhoto: null, busy: false, edit: null, dirty: false, deleting: null, loadVersion: 0 };
+const number = n => n === null || !Number.isFinite(n) ? '—' : new Intl.NumberFormat(locale(), { maximumFractionDigits: 1 }).format(n);
+const saltNumber = n => n === null || !Number.isFinite(n) ? '—' : new Intl.NumberFormat(locale(), { maximumFractionDigits: 2 }).format(n);
+const integer = n => new Intl.NumberFormat(locale(), { maximumFractionDigits: 0 }).format(n);
+const dateLabel = day => new Intl.DateTimeFormat(locale(), { month: 'short', day: 'numeric', weekday: 'short' }).format(asDate(day));
+const goal = 2000;
+const state = { selected: today(), month: today().slice(0, 7), meals: [], status: null, goal, photo: null, secondPhoto: null, busy: false, edit: null, dirty: false, deleting: null, loadVersion: 0, uploadId: null, pendingOpenId: null, recipeEditing: false, recipeBackup: null };
 let toastTimer, photoVersion = 0, secondPhotoVersion = 0, processingPhotos = 0;
-function toast(message) { $('#toast').textContent = message; $('#toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('#toast').hidden = true; }, 5000); }
-function errorAt(id, error) { $(id).textContent = error?.message || String(error); $(id).hidden = false; }
+function toast(message) { $('#toast').dataset.message = messageSource(message); $('#toast').textContent = t(message); $('#toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('#toast').hidden = true; }, 5000); }
+function errorAt(id, error) { $(id).dataset.message = messageSource(error?.message || String(error)); $(id).textContent = t($(id).dataset.message); $(id).hidden = false; }
 async function request(path, options = {}) {
-  const response = await fetch(path, { ...options, headers: { ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...options.headers }, cache: 'no-store' });
-  let result; try { result = await response.json(); } catch { throw new Error('A szerver válasza nem olvasható. Ellenőrizd a kapcsolatot.'); }
+  const response = await fetch(path, { ...options, headers: { 'Accept-Language': getLanguage(), ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...options.headers }, cache: 'no-store' }).catch(() => { throw new Error(t('A szerver most nem érhető el. Próbáld újra később.')); });
+  let result; try { result = await response.json(); } catch { throw new Error(t('Nem sikerült feldolgozni a szerver válaszát. Ellenőrizd az internetkapcsolatot, majd próbáld újra.')); }
   if (!response.ok) {
     if (response.status === 401 && path !== '/api/login') showLogin();
-    const error = new Error(result.error || 'A művelet nem sikerült.'); error.status = response.status; throw error;
+    const error = new Error(result.error || t('A művelet nem sikerült.')); error.status = response.status; throw error;
   }
   return result;
 }
-function showLogin() {
-  const hosted = location.hostname.endsWith('.chatgpt.site');
-  $('#login-form').hidden = hosted; $('#hosted-signin').hidden = !hosted;
-  if (!$('#login-dialog').open) $('#login-dialog').showModal();
-}
-$('#login-dialog').addEventListener('cancel', event => event.preventDefault());
-$('#login-form').addEventListener('submit', async event => {
-  event.preventDefault(); const button = event.submitter; button.disabled = true; $('#login-error').hidden = true;
-  try { await request('/api/login', { method: 'POST', body: JSON.stringify({ password: $('#login-password').value }) }); $('#login-password').value = ''; $('#login-dialog').close(); await initialize(); }
-  catch (error) { errorAt('#login-error', error); } finally { button.disabled = false; }
-});
+function showLogin() { window.location.assign("/"); }
 async function initialize() {
-  try { state.status = await request('/api/status'); $('#logout-button').hidden = false; await loadMonth(); }
+  try { state.status = await request('/api/status'); state.goal = state.status.user.calorieGoal; $('.profile strong').textContent = state.status.user.name; $('.profile small').textContent = state.status.user.email; $('#logout-button').hidden = false; await loadMonth(); }
   catch (error) { $('#loading').hidden = true; if (error.status !== 401) toast(error.message); }
 }
 async function loadMonth() {
@@ -67,38 +59,30 @@ async function loadMonth() {
   try {
     const result = await request(`/api/meals?month=${state.month}`);
     if (version !== state.loadVersion) return;
-    state.meals = result.meals; render();
+    state.meals = result.meals;
+    for (const meal of state.meals) for (const item of meal.analysis?.ingredients || []) if (item.referenceKey && item.referenceRecord) FOOD_REFERENCE[item.referenceKey] = item.referenceRecord;
+    render();
+    const pending = state.meals.find(meal => meal.id === state.pendingOpenId);
+    if (pending?.analysis && pending.status === 'draft') { state.pendingOpenId = null; openMeal(pending.id); toast(t('Elkészült a becslés. Nézd át, majd mentsd a naplódba.')); }
+    if ($('#meal-dialog').open && !state.dirty && state.edit && !state.edit.analysis) {
+      const updated = state.meals.find(meal => meal.id === state.edit.id);
+      if (updated) { state.edit = structuredClone(updated); renderDetail(); }
+      else $('#meal-dialog').close();
+    }
   } catch (error) { if (version === state.loadVersion && error.status !== 401) toast(error.message); }
   finally { if (version === state.loadVersion) $('#loading').hidden = true; }
 }
-function demoMeals() {
-  const ingredient = (name, grams, calories, protein, carbs, fat, fiber, sugar, sodium) => ({ name, grams, calories, protein, carbs, fat, fiber, sugar, sodium });
-  return [
-    { id: 'demo-breakfast', day: today(), time: '08:30', type: 'Reggeli', analysis: { name: 'Avokádós pirítós tojással', confidence: 'medium', assumptions: 'Mintaadat: két szelet kenyér, fél avokádó és egy tojás. A tápértékek szemléltető becslések.', ingredients: [ingredient('Teljes kiőrlésű kenyér', 80, 247, 13, 35, 4.2, 7, 4, 400), ingredient('Avokádó', 70, 160, 2, 1.8, 14.7, 6.7, .7, 7), ingredient('Főtt tojás', 55, 155, 12.6, 1.1, 10.6, 0, 1.1, 124)] }, photo: { url: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=500&q=80' } },
-    { id: 'demo-lunch', day: today(), time: '12:45', type: 'Ebéd', analysis: { name: 'Mediterrán csirkés tál', confidence: 'medium', assumptions: 'Mintaadat: a főtt rizs és a sült csirke tápértékei elkészített állapotra vonatkoznak. Az öntet mennyisége becsült.', ingredients: [ingredient('Sült csirkemell', 140, 165, 31, 0, 3.6, 0, 0, 74), ingredient('Főtt barna rizs', 150, 123, 2.7, 24, 1, 1.6, .2, 4), ingredient('Vegyes saláta', 150, 25, 1.5, 3, .3, 2, 2, null), ingredient('Olívaolaj', 10, 884, 0, 0, 100, 0, 0, 0)] }, photo: { url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=500&q=80' } },
-    { id: 'demo-yesterday', day: dayKey(new Date(asDate(today()).setDate(asDate(today()).getDate() - 1))), time: '18:30', type: 'Vacsora', analysis: { name: 'Zöldséges tál', confidence: 'low', assumptions: 'Szemléltető mintaadat.', ingredients: [ingredient('Zöldséges gabonatál', 350, 130, 4, 20, 3, 3, null, null)] }, photo: { url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=500&q=80' } },
-  ].map(meal => {
-    const keys = { 'Teljes kiőrlésű kenyér': 'fdc-172688', 'Avokádó': 'fdc-171705', 'Főtt tojás': 'fdc-173424', 'Sült csirkemell': 'fdc-171477', 'Olívaolaj': 'fdc-171413' };
-    Object.assign(meal.analysis, { reportVersion: 2, summary: 'Bemutatóelemzés: a látható összetevők külön adagokkal és ellenőrizhető tápértékforrásokkal szerepelnek. A grammok szemléltető becslések.', observations: ['A fő összetevők és a köret külön szerepelnek.', 'Az elkészítés és az adag pontosítása befolyásolja az összesítést.'], questions: ['Mennyi olaj vagy öntet került az ételbe?'], imageQuality: { level: 'limited', issues: ['Mintaadat: nincs valódi mérés vagy AI-feldolgozás.'] } });
-    meal.analysis.ingredients = meal.analysis.ingredients.map(item => {
-      const key = keys[item.name], ref = FOOD_REFERENCE[key];
-      return { ...item, ...(ref?.nutrients || { saturatedFat: null }), gramsMin: item.grams * .85, gramsMax: item.grams * 1.15, preparation: ref?.label || 'Elkészítve, becsült összetétellel', sourceType: ref ? 'reference' : 'ai', referenceKey: key || null, sourceConfirmed: false, weightBasis: 'visual', visibility: item.name === 'Olívaolaj' ? 'inferred' : 'visible', portionNote: 'Szemléltető minta: az adagtartomány nem mért hibahatár.', alternatives: [] };
-    });
-    return { ...meal, status: 'saved', notes: '', revision: 0, totals: totals(meal.analysis.ingredients) };
-  });
-}
-const visibleMeals = () => state.demo ? demoMeals() : state.meals;
+const visibleMeals = () => state.meals.filter(meal => meal.job?.kind !== 'delete');
 function render() {
   const meals = visibleMeals(), selected = meals.filter(meal => meal.day === state.selected && meal.status === 'saved').sort((a, b) => a.time.localeCompare(b.time));
   const sum = key => selected.reduce((value, meal) => value + (meal.totals[key] ?? 0), 0);
-  $('#demo-banner').hidden = !state.demo; $('#demo-button').innerHTML = `${icon('play')}${state.demo ? 'Saját naplóm' : 'Mintaadatok'}`;
   $('#selected-day-label').textContent = dateLabel(state.selected);
-  $('#daily-title').textContent = state.selected === today() ? 'Mai áttekintés' : 'Napi áttekintés';
+  $('#daily-title').textContent = state.selected === today() ? t('Mai áttekintés') : t('Napi áttekintés');
   $('#meal-count').textContent = selected.length;
   const optionalSum = key => !selected.length || selected.some(meal => meal.totals[key] == null) ? null : selected.reduce((total, meal) => total + meal.totals[key], 0);
-  $('#daily-details').innerHTML = `<span><b>${selected.length}</b> megörökített étkezés</span><span>Rost: <b>${number(optionalSum('fiber'))}${optionalSum('fiber') === null ? '' : ' g'}</b></span><span>Sóegyenérték: <b>${saltNumber(optionalSum('sodium') === null ? null : optionalSum('sodium') * 2.5 / 1000)}${optionalSum('sodium') === null ? '' : ' g'}</b></span>`;
+  $('#daily-details').innerHTML = html`<span><b>${selected.length}</b> mentett étkezés</span><span>Rost: <b>${number(optionalSum('fiber'))}${optionalSum('fiber') === null ? '' : ' g'}</b></span><span>Számított sótartalom: <b>${saltNumber(optionalSum('sodium') === null ? null : optionalSum('sodium') * 2.5 / 1000)}${optionalSum('sodium') === null ? '' : ' g'}</b></span>`;
   $('#calorie-total').textContent = integer(sum('calories'));
-  $('#energy-caption').textContent = selected.length ? `${integer(state.goal)} kcal választott napi keret` : 'Egy új nap, egy tiszta lap.';
+  $('#energy-caption').textContent = selected.length ? t`${integer(state.goal)} kcal a választott napi kereted` : t('Erre a napra még nincs mentett étkezés.');
   const percent = Math.round(sum('calories') / state.goal * 100);
   $('#energy-percent').textContent = `${percent}%`; $('#energy-ring').style.setProperty('--progress', `${Math.min(percent, 100)}%`);
   const macroEnergy = sum('protein') * 4 + sum('carbs') * 4 + sum('fat') * 9;
@@ -107,33 +91,33 @@ function render() {
     $(`#${key}-bar`).style.width = `${macroEnergy ? sum(key) * factor / macroEnergy * 100 : 0}%`;
   }
   $('#empty-state').hidden = selected.length > 0;
-  $('#meal-list').innerHTML = selected.map(meal => `<button class="meal-card" data-meal="${escape(meal.id)}" aria-label="${escape(meal.analysis.name)}, ${integer(meal.totals.calories)} kilokalória, részletek"><img src="${escape(meal.photo.url)}" alt="${escape(meal.analysis.name)}" loading="lazy"><div class="meal-card-info"><div class="meal-meta"><span>${escape(meal.type)}</span><span>·</span><span>${escape(meal.time)}</span>${state.demo ? '<span>· Minta</span>' : ''}</div><h3>${escape(meal.analysis.name)}</h3><p class="meal-components">${meal.analysis.ingredients.map(item => escape(item.name)).join(' · ')}</p><div class="meal-macros"><span><i class="macro-dot protein"></i>${number(meal.totals.protein)} g feh.</span><span><i class="macro-dot carbs"></i>${number(meal.totals.carbs)} g szénh.</span><span><i class="macro-dot fat"></i>${number(meal.totals.fat)} g zsír</span></div></div><div class="meal-kcal"><strong>${integer(meal.totals.calories)}</strong><small>kcal</small></div></button>`).join('');
-  const drafts = meals.filter(meal => meal.status !== 'saved');
-  $('#draft-list').innerHTML = drafts.map(meal => `<div class="draft-card"><div><strong>${escape(meal.analysis?.name || 'Befejezetlen elemzés')}</strong><p>${escape(meal.day)} · ${meal.status === 'draft' ? 'Még nincs a naplóban · Átnézésre vár' : meal.status === 'failed' ? 'Sikertelen elemzés · Törölhető' : 'Folyamatban vagy megszakadt · Később törölhető'}</p></div><button data-meal="${escape(meal.id)}">Megnyitás</button></div>`).join('');
+  $('#meal-list').innerHTML = selected.map(meal => html`<button class="meal-card" data-meal="${escape(meal.id)}" aria-label="${escape(meal.analysis.name)}, ${integer(meal.totals.calories)} kilokalória, részletek"><img src="${escape(meal.photo.url)}" alt="${escape(meal.analysis.name)}" loading="lazy"><div class="meal-card-info"><div class="meal-meta"><span>${escape(t(meal.type))}</span><span>·</span><span>${escape(meal.time)}</span></div><h3>${escape(meal.analysis.name)}</h3><p class="meal-components">${meal.analysis.ingredients.map(item => escape(item.name)).join(' · ')}</p><div class="meal-macros"><span><i class="macro-dot protein"></i>${number(meal.totals.protein)} g fehérje</span><span><i class="macro-dot carbs"></i>${number(meal.totals.carbs)} g szénhidrát</span><span><i class="macro-dot fat"></i>${number(meal.totals.fat)} g zsír</span></div></div><div class="meal-kcal"><strong>${integer(meal.totals.calories)}</strong><small>kcal</small></div></button>`).join('');
+  const drafts = state.meals.filter(meal => meal.status !== 'saved' || meal.job?.kind === 'delete');
+  $('#draft-list').innerHTML = drafts.map(meal => html`<div class="draft-card"><div><strong>${escape(meal.analysis?.name || t('Befejezetlen elemzés'))}</strong><p>${escape(meal.day)} · ${meal.job?.kind === 'delete' ? (meal.job.state === 'failed' ? t('Nem sikerült törölni · Újra megpróbálhatod') : t('Törlés folyamatban')) : meal.status === 'draft' ? t('Ellenőrzésre és mentésre vár') : meal.status === 'failed' ? t('Nem sikerült az elemzés · Újra megpróbálhatod') : t('Elemzés folyamatban · Az ablakot bezárhatod')}</p></div><button data-meal="${escape(meal.id)}">Megnyitás</button></div>`).join('');
   renderCalendar();
 }
 function renderCalendar() {
   const first = asDate(`${state.month}-01`), start = new Date(first); start.setDate(1 - (first.getDay() + 6) % 7);
-  $('#month-label').textContent = new Intl.DateTimeFormat('hu-HU', { year: 'numeric', month: 'long' }).format(first);
+  $('#month-label').textContent = new Intl.DateTimeFormat(locale(), { year: 'numeric', month: 'long' }).format(first);
   const logged = new Map(); visibleMeals().filter(meal => meal.status === 'saved').forEach(meal => logged.set(meal.day, (logged.get(meal.day) || 0) + meal.totals.calories));
   $('#calendar-grid').innerHTML = Array.from({ length: 42 }, (_, i) => {
     const date = new Date(start); date.setDate(start.getDate() + i); const key = dayKey(date), energy = logged.get(key);
     const classes = [key.slice(0, 7) !== state.month ? 'other-month' : '', key === today() ? 'today' : '', key === state.selected ? 'selected' : '', energy !== undefined ? 'has-meal' : ''].join(' ');
-    return `<button type="button" class="${classes}" data-day="${key}" aria-pressed="${key === state.selected}"${key === today() ? ' aria-current="date"' : ''} aria-label="${escape(key)}${energy !== undefined ? `, ${integer(energy)} kcal naplózva` : ', nincs naplózott étkezés'}">${date.getDate()}</button>`;
+    return `<button type="button" class="${classes}" data-day="${key}" aria-pressed="${key === state.selected}"${key === today() ? ' aria-current="date"' : ''} aria-label="${escape(key)}${energy !== undefined ? t`, ${integer(energy)} kcal naplózva` : t(', nincs naplózott étkezés')}">${date.getDate()}</button>`;
   }).join('');
 }
 async function selectDay(value) {
   const oldMonth = state.month; state.selected = value; state.month = value.slice(0, 7); render();
-  if (oldMonth !== state.month && !state.demo) await loadMonth();
+  if (oldMonth !== state.month) await loadMonth();
 }
 async function changeMonth(amount) {
   const date = asDate(`${state.month}-01`); date.setMonth(date.getMonth() + amount);
   if (date.getFullYear() < 1900 || date.getFullYear() > 2100) return;
-  state.month = dayKey(date).slice(0, 7); renderCalendar(); if (!state.demo) await loadMonth();
+  state.month = dayKey(date).slice(0, 7); renderCalendar(); await loadMonth();
 }
 const show = id => { const dialog = $(id); if (!dialog.open) dialog.showModal(); };
 function close(dialog) {
-  if (dialog.id === 'meal-dialog' && state.dirty && !confirm('A módosításaid még nincsenek mentve. Bezárod?')) return;
+  if (dialog.id === 'meal-dialog' && state.dirty && !confirm(t('Még nem mentetted a módosításaidat. Bezárod az ablakot mentés nélkül?'))) return;
   dialog.close();
 }
 document.addEventListener('click', async event => {
@@ -143,10 +127,6 @@ document.addEventListener('click', async event => {
   const action = event.target.closest('[data-action]')?.dataset.action;
   if (!action) return;
   if (action === 'upload') openUpload();
-  if (action === 'demo') {
-    state.demo = !state.demo; state.selected = today(); state.month = today().slice(0, 7); render();
-    if (!state.demo) await loadMonth();
-  }
   if (action === 'calendar') { $('#calendar').scrollIntoView({ behavior: 'smooth', block: 'center' }); $('#calendar').focus({ preventScroll: true }); }
   if (action === 'diary') window.scrollTo({ top: 0, behavior: 'smooth' });
   if (action === 'learn') show('#learn-dialog');
@@ -163,26 +143,25 @@ document.addEventListener('click', async event => {
 });
 $('#meal-dialog').addEventListener('cancel', event => { if (state.dirty) { event.preventDefault(); close($('#meal-dialog')); } });
 function renderConnections() {
-  $('#connection-status').innerHTML = [['OpenCode AI', state.status?.ai], ['Cloudinary képtár', state.status?.photos]].map(([name, ready]) => `<div class="connection-row"><span>${name}</span><small class="${ready ? '' : 'missing'}">${ready ? 'Beállítva' : 'Beállításra vár'}</small></div>`).join('');
+  $('#connection-status').innerHTML = [[t('OpenCode · AI-elemzés'), state.status?.ai], [t('Cloudinary képtár'), state.status?.photos], [t('USDA-keresés · választható'), state.status?.usda]].map(([name, ready]) => `<div class="connection-row"><span>${name}</span><small class="${ready ? '' : 'missing'}">${ready ? t('Beállítva') : t('Beállításra vár')}</small></div>`).join('');
 }
-$('#settings-form').addEventListener('submit', event => {
-  event.preventDefault(); state.goal = Number($('#calorie-goal').value);
-  try { localStorage.setItem('yumetrics-goal', String(state.goal)); toast('A napi kereted elmentve.'); } catch { toast('A keret erre a munkamenetre beállítva.'); }
-  $('#settings-dialog').close(); render();
+$('#settings-form').addEventListener('submit', async event => {
+  event.preventDefault(); const button = event.submitter || $('#settings-form button[type="submit"]'); button.disabled = true;
+  try { const result = await request('/api/profile', { method: 'PATCH', body: JSON.stringify({ calorieGoal: Number($('#calorie-goal').value) }) }); state.goal = result.calorieGoal; $('#settings-dialog').close(); render(); toast(t('Elmentettük a napi energiakeretedet.')); }
+  catch (error) { toast(error.message); } finally { button.disabled = false; }
 });
 $('#logout-button').addEventListener('click', async () => {
-  if (location.hostname.endsWith('.chatgpt.site')) { window.location.assign('/signout-with-chatgpt?return_to=%2F'); return; }
   try { await request('/api/logout', { method: 'POST' }); window.location.reload(); } catch (error) { toast(error.message); }
 });
 function openUpload() {
   if (state.busy) { show('#upload-dialog'); return; }
-  state.photo = null; state.secondPhoto = null; photoVersion++; secondPhotoVersion++;
+  state.photo = null; state.secondPhoto = null; state.uploadId = crypto.randomUUID(); photoVersion++; secondPhotoVersion++;
   $('#upload-form').reset(); $('#upload-day').value = state.selected; $('#upload-time').value = new Date().toTimeString().slice(0, 5);
   const hour = new Date().getHours(); $('#upload-type').value = hour < 11 ? 'Reggeli' : hour < 16 ? 'Ebéd' : hour < 22 ? 'Vacsora' : 'Kisétkezés';
   $('#photo-preview').hidden = true; $('#upload-zone').hidden = false; $('#change-photo').hidden = true; $('#upload-error').hidden = true; $('#analysis-progress').hidden = true;
   $('.second-preview-wrap').hidden = true;
-  $('#analyze-button').disabled = false; $('#analyze-button').innerHTML = `${icon('sparkles')}Étel elemzése`;
-  if (!state.status?.ai || !state.status?.photos) errorAt('#upload-error', new Error('Az elemzéshez még be kell állítani az OpenCode- és Cloudinary-kapcsolatot. A Beállításokban láthatod az állapotukat.'));
+  $('#analyze-button').disabled = false; $('#analyze-button').innerHTML = t`${icon('sparkles')}Elemzés indítása`;
+  if (!state.status?.ai || !state.status?.photos) errorAt('#upload-error', new Error(t('Az elemzéshez még nincs minden szolgáltatás beállítva. A részleteket a Beállításokban találod; a kapcsolatokat az alkalmazás üzemeltetője tudja beállítani.')));
   show('#upload-dialog');
 }
 async function choosePhoto(file, secondary = false) {
@@ -192,16 +171,16 @@ async function choosePhoto(file, secondary = false) {
   processingPhotos++; $('#upload-error').hidden = true; $('#analyze-button').disabled = true;
   const objectUrl = URL.createObjectURL(file);
   try {
-    if (file.size > 25 * 1024 * 1024) throw new Error('A kiválasztott kép legfeljebb 25 MB lehet.');
-    if (!/\.(jpe?g|png|webp|hei[cf])$/i.test(file.name) && !/^image\/(jpeg|png|webp|hei[cf])$/.test(file.type)) throw new Error('JPEG, PNG vagy WebP képet válassz.');
+    if (file.size > 25 * 1024 * 1024) throw new Error(t('A kiválasztott kép legfeljebb 25 MB lehet.'));
+    if (!/\.(jpe?g|png|webp|hei[cf])$/i.test(file.name) && !/^image\/(jpeg|png|webp|hei[cf])$/.test(file.type)) throw new Error(t('JPEG-, PNG- vagy WebP-formátumú képet válassz.'));
     const image = new Image(); image.src = objectUrl;
-    try { await image.decode(); } catch { throw new Error('A böngésző nem tudja megnyitni ezt a képet. HEIC/HEIF esetén válaszd a JPEG formátumot.'); }
-    if (!image.naturalWidth || image.naturalWidth * image.naturalHeight > 50_000_000) throw new Error('A kép felbontása túl nagy. Válassz legfeljebb 50 megapixeles képet.');
+    try { await image.decode(); } catch { throw new Error(t('A böngésző nem tudja megnyitni ezt a képet. Ha HEIC- vagy HEIF-fájlt választottál, alakítsd át JPEG-formátumra, majd töltsd fel újra.')); }
+    if (!image.naturalWidth || image.naturalWidth * image.naturalHeight > 50_000_000) throw new Error(t('A kép felbontása túl nagy. Válassz legfeljebb 50 megapixeles képet.'));
     const ratio = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight)), canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(image.naturalWidth * ratio)); canvas.height = Math.max(1, Math.round(image.naturalHeight * ratio));
     const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL('image/jpeg', .86);
-    if (dataUrl.length > 5_590_000) throw new Error('A tömörített kép túl nagy. Válassz kisebb fotót.');
+    if (dataUrl.length > 5_590_000) throw new Error(t('A tömörített kép túl nagy. Válassz kisebb fotót.'));
     if (version !== (secondary ? secondPhotoVersion : photoVersion)) return;
     if (secondary) { state.secondPhoto = dataUrl; $('#second-photo-preview').src = dataUrl; $('.second-preview-wrap').hidden = false; }
     else { state.photo = dataUrl; $('#photo-preview').src = dataUrl; $('#photo-preview').hidden = false; $('#upload-zone').hidden = true; $('#change-photo').hidden = false; }
@@ -219,72 +198,127 @@ for (const name of ['dragleave', 'drop']) $('#upload-zone').addEventListener(nam
 $('#upload-form').addEventListener('submit', async event => {
   event.preventDefault(); if (state.busy) return;
   $('#upload-error').hidden = true;
-  if (!state.photo) { errorAt('#upload-error', new Error('Válassz egy ételfotót az elemzéshez.')); return; }
+  if (!state.photo) { errorAt('#upload-error', new Error(t('Válassz egy ételfotót az elemzéshez.'))); return; }
   state.busy = true; $('#analyze-button').disabled = true; $('#analysis-progress').hidden = false;
-  let id = crypto.randomUUID();
+  const id = state.uploadId;
   try {
-    const payload = { id, image: state.photo, secondImage: state.secondPhoto, context: { totalWeightG: $('#context-weight').value ? Number($('#context-weight').value) : null, plateDiameterCm: $('#context-diameter').value ? Number($('#context-diameter').value) : null, consumedPercent: Number($('#context-consumed').value) || 100 }, day: $('#upload-day').value, time: $('#upload-time').value, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, type: $('#upload-type').value, notes: $('#upload-notes').value };
+    const payload = { id, image: state.photo, secondImage: state.secondPhoto, context: { language: getLanguage(), dishProfile: $('#dish-profile').value, preparationNotes: $('#preparation-notes').value, totalWeightG: $('#context-weight').value ? Number($('#context-weight').value) : null, inedibleWeightG: Number($('#context-inedible').value), plateDiameterCm: $('#context-diameter').value ? Number($('#context-diameter').value) : null }, day: $('#upload-day').value, time: $('#upload-time').value, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, type: $('#upload-type').value, notes: $('#upload-notes').value };
     const { meal } = await request('/api/analyze', { method: 'POST', body: JSON.stringify(payload) });
-    if (state.demo) state.demo = false;
+
     state.meals = [...state.meals.filter(item => item.id !== meal.id), meal];
     state.selected = meal.day; state.month = meal.day.slice(0, 7); render(); await loadMonth();
-    $('#upload-dialog').close(); openMeal(meal.id); toast('Elkészült a becslés. Nézd át, majd mentsd a naplódba.');
+    $('#upload-dialog').close(); state.pendingOpenId = meal.status === 'analyzing' ? meal.id : null; openMeal(meal.id); toast(meal.analysis ? t('Elkészült a becslés. Nézd át mentés előtt.') : t('A fotó elmentve. Az elemzés a háttérben folytatódik.'));
   } catch (error) { errorAt('#upload-error', error); if (!$('#upload-dialog').open) toast(error.message); await loadMonth(); }
   finally { state.busy = false; $('#analyze-button').disabled = false; $('#analysis-progress').hidden = true; }
 });
-const field = (label, name, value, attrs = '') => `<label>${label}<input name="${name}" value="${escape(value)}" ${attrs}></label>`;
-const nutrientNames = { calories: 'Energia (kcal)', protein: 'Fehérje (g)', carbs: 'Szénhidrát (g)', fat: 'Zsír (g)', fiber: 'Rost (g)', sugar: 'Cukor (g)', sodium: 'Nátrium (mg)', saturatedFat: 'Telített zsír (g)' };
+const field = (label, name, value, attrs = '') => `<label>${t(label)}<input name="${name}" value="${escape(value)}" ${attrs}></label>`;
+const nutrientNames = { calories: 'Energia (kcal)', protein: 'Fehérje (g)', carbs: 'Szénhidrát (g)', fat: 'Zsír (g)', fiber: 'Rost (g)', sugar: 'Cukor (g)', sodium: 'Nátrium (mg)', saturatedFat: 'Telített zsírsavak (g)' };
 function openMeal(id) {
-  const meal = visibleMeals().find(item => item.id === id);
-  if (!meal) { toast('A bejegyzés még nem tölthető be. Frissítsd a naplót.'); return; }
-  state.edit = structuredClone(meal); state.dirty = false; renderDetail(); show('#meal-dialog');
+  const meal = state.meals.find(item => item.id === id);
+  if (!meal) { toast(t('A bejegyzés még nem tölthető be. Frissítsd a naplót.')); return; }
+  state.edit = structuredClone(meal); state.dirty = false; state.recipeEditing = false; state.recipeBackup = null; renderDetail(); show('#meal-dialog');
 }
 function renderDetail() {
-  const meal = state.edit, analysis = meal.analysis, readOnly = state.demo;
-  $('#detail-heading').textContent = analysis ? meal.status === 'draft' ? 'Nézd át az AI becslését.' : 'A tányérod részletei.' : 'Befejezetlen elemzés';
-  if (!analysis || !meal.photo) {
-    $('#meal-detail').innerHTML = `<p class="dialog-intro">${escape(meal.error || 'Az elemzés még fut, vagy megszakadt. Két perc elteltével törölheted a bejegyzést, és új fotóval próbálkozhatsz.')}</p><button type="button" class="delete-button" id="delete-meal">${icon('trash')}Bejegyzés és kép törlése</button>`;
+  const meal = state.edit, analysis = meal.analysis;
+  $('#detail-heading').textContent = analysis ? meal.status === 'draft' ? t('Ellenőrizd a becsült tápértékeket') : t('Az étkezés részletei') : t('Befejezetlen elemzés');
+  if (!analysis || !meal.photo || meal.job?.kind === 'delete') {
+    $('#meal-detail').innerHTML = `<p class="dialog-intro">${escape(t(meal.error) || (meal.job?.kind === 'delete' ? t('A bejegyzés és a képek törlése folyamatban. Ha megszakad, később folytatjuk.') : t('A fotó elmentve, az elemzés folyamatban. Bezárhatod ezt az ablakot; az eredmény itt vár majd.')))}</p>${meal.job?.state === 'failed' && meal.job?.kind === 'analyze' ? html('<button type="button" class="button primary" id="retry-meal">Elemzés újrapróbálása</button>') : ''}<button type="button" class="delete-button" id="delete-meal">${icon('trash')}${meal.job?.kind === 'delete' ? t('Törlés újrapróbálása') : t('Bejegyzés és kép törlése')}</button>`;
+    $('#retry-meal')?.addEventListener('click', async event => {
+      event.currentTarget.disabled = true;
+      try { await request(`/api/meals/${meal.id}/retry`, { method: 'POST' }); state.pendingOpenId = meal.id; await loadMonth(); }
+      catch (error) { toast(error.message); event.currentTarget.disabled = false; }
+    });
     $('#delete-meal').addEventListener('click', askDelete); return;
   }
   const total = totals(analysis.ingredients);
-  $('#meal-detail').innerHTML = `${readOnly ? '<p class="read-only-note">Mintaadat · Ezt az étkezést csak megtekinteni lehet. A saját elemzéseid minden adata módosítható.</p>' : ''}<form id="detail-form"><div class="detail-top"><img src="${escape(meal.photo.url)}" alt="${escape(analysis.name)}"><div class="detail-summary"><strong id="detail-calories">${integer(total.calories)}</strong><small> kcal</small><div class="detail-totals" id="detail-macros"></div><span class="confidence ${analysis.confidence}">AI önértékelés: ${{ low: 'bizonytalan', medium: 'közepes', high: 'magas' }[analysis.confidence]}</span></div></div><fieldset ${readOnly ? 'disabled' : ''} class="detail-fields">${field('Az étel neve', 'name', analysis.name, 'required maxlength="160"')}<div class="form-grid">${field('Dátum', 'day', meal.day, 'type="date" required min="1900-01-01" max="2100-12-31"')}${field('Időpont', 'time', meal.time, 'type="time" required')}<label class="full-width">Étkezés<select name="type">${TYPES.map(type => `<option ${type === meal.type ? 'selected' : ''}>${type}</option>`).join('')}</select></label></div><div class="ingredient-heading"><h3>Összetevők és adagok</h3><button type="button" class="text-button" id="add-ingredient">${icon('plus')}Hozzáadás</button></div><div id="ingredient-list">${analysis.ingredients.map((item, index) => `<div class="ingredient-row" data-ingredient="${index}"><div class="ingredient-main">${field('Összetevő', `i-${index}-name`, item.name, 'required maxlength="160"')}${field('Adag (g)', `i-${index}-grams`, item.grams, 'type="number" step="any" min="0.1" max="5000" required')}<button class="icon-button" type="button" data-remove="${index}" aria-label="Összetevő törlése">${icon('x')}</button></div><details><summary>Tápértékek szerkesztése · 100 g-ra</summary><div class="nutrient-inputs">${NUTRIENTS.map(key => field(nutrientNames[key], `i-${index}-${key}`, item[key] ?? '', `type="number" step="any" min="0" max="${key === 'calories' ? 1000 : key === 'sodium' ? 100000 : 100}" ${['fiber', 'sugar', 'sodium'].includes(key) ? 'placeholder="Ismeretlen"' : 'required'}`)).join('')}</div></details></div>`).join('')}</div><div class="detail-extra" id="detail-extra"></div><label>Megjegyzés<textarea name="notes" rows="2" maxlength="2000">${escape(meal.notes)}</textarea></label></fieldset><div class="assumptions"><strong>A becslés bizonytalanságai</strong>${escape(analysis.assumptions || 'Az adag és a rejtett összetevők egy fotóból nem mérhetők pontosan.')}</div><p class="form-error" id="detail-error" role="alert" hidden></p><div class="detail-footer">${readOnly ? '' : `<button type="button" class="delete-button" id="delete-meal">${icon('trash')}Törlés</button><button type="submit" class="button primary" id="save-meal">${meal.status === 'draft' ? 'Mentés a naplómba' : 'Módosítások mentése'}</button>`}</div><p class="detail-provenance">${readOnly ? 'Szemléltető mintaadat' : `Modell: ${escape(meal.model)} · ${escape(meal.promptVersion)} · Az eredeti AI-becslés külön megőrizve.`}</p></form>`;
+  $('#meal-detail').innerHTML = html`<form id="detail-form"><div class="detail-top"><img src="${escape(meal.photo.url)}" alt="${escape(analysis.name)}"><div class="detail-summary"><strong id="detail-calories">${integer(total.calories)}</strong><small> kcal</small><div class="detail-totals" id="detail-macros"></div><span class="confidence ${analysis.confidence}">Az AI saját értékelése: ${{ low: t('bizonytalan'), medium: t('részben biztos'), high: t('biztos') }[analysis.confidence]}</span></div></div><fieldset  class="detail-fields">${field(t('Az étel neve'), 'name', analysis.name, 'required maxlength="160"')}<div class="form-grid">${field(t('Dátum'), 'day', meal.day, 'type="date" required min="1900-01-01" max="2100-12-31"')}${field(t('Időpont'), 'time', meal.time, 'type="time" required')}<label class="full-width">Étkezés<select name="type">${TYPES.map(type => `<option value="${type}" ${type === meal.type ? 'selected' : ''}>${t(type)}</option>`).join('')}</select></label></div><div class="ingredient-heading"><h3>Összetevők és adagok</h3><button type="button" class="text-button" id="add-ingredient">${icon('plus')}Hozzáadás</button></div><div id="ingredient-list">${analysis.ingredients.map((item, index) => html`<div class="ingredient-row" data-ingredient="${index}"><div class="ingredient-main">${field(t('Összetevő'), `i-${index}-name`, item.name, 'required maxlength="160"')}${field(t('Az összetevő teljes tömege (g)'), `i-${index}-grams`, item.grams, 'type="number" step="any" min="0.1" max="5000" required')}<button class="icon-button" type="button" data-remove="${index}" aria-label="Összetevő törlése">${icon('x')}</button></div><details><summary>Tápértékek 100 g-ban · szerkesztés</summary><div class="nutrient-inputs">${NUTRIENTS.map(key => field(nutrientNames[key], `i-${index}-${key}`, item[key] ?? '', `type="number" step="any" min="0" max="${key === 'calories' ? 1000 : key === 'sodium' ? 100000 : 100}" ${['fiber', 'sugar', 'sodium'].includes(key) ? 'placeholder="Ismeretlen"' : 'required'}`)).join('')}</div></details></div>`).join('')}</div><div class="detail-extra" id="detail-extra"></div><label>Megjegyzés<textarea name="notes" rows="2" maxlength="2000">${escape(meal.notes)}</textarea></label></fieldset><div class="assumptions"><strong>A becslés bizonytalanságai</strong>${escape(analysis.assumptions || t('Az adag és a rejtett összetevők egy fotóból nem mérhetők pontosan.'))}</div><p class="form-error" id="detail-error" role="alert" hidden></p><div class="detail-footer">${html`<button type="button" class="delete-button" id="delete-meal">${icon('trash')}Törlés</button><button type="submit" class="button primary" id="save-meal">${meal.status === 'draft' ? t('Mentés a naplómba') : t('Módosítások mentése')}</button>`}</div><p class="detail-provenance">${t`Az eredeti AI-becslést külön megőrizzük. Elemzőmodell: ${escape(meal.model)} · Módszerváltozat: ${escape(meal.promptVersion)}.`}</p></form>`;
   $('#detail-form fieldset').insertAdjacentHTML('beforebegin', reportMarkup(meal));
+  $('.ingredient-heading').insertAdjacentHTML('beforebegin', recipeMarkup(analysis, state.recipeEditing));
+  if (state.recipeEditing) {
+    $('#detail-heading').textContent = t('A teljes recept összeállítása');
+    $('.ingredient-heading h3').textContent = t('A teljes recept alapanyagai');
+    $('.detail-summary > small').textContent = t(' kcal a teljes recept alapanyagaiban');
+    $('#meal-detail .analysis-report').hidden = true;
+    $('#save-meal').disabled = true;
+  }
+  $('#recipe-start')?.addEventListener('click', startRecipe);
+  $('#recipe-edit')?.addEventListener('click', startRecipe);
+  $('#recipe-cancel')?.addEventListener('click', () => { state.edit.analysis = state.recipeBackup; state.recipeEditing = false; state.recipeBackup = null; renderDetail(); });
+  $('#recipe-apply')?.addEventListener('click', () => {
+    try {
+      syncDetail();
+      state.edit.analysis = validateAnalysis({ ...state.edit.analysis, portionScope: 'full_image', recipe: { cookedWeightG: Number($('#recipe-cooked').value), eatenWeightG: Number($('#recipe-eaten').value), lossesAccountedFor: $('#recipe-losses').checked, ingredients: structuredClone(state.edit.analysis.ingredients) } });
+      state.recipeEditing = false; state.recipeBackup = null; state.dirty = true; renderDetail(); toast(t('Kiszámítottuk a teljes adag tápértékét a receptedből. Mentés előtt ellenőrizd az eredményt.'));
+    } catch (error) { errorAt('#recipe-error', error); }
+  });
   $('#ingredient-list').querySelectorAll('[data-ingredient]').forEach(row => {
     const index = Number(row.dataset.ingredient);
     row.querySelector('.ingredient-main').insertAdjacentHTML('afterend', ingredientMarkup(analysis.ingredients[index], index));
     row.querySelector(`[name="i-${index}-grams"]`).min = '.001';
-    const saturated = row.querySelector(`[name="i-${index}-saturatedFat"]`); saturated.required = false; saturated.placeholder = 'Ismeretlen';
+    const saturated = row.querySelector(`[name="i-${index}-saturatedFat"]`); saturated.required = false; saturated.placeholder = t('Ismeretlen');
   });
+  if (analysis.recipe) {
+    $('#add-ingredient').hidden = true;
+    $('#ingredient-list').querySelectorAll('input,select,button').forEach(element => { element.disabled = true; });
+    $('#ingredient-list').querySelectorAll('.measured-toggle').forEach(element => { element.hidden = true; });
+    $('#ingredient-list').querySelectorAll('.ingredient-main label:nth-child(2)').forEach(label => { label.firstChild.textContent = t('Az adagra jutó alapanyag (g)'); });
+  } else if (state.recipeEditing) $('#ingredient-list').querySelectorAll('.ingredient-main label:nth-child(2)').forEach(label => { label.firstChild.textContent = t('Az egész recepthez használt mennyiség (g)'); });
   $('#ingredient-list').addEventListener('change', event => {
-    const select = event.target.closest('[data-reference-index]'); if (!select || readOnly) return;
+    const select = event.target.closest('[data-reference-index]'); if (!select) return;
     syncDetail(); const item = state.edit.analysis.ingredients[Number(select.dataset.referenceIndex)], reference = FOOD_REFERENCE[select.value];
-    Object.assign(item, reference ? { ...reference.nutrients, referenceKey: select.value, sourceType: 'reference', sourceConfirmed: true, preparation: reference.label } : { referenceKey: null, sourceType: 'user', sourceConfirmed: false });
-    state.dirty = true; renderDetail(); toast(reference ? 'A tápértékeket a kiválasztott USDA-referenciából számoljuk.' : 'A megadott tápértékeket saját értékként tartjuk meg.');
+    Object.assign(item, reference ? { ...reference.nutrients, referenceKey: select.value, referenceRecord: reference, foodState: REFERENCE_STATES[select.value] || 'unknown', sourceType: 'reference', sourceConfirmed: true, preparation: getLanguage() === 'en' ? reference.description : reference.label } : { referenceKey: null, sourceType: 'user', sourceConfirmed: false });
+    state.dirty = true; renderDetail(); toast(reference ? t('A tápértékeket a kiválasztott USDA-adatok alapján számoljuk.') : t('Megtartottuk a saját tápértékadataidat.'));
   });
-  $('#detail-form').addEventListener('input', () => { if (!readOnly) { state.dirty = true; syncDetail(); updateDetailTotals(); } });
+  $('#detail-form').addEventListener('input', event => { if (event.target.matches('[data-food-query]')) return; state.dirty = true; syncDetail(); updateDetailTotals(); });
   $('#detail-form').addEventListener('submit', saveMeal);
   $('#add-ingredient').addEventListener('click', () => {
     syncDetail();
-    if (state.edit.analysis.ingredients.length >= 40) { toast('Legfeljebb 40 összetevő adható meg.'); return; }
-    state.edit.analysis.ingredients.push({ name: '', grams: 100, gramsMin: 100, gramsMax: 100, weightBasis: 'user', sourceType: 'user', visibility: 'visible', preparation: 'Saját megadás', calories: 0, protein: 0, carbs: 0, fat: 0, fiber: null, sugar: null, sodium: null, saturatedFat: null }); state.dirty = true; renderDetail();
+    if (state.edit.analysis.ingredients.length >= 40) { toast(t('Legfeljebb 40 összetevő adható meg.')); return; }
+    state.edit.analysis.ingredients.push({ name: '', grams: 100, gramsMin: 100, gramsMax: 100, weightBasis: 'user', sourceType: 'user', visibility: 'visible', preparation: t('Általad megadott adat'), calories: 0, protein: 0, carbs: 0, fat: 0, fiber: null, sugar: null, sodium: null, saturatedFat: null }); state.dirty = true; renderDetail();
   });
   $('#ingredient-list').addEventListener('click', event => {
     const confirmSource = event.target.closest('[data-confirm-source]');
-    if (confirmSource && !readOnly) { syncDetail(); state.edit.analysis.ingredients[Number(confirmSource.dataset.confirmSource)].sourceConfirmed = true; state.dirty = true; confirmSource.textContent = '✓ A párosítást ellenőriztem'; return; }
-    const remove = event.target.closest('[data-remove]'); if (!remove || readOnly) return;
-    if (state.edit.analysis.ingredients.length === 1) { toast('Legalább egy összetevő szükséges.'); return; }
+    if (confirmSource) { syncDetail(); state.edit.analysis.ingredients[Number(confirmSource.dataset.confirmSource)].sourceConfirmed = true; state.dirty = true; confirmSource.textContent = t('✓ Ellenőriztem, hogy ez az összetevő'); return; }
+    const remove = event.target.closest('[data-remove]'); if (!remove) return;
+    if (state.edit.analysis.ingredients.length === 1) { toast(t('Legalább egy összetevő szükséges.')); return; }
     syncDetail(); state.edit.analysis.ingredients.splice(Number(remove.dataset.remove), 1); state.dirty = true; renderDetail();
+  });
+  $('#ingredient-list').addEventListener('click', async event => {
+    const search = event.target.closest('[data-food-search]'), choose = event.target.closest('[data-food-id]');
+    if (!search && !choose) return;
+    const button = search || choose, index = Number(button.dataset.foodSearch ?? button.dataset.foodIndex), results = document.querySelector(`[data-food-results="${index}"]`); button.disabled = true;
+    try {
+      if (search) {
+        const query = document.querySelector(`[data-food-query="${index}"]`).value;
+        const { foods } = await request(`/api/foods/search?q=${encodeURIComponent(query)}`);
+        results.innerHTML = foods.length ? foods.map(food => `<button type="button" data-food-id="${food.id}" data-food-index="${index}">${escape(food.description)} <small>${escape(food.dataType)} · FDC ${food.id}</small></button>`).join('') : html('<p>Nincs találat. Próbálj másik angol ételnevet, vagy add meg az elkészítés módját is.</p>');
+      } else {
+        const { key, record } = await request(`/api/foods/${choose.dataset.foodId}`);
+        syncDetail(); FOOD_REFERENCE[key] = record;
+        Object.assign(state.edit.analysis.ingredients[index], { ...record.nutrients, referenceKey: key, referenceRecord: record, foodState: 'unknown', sourceType: 'reference', sourceConfirmed: true, preparation: record.description });
+        state.dirty = true; renderDetail(); toast(t('Elmentettük a kiválasztott USDA-adatokat és a forrásukat. Ellenőrizd, hogy az elkészítés és a mennyiség megfelel-e az ételednek.'));
+      }
+    } catch (error) { results.textContent = t(error.message); } finally { button.disabled = false; }
   });
   $('#delete-meal')?.addEventListener('click', askDelete); updateDetailTotals();
 }
+function startRecipe() {
+  syncDetail(); state.recipeBackup = structuredClone(state.edit.analysis);
+  if (state.edit.analysis.recipe) { state.edit.analysis.ingredients = structuredClone(state.edit.analysis.recipe.ingredients); delete state.edit.analysis.recipe; }
+  state.recipeEditing = true; renderDetail();
+  if (state.recipeBackup.recipe) { $('#recipe-cooked').value = state.recipeBackup.recipe.cookedWeightG; $('#recipe-eaten').value = state.recipeBackup.recipe.eatenWeightG; $('#recipe-losses').checked = true; }
+}
 function syncDetail() {
-  const form = $('#detail-form'); if (!form || state.demo) return;
+  const form = $('#detail-form'); if (!form) return;
   const data = new FormData(form), meal = state.edit;
   meal.analysis.name = String(data.get('name')); meal.day = String(data.get('day')); meal.time = String(data.get('time')); meal.type = String(data.get('type')); meal.notes = String(data.get('notes'));
+  if (meal.analysis.recipe) return;
   meal.analysis.ingredients = meal.analysis.ingredients.map((item, index) => {
     const updated = { ...item, name: String(data.get(`i-${index}-name`)), grams: Number(data.get(`i-${index}-grams`)) };
     NUTRIENTS.forEach(key => { const value = data.get(`i-${index}-${key}`); updated[key] = value === '' && OPTIONAL_NUTRIENTS.includes(key) ? null : Number(value); });
     if (updated.grams !== item.grams) Object.assign(updated, { gramsMin: updated.grams, gramsMax: updated.grams, weightBasis: 'user' });
+    if (data.get(`i-${index}-measured`)) Object.assign(updated, { gramsMin: updated.grams, gramsMax: updated.grams, weightBasis: 'measured_ingredient' });
+    else if (item.weightBasis === 'measured_ingredient') updated.weightBasis = 'user';
     if (updated.name !== item.name || NUTRIENTS.some(key => updated[key] !== (item[key] ?? null))) Object.assign(updated, { sourceType: 'user', referenceKey: null, sourceConfirmed: false });
     return updated;
   });
@@ -293,23 +327,52 @@ function updateDetailTotals() {
   if (!state.edit?.analysis || !$('#detail-macros')) return;
   const report = refreshReport(state.edit), total = report.total;
   $('#detail-calories').textContent = integer(total.calories);
-  $('#detail-macros').innerHTML = `<span>${number(total.protein)} g fehérje</span><span>${number(total.carbs)} g szénh.</span><span>${number(total.fat)} g zsír</span>`;
-  $('#detail-extra').innerHTML = [['Rost', total.fiber, 'g'], ['Cukor', total.sugar, 'g'], ['Telített zsír', total.saturatedFat, 'g'], ['Nátrium', total.sodium, 'mg'], ['Sóegyenérték', report.salt, 'g']].map(([label, value, unit]) => `<span>${label}<strong>${label === 'Sóegyenérték' ? saltNumber(value) : number(value)}${value === null ? '' : ` ${unit}`}</strong></span>`).join('');
+  $('#detail-macros').innerHTML = html`<span>${number(total.protein)} g fehérje</span><span>${number(total.carbs)} g szénhidrát</span><span>${number(total.fat)} g zsír</span>`;
+  $('#detail-extra').innerHTML = [[t('Rost'), total.fiber, 'g'], [t('Cukor'), total.sugar, 'g'], [t('Telített zsírsavak'), total.saturatedFat, 'g'], [t('Nátrium'), total.sodium, 'mg'], [t('Számított sótartalom'), report.salt, 'g']].map(([label, value, unit]) => `<span>${label}<strong>${label === t('Számított sótartalom') ? saltNumber(value) : number(value)}${value === null ? '' : ` ${unit}`}</strong></span>`).join('');
 }
 async function saveMeal(event) {
-  event.preventDefault(); if (state.demo) return;
+  event.preventDefault();
+  if (state.recipeEditing) { toast(t('Előbb kattints az „Adag kiszámítása” gombra, vagy szakítsd meg a recept szerkesztését a „Mégsem” gombbal.')); return; }
   $('#detail-error').hidden = true; syncDetail();
   try { validateAnalysis(state.edit.analysis); metadata(state.edit); } catch (error) { errorAt('#detail-error', error); return; }
   const button = $('#save-meal'); button.disabled = true;
   try {
     const { meal } = await request(`/api/meals/${state.edit.id}`, { method: 'PATCH', body: JSON.stringify(state.edit) });
-    state.dirty = false; $('#meal-dialog').close(); state.meals = [...state.meals.filter(item => item.id !== meal.id), meal]; state.selected = meal.day; state.month = meal.day.slice(0, 7); render(); await loadMonth(); toast('Az étkezés a naplódban. Jó étvágyat az egyensúlyhoz!');
+    state.dirty = false; $('#meal-dialog').close(); state.meals = [...state.meals.filter(item => item.id !== meal.id), meal]; state.selected = meal.day; state.month = meal.day.slice(0, 7); render(); await loadMonth(); toast(t('Elmentettük az étkezést a naplódba.'));
   } catch (error) { errorAt('#detail-error', error); } finally { button.disabled = false; }
 }
 function askDelete() { state.deleting = state.edit.id; $('#delete-error').hidden = true; show('#confirm-dialog'); }
 $('#confirm-delete').addEventListener('click', async event => {
   const button = event.currentTarget; button.disabled = true; $('#delete-error').hidden = true;
-  try { await request(`/api/meals/${state.deleting}`, { method: 'DELETE' }); state.meals = state.meals.filter(item => item.id !== state.deleting); state.dirty = false; $('#confirm-dialog').close(); $('#meal-dialog').close(); render(); await loadMonth(); toast('Az étkezést és a képet töröltük.'); }
+  try { await request(`/api/meals/${state.deleting}`, { method: 'DELETE' }); state.dirty = false; $('#confirm-dialog').close(); $('#meal-dialog').close(); await loadMonth(); toast(t('A törlés elindult. A képek törlése után a bejegyzést is eltávolítjuk.')); }
   catch (error) { errorAt('#delete-error', error); } finally { button.disabled = false; }
 });
 render(); await initialize();
+setInterval(() => { if (!document.hidden && state.meals.some(meal => ['uploading', 'queued', 'running'].includes(meal.job?.state))) loadMonth(); }, 3000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) loadMonth(); });
+let languageSnapshot;
+window.addEventListener('languagechanging', () => {
+  if ($('#detail-form')) syncDetail();
+  languageSnapshot = {
+    fields: [...document.querySelectorAll('#meal-detail input,#meal-detail textarea,#meal-detail select')].map(element => ({ name: element.name, id: element.id, query: element.dataset.foodQuery, value: element.value, checked: element.checked })),
+    open: [...document.querySelectorAll('#meal-detail details')].map(element => element.open),
+    scroll: $('#meal-dialog').scrollTop,
+    errors: [...document.querySelectorAll('#meal-detail [data-message]')].filter(element => !element.hidden).map(element => ({id:element.id,source:element.dataset.message})),
+  };
+});
+window.addEventListener('languagechange', () => {
+  render(); renderConnections();
+  $('#dish-guidance').innerHTML = dishGuidance($('#dish-profile').value);
+  $('#analyze-button').innerHTML = `${icon('sparkles')}${t('Elemzés indítása')}`;
+  if (state.edit && $('#meal-dialog').open) {
+    renderDetail();
+    for (const field of languageSnapshot?.fields || []) {
+      const element = field.name ? $('#detail-form')?.elements.namedItem(field.name) : field.id ? document.getElementById(field.id) : document.querySelector(`[data-food-query="${field.query}"]`);
+      if (element) { element.value = field.value; if (element.type === 'checkbox') element.checked = field.checked; }
+    }
+    document.querySelectorAll('#meal-detail details').forEach((element, index) => { element.open = languageSnapshot?.open[index] ?? element.open; });
+    $('#meal-dialog').scrollTop = languageSnapshot?.scroll || 0;
+    for (const error of languageSnapshot?.errors || []) if (document.getElementById(error.id)) errorAt('#'+error.id, error.source);
+  }
+  for (const element of document.querySelectorAll('[data-message]')) element.textContent = t(element.dataset.message);
+});

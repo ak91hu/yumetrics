@@ -1,0 +1,68 @@
+# Northflank: tartós adatok és újraindítható alkalmazás
+
+Ellenőrizve: 2026-11-07. Ez telepíthető megvalósítás és üzemeltetési terv; ebben a munkamenetben **nem hoztunk létre Northflank-erőforrást és nem történt éles telepítés**.
+
+## Választott felépítés
+
+```text
+Böngésző → HTTPS → Node alkalmazáspod(ok)
+                    ├─ Google OIDC: belépés
+                    ├─ Northflank PostgreSQL addon: összes tartós alkalmazásadat
+                    ├─ Cloudinary: felhasználói fotók
+                    └─ OpenCode: képelemzés
+```
+
+A PostgreSQL addon az alkalmazástól külön erőforrás, tartós adatlemezzel. A Northflank PostgreSQL-t, TLS-t, secret group kapcsolatátadást és írható primary kapcsolati URI-t biztosít. Az alkalmazás a `POSTGRES_URI` titkot `DATABASE_URL` alias alatt kapja meg. Az adatbázis maradjon privát hálózaton; az appot HTTPS-en publikáld. [Northflank PostgreSQL útmutató](https://northflank.com/docs/v1/application/databases-and-persistence/deploy-databases-on-northflank/deploy-postgresql-on-northflank).
+
+| Tartós adat | Helye |
+| --- | --- |
+| Google `sub`, név, email, napi keret | PostgreSQL `users` |
+| Munkamenet-token hash, lejárat | PostgreSQL `sessions` |
+| Egyszer használható OAuth state, nonce, PKCE verifier | PostgreSQL `oauth_states`, 10 percig |
+| Étkezés, elfogyasztott adag, megjegyzés, dátum/időzóna | PostgreSQL `meals` |
+| Eredeti AI-eredmény, javított adatok, forrásmásolatok | PostgreSQL `meals` JSON-mezői |
+| Modell, promptverzió, használat, hiba, revízió | PostgreSQL `meals` |
+| Feldolgozási és törlési sor, állapot, lease | PostgreSQL `analysis_jobs` |
+| Óránkénti/napi elemzési próbálkozások | PostgreSQL `analysis_attempts` |
+| USDA-rekordok változatlan, kulccsal azonosított másolata | PostgreSQL `food_records` |
+| Feltöltött képbájtok, második nézet | Cloudinary |
+| Kép public ID, URL, verzió és méretek | PostgreSQL, a `photo` mezőben |
+
+A kész alkalmazás statikus arculati fájljai a konténer részei. Felhasználói adat nem a konténer lemezére íródik. A titkok Northflank runtime secret groupba kerüljenek; a helyi `.env` nem build argument és nem része az image-nek.
+
+## Konkrét telepítési beállítás
+
+1. Válaszd ki a Yumetrics Northflank projektjét és régióját. Hozz létre külön PostgreSQL 17 addont megfelelő tartós tárhellyel; az alkalmazás adatbázisát ne oszd össze más termék tábláival.
+2. Kapcsold a primary adatbázis URI-t runtime secret grouphoz `DATABASE_URL` néven. Ne a read replica címét használd. A TLS tanúsítvány ellenőrzését ne kapcsold ki; szükség esetén a szolgáltatói CA-t a Node trust store-jához add.
+3. A repóból Dockerfile build, végleges image-ből deployment service. Konténerport `3000`, HTTP, publikus HTTPS domain. Runtime: `NODE_ENV=production`, `HOST=0.0.0.0`, `PORT=3000`, `APP_ORIGIN=https://sajat-domain`.
+4. Ugyanebbe a secret groupba a Google, OpenCode, Cloudinary és opcionális USDA mezők a `.env.example` szerint. A Google Console-ba pontos éles callback: `https://sajat-domain/auth/google/callback`.
+5. Liveness: `GET /healthz`; readiness: `GET /readyz`. A readiness adatbázist is olvas, és Google-konfigurációt kér. Ez nem igazolja a külső kulcsok jogosultságát. Production hiányzó adatbázissal/Google-klienssel vagy HTTP APP_ORIGIN-nel nem indul.
+6. Az első indítás tranzakcióban, PostgreSQL advisory lock mellett alkalmazza a sémát. A már naplózott migráció nem fut újra. Több app-pod ugyanazt az írható adatbázist használja; nincs sticky session követelmény. Indulásnak két app-példány gördülő telepítéssel csökkenti a kiesést; a pool példányonként legfeljebb 10 kapcsolat.
+
+Közvetlen primary PostgreSQL-kapcsolatot használj. Ha PgBouncert vezetsz be, a session advisory lock és a sessionbeállítások miatt előbb külön ellenőrizd a pooling módját; transaction poolingra ezt nem állítottuk át.
+
+## Mi történik app-pod leállásakor?
+
+A felhasználói művelet csak adatbázis-commit után kap sikeres választ. `synchronous_commit=on` szerepel a PostgreSQL-kapcsolaton. Az elemzés `202` válasza már feltöltött Cloudinary-fotót és adatbázisba írt feldolgozási feladatot jelent. A worker a Cloudinaryból olvassa vissza a képet, a bájtok nem kerülnek PostgreSQL-be.
+
+Ha elemzés közben áll le az app, a feladat lease-e legfeljebb kb. 90 másodperc után újra felvehető. Szívverés tartja életben; a mentést a lease tokenje védi. Egy korábbi worker késői válasza nem írhatja felül a feladatot átvevő worker eredményét. Három ismételt megszakítás után a feladat hibásként, megőrzött fotókkal látható; kézzel újrapróbálható. A külső AI-hívás a leállás miatt megismétlődhet és újra számlázódhat; szolgáltatói pontosan-egyszer végrehajtást nem állítunk.
+
+Törlésnél előbb tartós törlési feladat készül, aztán a Cloudinary-képek törlődnek, végül az adatbázis-bejegyzés. Megszakadásnál az idempotens törlés folytatódik. A képtár hibájánál a bejegyzés és a képazonosítók megmaradnak, a törlés újrapróbálható.
+
+Az app-pod cseréje nem változtatja meg a munkamenetet, napi keretet vagy a napló tartalmát. A még fel nem töltött, sikeresen vissza nem igazolt böngészős kép ugyanakkor nem tekinthető tartós mentésnek. Részleges feltöltésnél a már tárolt képazonosítókat megőrizzük; hiányzó képet új bejegyzéshez újra ki kell választani.
+
+## Adatbázishiba és mentési terv
+
+Az alkalmazás újraindítása és az adatbázis elvesztése külön esemény. A visszaigazolt adatok app-pod cseréjétől való megőrzése nem jelent általános nulla adatvesztési vagy folyamatos rendelkezésre állási garanciát.
+
+A Northflank PostgreSQL több replikát és Patroni-alapú automatikus failovert támogat; megfelelő régióban zónák közé helyezett replikák is választhatók. Élesben legalább primary és standby, fontos naplónál primary és két standby, külön zónák javasoltak. A replikák száma önmagában nem igazolja a szinkron replikációt: szigorú adatvesztési célhoz a tényleges replikációs/failover beállításokat és a szolgáltatói vállalást is ellenőrizni kell. [Northflank HA](https://northflank.com/docs/v1/application/databases-and-persistence/configure-addons-for-high-availability).
+
+Javasolt mentés a Northflankon: óránkénti snapshot 7 nap megőrzéssel, napi native dump 30 napig, heti native dump 90 napig. A dokumentáció órás/napi/heti ütemezést és megőrzési időt támogat; a native dump letölthető, a snapshot nem. A mentések Northflankon maradjanak. Havi próba-visszaállítást külön addonba végezz, és ellenőrizd a felhasználókat, naplót, forrásokat, feladatokat és Cloudinary-hivatkozásokat. Ne állítsd vissza próbaképpen az éles addonra: az felülírná a tartalmát. [Northflank backup és restore](https://northflank.com/docs/v1/application/databases-and-persistence/backup-restore-and-import-data).
+
+Csak órás mentésből helyreállítva a legutóbbi mentés utáni írások elveszhetnek; ez nem RPO=0. Katasztrófára is nulla adatvesztést előíró üzemhez a Northflankkal egyeztetett szinkron replikáció/WAL-védelem, mért visszaállítási idő és dokumentált szolgáltatási vállalás szükséges. A helyreállítás ideje itt még nincs megmérve. Cloudinaryban a mentési/visszaállítási képességet a tényleges csomag szerint külön ellenőrizd; egy PostgreSQL-dump nem tartalmaz képbájtokat.
+
+## Telepítés utáni bizonyítás
+
+Valódi Google-fiókkal belépés, napikeret mentése, saját fotó feltöltése és egy étkezés naplózása után jegyezd fel az azonosítóját. Indíts app service restartot, majd új image-re redeploymentet ugyanazzal a DATABASE_URL-lel. Ellenőrizd ugyanazt a munkamenetet, étkezést, fotókat, napi keretet és az eredeti/javított elemzést. Folyamatban lévő elemzéssel és törléssel is ismételd meg stagingben. Végül külön addonba visszaállított mentésen is olvasd vissza az adatokat.
+
+A helyi, valódi PostgreSQL-integrációs tesztek ennek alkalmazásfolyamatot cserélő részét ellenőrzik. Éles Northflank-pod, addon-failover, backup és restore próba még nem történt.

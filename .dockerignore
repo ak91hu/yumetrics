@@ -1,0 +1,14 @@
+*
+!package.json
+!package-lock.json
+!server.mjs
+!lib/
+!lib/**
+!public/
+!public/**
+!postgres/
+!postgres/**
+!drizzle/
+!drizzle/**
+!scripts/
+!scripts/build.mjs

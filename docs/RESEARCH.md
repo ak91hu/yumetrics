@@ -1,69 +1,37 @@
-# Modellkutatás és adattárolás
+# Hitelesebb kalóriaszámítás: kutatási döntések
 
-Ellenőrzés: **2026-11-06**. A megállapítások hivatalos szolgáltatói dokumentációból származnak. Saját, lemért ételfotókon végzett modellbenchmark még nincs; a választás ezért gyakorlati kiindulópont, nem bizonyított táplálkozási pontossági rangsor.
+Frissítve: 2026-11-07. A cél ellenőrizhető számítás és látható bizonytalanság. Saját, lemért magyar étkezéseken végzett modellbenchmark még nincs; ezért nem állítunk mért pontossági százalékot vagy bizonyítottan legpontosabb modellt.
 
-## Melyik LLM alkalmas?
+A v4 magyar ételcsoportos megkülönböztetése, a piaci összevetés és a Nébih-források: [HUNGARIAN-POSITIONING.md](HUNGARIAN-POSITIONING.md). Az új receptszámítás és a nyers/főtt referenciavédelem működik; a tényleges fotós hibaméréshez készült külön eszköz és adatszerződés: [BENCHMARK.md](BENCHMARK.md). A szükséges hozzáférések beszerzése: [API-KEYS.md](API-KEYS.md).
 
-**Induló ajánlás: Gemini 3.8 Flash az OpenCode natív Gemini API-ján.** A feladathoz képbemenet, magyar strukturált szövegkimenet és rövid, interaktív válaszidő kell. A Flash modell multimodális képességei és strukturált kimenete megfelelnek ennek. A legújabb általános csúcsmodell neve önmagában nem igazolja, hogy ételadagokra pontosabb lenne. [Gemini 3.8 Flash dokumentáció](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash), [hivatalos modellkártya](https://deepmind.google/models/model-cards/gemini-3-8-flash/).
+## A legnagyobb javulást az ehető tömeg és a helyes referencia adja
 
-| Jelölt | Miért érdemes vizsgálni? | Döntés ehhez az apphoz |
-| --- | --- | --- |
-| Gemini 3.8 Flash | Képbemenet és strukturált kimenet, mindennapos interaktív használatra szánt Flash modell | Alapértelmezett; a tényleges késleltetést és költséget saját kéréseken mérni kell |
-| Gemini 4 Argon | Újabb frontier modell, komplex vizuális és következtetési feladatok vizsgálatához | Kísérleti összehasonlításra, ha a saját OpenCode-fiókban elérhető; nem automatikus, fizetős tartalék |
-| Claude Sonnet 5.5 / aktuális képes Claude | Más modellcsalád, dokumentált képbemenettel | Érdemes etalonként összehasonlítani; natív Messages adapter kellene, ezért nincs csendes modellcsere |
+A FAO receptszámítási módszere ehető részre korrigált alapanyagtömegekből indul. A főzés miatti tömegváltozást, a zsír/víz változását és a tápanyagveszteséget külön kell kezelni. Nyers referencia nem szorozható egyszerűen ugyanannyi gramm készétellel. Ez alapján a Yumetrics külön kéri a nem ehető részt, jelzi az össztömeg becsült felosztását, és szerkeszthetővé teszi az elkészítéshez párosított forrást. [FAO: receptösszetétel számítása](https://www.fao.org/4/y4705e/y4705e23.htm).
 
-A Gemini 4 Argon hivatalos bemutatása kezdetben korlátozott elérést jelölt; a modelllistában való szereplésből nem következik minden fiókra elérhető jogosultság. A Claude dokumentáció képbemenetet támogat, de nem közöl erre a konkrét magyar ételfotós feladatra összehasonlító kalóriapontosságot. [Gemini 4 Argon bemutató](https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-4-argon/), [Claude Vision](https://platform.claude.com/docs/en/build-with-claude/vision).
+A FAO adatminőségi szempontjai között szerepel az étel egyértelmű azonosítása, a minta elkészítése, a nem ehető rész eltávolítása és az adatok kifejezési módjának egyezése. Következtetésünk: egy adatbázisnév vagy sok tizedesjegy önmagában nem teszi hitelessé a fotóhoz rendelt kalóriát. Ezért külön jelöljük a forrás és a párosítás ellenőrzöttségét. [FAO: adatminőség](https://www.fao.org/4/y4705e/y4705e15.htm).
 
-Az OpenCode aktuális modelllistája a Gemini modelleket natív Google `generateContent` végponttal jelöli, a GPT-modelleket Responses, a Claude-modelleket Messages protokollal. Emiatt a „minden modell ugyanazon chat/completions végponton” megoldás nem megfelelő. A kód a dokumentált Gemini-protokollt és szerveroldali Bearer-hitelesítést használja. [OpenCode modellek és protokollok](https://opencode.ai/v2/docs/console/models/), [Inference API példák](https://dev.opencode.ai/v2/docs/console/api/inference).
+## Miért kétlépéses az AI-feladat?
 
-## Mit tud és mit nem tud egy fotó?
+A 2025-ös CVPR Workshop tanulmány az étel képét összetevőkre, adagra és elkészítési információra bontja, majd külön becsüli a tápértéket. Ezt a feladatbontást használjuk; a szerzők eredményeit nem állítjuk a saját alkalmazásunk pontosságának. [Khlaisamniang és mtsai.](https://openaccess.thecvf.com/content/CVPR2025W/MTF/html/Khlaisamniang_Decomposing_Food_Images_for_Better_Nutrition_Analysis_A_Nutritionist-Inspired_Two-Step_CVPRW_2025_paper.html).
 
-A fénykép segít az étel nevének, látható összetevőinek és hozzávetőleges adagjának felismerésében. Az olaj, az öntet alatti összetevők, az elkészítési víztartalom és a tömeg gyakran nem azonosítható megbízhatóan. Ezért a felület becslést mond, külön megmutatja a feltételezéseket, és mentés előtt javítható grammokat ad. A modell `high` önértékelése sem kalibrált valószínűség.
+A Nutrition5k lemért komponenseket, több nézetet és mélységi információt tartalmazó kutatási adatkészlet. A két szokásos telefonos fotó ettől eltérő mérési helyzet. A második kép segítség, de nem mélységkamera és nem mérleg. [Nutrition5k, szerzői adatkészlet](https://github.com/google-research-datasets/Nutrition5k).
 
-A JSON-séma a formátumot segíti, az értékek valódiságát nem bizonyítja. A szerver ellenőrzi a mezőket, mértékegységhez illő tartományokat és a teljes válasz lezárását; a hibás, levágott vagy nem ételt ábrázoló eredményt elutasítja. [Gemini strukturált kimenet](https://ai.google.dev/gemini-api/docs/structured-output), [GenerateContent konfiguráció](https://ai.google.dev/api/generate-content).
+## Adatforrás és visszakövethetőség
 
-## A pontosság következő, mérhető ellenőrzése
+A FoodData Central Foundation Foods alapélelmiszerek adatait és részletes mintaeredetet közöl; az SR Legacy lezárt történeti adattípus, a márkázott termékek pedig külön adatállomány. A források és elkészítések nem automatikusan felcserélhetők. A beépített 44 SR Legacy rekord mellett ezért a felhasználó Foundation/SR Legacy keresésből is választhat megfelelő rekordot. [USDA adattípusok](https://fdc.nal.usda.gov/Foundation_Foods_Documentation/).
 
-Valódi „legalkalmasabb” rangsorhoz 50–100 saját, lemért, recepttel ismert étkezésre van szükség: magyar egytálételek, szószok, vegyes tányérok, kisétkezések és nem ételt ábrázoló negatív példák. Ugyanazzal a fotóval és sémával mérendő a felismerési hibák száma, az adag tömeghibája, a kcal/protein/carb/fat abszolút hibája, a visszautasítások és hibás JSON-ok aránya, a medián/95. percentilis válaszidő és a kérésenkénti tényleges költség. A kis energiatartalmú ételeknél a százalékos hiba önmagában félrevezető lehet.
+A magyar konyhai bővítés 24 új alapanyaga hivatalos USDA-letöltésből került be, nyers/főtt párokkal és a nem egyenértékű helyettesítések megjegyzéseivel. Az archívum azonosítója, ellenőrzőösszege és az összes új FDC ID: [REFERENCE-CATALOG.md](REFERENCE-CATALOG.md). A saját magyar fordítás nem teszi magyar termékadatbázissá az amerikai referenciát.
 
-Az értékelést külön kell futtatni csak fotóval és felhasználó által megadott grammokkal. A költség a kép felbontásától, a kimenettől és a szolgáltató aktuális díjától függ; ezért a kód eltárolja a tokenhasználatot és a késleltetést, de nem talál ki rögzített elemzési árat. A saját API-kulcs megadásakor a szolgáltatói keretet is ellenőrizni kell.
+A hivatalos API keresést és FDC ID szerinti részletes lekérést ad, kulccsal és szolgáltatói korláttal. Az adat CC0. A kulcs csak szerveroldalon szerepel. Az app ellenőrzi a rekordazonosítót, az egységeket és a kötelező tápanyagokat, majd tartós másolatot tárol. A kliens által küldött, kitalált „USDA-forrás” nem válik ellenőrzött adattá. [USDA API és licenc](https://fdc.nal.usda.gov/api-guide/).
 
-## Miért nem csak LLM-ből származó tápérték?
+## Modellválasztás és tényleges pontosság
 
-A `food-v2-grounded` implementáció már külön választja a vizuális leltárt és a tápértékszámítást. A megfelelően párosítható összetevőknél 20 rögzített, hivatalos USDA-rekord tápértékeit használja, egyébként jelölt LLM-becslést kér. A párosítás ellenőrizhető és kézzel javítható; a referenciatár nem teljes ételadatbázis. A részletes kutatás, korlátok és megvalósítás a **[PHOTO-ASSESSMENT.md](PHOTO-ASSESSMENT.md)** dokumentumban található. [USDA API-útmutató](https://fdc.nal.usda.gov/api-guide/), [Foundation Foods dokumentáció](https://fdc.nal.usda.gov/Foundation_Foods_Documentation/).
+A választott alapmodell `gemini-4-argon`, az OpenCode natív Google generateContent útvonalán; a szolgáltató modelllistája ezt a modellazonosítót és protokollt közli. A beállított kulccsal lekért modelllista és egy valódi, kétlépéses képelemzési próba igazolta a hozzáférést. A fejlettebb Gemini 4 Carbon nem szerepelt ezen a szolgáltatói listán. Ez működési ellenőrzés, nem táplálkozási pontossági rangsor. Nincs automatikus fizetős tartalékmodell. [OpenCode modelllista](https://opencode.ai/docs/console/models/).
 
-## Pontosan tárolt adatok
+A Gemini 4 Argon natív multimodális modell: képet is fogad, és összetett vizuális feladatokra készült. A szolgáltatói képességlista alapján sampling paramétert nem küldünk. A gateway a `maxItems` sémamezőt a valódi próbán elutasította, ezért a tömbök hosszát a szerver validálja. [Google DeepMind modellkártya](https://deepmind.google/models/model-cards/gemini-4-argon/), [Google paraméterek](https://firebase.google.com/docs/ai-logic/model-parameters?api=vertex).
 
-Az étkezés a tartós tárolás egysége; az összetevők egy bounded JSON-tömbben vannak. Ehhez a személyes naplóhoz nem kell önálló recept- vagy hozzávalókatalógus. A tápértékek az adott **elkészített összetevő 100 grammjára** vonatkoznak; a grammok az elfogyasztott/becsült adag tömegét jelentik.
+A következő, valóban pontosságot igazoló lépés 50–100 lemért, recepttel és elkészítési veszteséggel dokumentált étkezésen végzett vakteszt. Külön csoport: csontos hús, bőrös/zsíros hús, pörkölt/főzelék, öntet, olaj, vegyes tányér és nem étel. Külön értékelendő a fotó-only, össztömeges és külön lemért összetevős változat. Mérendő az adag grammhibája, kcal és makró abszolút hibája, elutasítási arány, téves párosítás, késleltetés és tényleges költség. Egy ismert recept szerinti számítás is tápanyagbecslés, nem bombakaloriméteres mérés.
 
-| Adat | Tényleges mező | Miért tároljuk? |
-| --- | --- | --- |
-| Azonosító, tulajdonos | `id`, `user_id` | Idempotencia, felhasználói adatok elkülönítése |
-| Étkezés napja, ideje, időzónája | `day`, `time`, `timezone` | A napló időzónaváltás után is az eredeti napon marad |
-| Étkezéstípus és megjegyzés | `type`, `notes` | Reggeli/ebéd/vacsora/kisétkezés, ismert adag és elkészítés |
-| Állapot | `status` | `analyzing`, `draft`, `saved`, `failed`; sikertelen művelet ne tűnjön mentett étkezésnek |
-| Ételfelismerés | `analysis.name`, `.confidence`, `.assumptions` | Név, minőségi önértékelés, bizonytalan összetevők |
-| Összetétel | `analysis.ingredients[].name`, `.grams` | Szerkeszthető név és tömeg, legfeljebb 40 összetevő |
-| Energia / 100 g | `calories` | kcal |
-| Makrók / 100 g | `protein`, `carbs`, `fat` | gramm; emészthető szénhidrát rost nélkül |
-| Egyéb értékek / 100 g | `fiber`, `sugar`, `sodium` | Rost/cukor gramm, nátrium mg; ismeretlennél `null` |
-| Eredeti becslés | `original_analysis` | A kézi javítások nem írják felül az AI eredeti állításait |
-| Képazonosító | `public_id` | A kép törlése akkor is lehetséges, ha a feltöltési válasz elveszett |
-| Kép metaadatai | `photo.publicId`, `.url`, `.width`, `.height`, `.bytes`, `.format`, `.version` | Cloudinary-hivatkozás és méret; képbájtokat nem duplikálunk SQLite-ban |
-| Modell és prompt | `model`, `prompt_version` | Utólag azonosítható, melyik modell/beállítás készítette a becslést |
-| Használat és idő | `usage`, `latency_ms` | Szolgáltatói tokenadatok, mért kérési késleltetés |
-| Hibás művelet | `error` | Kulcsot és nyers szolgáltatói hibát nem tartalmazó állapotüzenet |
-| Audit és ütközésvédelem | `created_at`, `updated_at`, `revision` | UTC-műveleti időpontok, másik ablak módosításának felismerése |
-| Kérésköltség korlátja | `analysis_attempts.id`, `.user_id`, `.created_at` | Az elemzési próbálkozások száma étkezéstörlés után is megmarad |
+Megvalósítás és korlátok: [PHOTO-ASSESSMENT.md](PHOTO-ASSESSMENT.md). Az adat- és munkamenettárolás: [NORTHFLANK.md](NORTHFLANK.md).
 
-A napi és étkezési összesítéseket **számoljuk**, nem tároljuk újra. Képlet: `100 g-ra adott érték × összetevő grammja / 100`; az összetevőket összeadjuk, majd egy tizedesre kerekítünk. Ha az adott tápanyagnál bármelyik összetevő ismeretlen, az étkezési összesítés is `null`. Nem tárolunk mesterséges kalóriapontossági százalékot, kitalált vitaminokat, kikövetkeztetett allergénmentességet, testsúlyt, egészségügyi előzményt vagy GPS-helyzetet.
-
-A v2 már tárolja a tápérték forrását (`reference` / `ai` / `user`), a rögzített referenciakulcsot és a párosítás felhasználói megerősítését. A katalógus a tényleges FDC ID-t, rekordleírást, adattípust és letöltési dátumot tartalmazza; az összetevő tárolja az elkészítést és az adagtartományt is. A fotóhoz párosítás továbbra is becslés, amíg nincs megfelelően ellenőrizve.
-
-## Tárolás, adatvédelem és Free keret
-
-Az SQLite/D1 tárolja a naplót; a Cloudinary Free a képeket. A Cloudinary Free ellenőrzött ajánlata havi 25 kredit, amely a szolgáltatás használatán oszlik meg. A kisebb feltöltött képek csökkentik a tárhelyet és az adatforgalmat. Nincs fizetős automatikus képelemző add-on. [Cloudinary csomagok](https://cloudinary.com/pricing).
-
-A szerver generálja a feltöltési és törlési aláírást; a secret nem jut a böngészőbe. A public ID véletlen és nem tartalmaz nevet vagy emailt. A normál képhivatkozás link birtokában megtekinthető; szigorúan privát képekhez authenticated delivery kell. A törlés CDN-invalidationt is kér, de a CDN-frissülés és a már letöltött másolatok nem vonhatók azonnal vissza. [Feltöltési API](https://cloudinary.com/documentation/upload_images), [Upload/Destroy referencia](https://cloudinary.com/documentation/image_upload_api_reference), [CDN invalidation](https://cloudinary.com/documentation/invalidate_cached_media_assets_on_the_cdn).
-
-Node módban egy személyes napló van, hálózati használatnál jelszóval; Sites módban a platformfelhasználóhoz kötött rekordok vannak. Az email nem a napló tulajdonosi kulcsa. A pontos fotót az AI-szolgáltató és a Cloudinary is megkapja; az eredeti fájlt az alkalmazás nem archiválja. Az adatbázis és a fotók külön mentési tartományok. A kérésnaplók nem kapják meg a fotóbájtokat vagy a hitelesítési kulcsokat.
+A v5 az egész képen látható ehető mennyiséget tekinti adagnak; fogyasztási részarányt nem alkalmaz. Mért össztömegnél a sávot is ugyanahhoz a tömeghez köti, az összetevőarányok változtatásával. A nyilvánosan közzétehető dokumentáció külön állomány: [PUBLISHING.md](PUBLISHING.md).

@@ -1,116 +1,80 @@
 # Yumetrics
 
-Magyar, reszponzív ételfotó-elemző és étkezési napló. Kép és támpontok → vizuális összetevő-leltár → forrásolt tápértékszámítás → ellenőrizhető piszkozat → naptár. A képek a saját Cloudinary Free-fiókodban, az étkezések SQLite-ban vagy a hosztolt változat D1-adatbázisában vannak.
+Magyar és angol nyelvű étkezési napló kötelező Google-belépéssel, ellenőrizhető tápértékforrásokkal és javítható AI-becsléssel. Magyar konyhai támpontokkal kezeli a rántás/habarás, panír, csont, tejföl és feltét bizonytalanságát. A saját receptből a teljes kész étel és az elfogyasztott adag alapján számol; külön jelzi a fotós és receptalapú eredményt. A támogatott szerver **Node.js 24+ és PostgreSQL**. Élesben a felhasználói képek Cloudinaryban, minden más tartós alkalmazásadat külön **Northflank PostgreSQL addonban** van.
 
-## Részletesebb elemzés: v2
-
-A `food-v2-grounded` folyamat külön elemzi a képen látható összetevőket, azok elkészítését és adagját. A megfelelő ételekhez 20, hivatalos USDA API-ból rögzített rekord tápértékeit veszi át; a többi összetevőhöz külön AI-kérés készít jelölt becslést. Az adatbázisrekord és a fénykép párosítása továbbra is ellenőrzendő, nem bizonyított azonosság. [A kutatás, a megvalósított gyakorlatok és korlátok](docs/PHOTO-ASSESSMENT.md).
-
-Opcionálisan második képet, lemért teljes ételtömeget, tányérátmérőt és elfogyasztott százalékot is megadhatsz. A két kép ugyanarról az adagról készüljön. Az elfogyasztott százalék minden összetevőre azonos arányban és csak egyszer vonatkozik. Az eredményben megjelenik a kép minősége, a feltételezett összetevők, az elkészítés, a tömegforgatókönyvek és a pontosítandó kérdések.
-
-Összetevőnként látható az **USDA-referencia / AI-becslés / Saját értékek** jelölés. A referencia linkkel visszakereshető, cserélhető és jóváhagyható. Kézi név- vagy tápértékmódosítás után az adott adat nem marad USDA-értékként megjelölve. A telített zsír és a számolt sóegyenérték is megjelenik; az ismeretlen érték „—”. Az energia-forgatókönyv nem statisztikai konfidenciaintervallum, csak az adagtartomány hatását szemlélteti.
-
-Referenciák frissítése, kizárólag fejlesztői műveletként: `node scripts/update-food-reference.mjs`. A program a dokumentált nyilvános USDA DEMO_KEY segítségével újratölti a rögzített FDC ID-ket; futás közben az alkalmazás nem kér további USDA-kulcsot. A forrásrekordok metaadatai és a letöltés dátuma a `lib/food-reference.mjs` fájlban vannak.
-
-## Gyors indítás
-
-Ajánlott: **Node.js 26.13.0 LTS**, a 2026-11-06-án ellenőrzött aktuális LTS. [Hivatalos letöltés](https://nodejs.org/en/download). Nincs külső npm-függőség, telepítés és frontend build nem kell a helyi futtatáshoz.
+## Helyi indítás
 
 ```powershell
-cd C:\Yumetrics
-Copy-Item .env.example .env
+npm ci
 npm start
 ```
 
-Megnyitás: **http://127.0.0.1:3000**. Fejlesztéshez `npm run dev` automatikus szerverújraindítással. Az első indulás létrehozza a `data/yumetrics.sqlite` adatbázist és alkalmazza a verziózott migrációkat. A többi indulás megtartja az adatokat.
+Cím: **http://127.0.0.1:3000**. A `.env` már létrejött, Git és a Docker build nem tartalmazza. A helyi gépen külön PostgreSQL 17.11 példány indult a `127.0.0.1:54329` címen, külön alkalmazás- és tesztadatbázissal; a helyi `DATABASE_URL` beállítva. A hozzáféréseket a saját `.env` fájlban kell beállítani; a nyilvános repó csak üres mintát tartalmaz. A bejelentkezőoldal konfiguráció nélkül is megjelenik, de a naplóhoz nincs kerülő belépés.
 
-Kulcsok nélkül megnyitható a felület, a naptár és az elkülönített **Mintaadatok** nézet. A mintanézet nem ír az adatbázisba és nem hív AI-t. Valódi elemzéshez az alábbi négy szolgáltatói érték szükséges.
+Tiszta gépen állíts be saját fejlesztői PostgreSQL-t vagy használd a `compose.yaml` adatbázisát: adj meg `LOCAL_POSTGRES_PASSWORD` környezeti változót, majd `docker compose up -d database`. A `.env` `DATABASE_URL` mezőjében ugyanaz a jelszó, `127.0.0.1:54329/yumetrics` szerepeljen. Ez fejlesztői adatbázis; élesben a Northflank kapcsolatát használd.
 
-## OpenCode és Cloudinary beállítása
-
-A `.env` fájlban add meg, majd indítsd újra a szervert:
-
-```dotenv
-OPENCODE_API_KEY=ide_kerul_a_kesobb_megadott_kulcs
-OPENCODE_MODEL=gemini-3.8-flash
-CLOUDINARY_CLOUD_NAME=sajat_cloud_name
-CLOUDINARY_API_KEY=sajat_api_key
-CLOUDINARY_API_SECRET=sajat_api_secret
-```
-
-A kulcsokat soha ne tedd a kliensoldali JavaScriptbe, Gitbe vagy a hosting manifestbe. A Beállítások csak a kapcsolat konfiguráltságát mutatja, a kulcsokat nem küldi a böngészőnek. A konfiguráltság önmagában nem igazolja a kulcs érvényességét vagy a rendelkezésre álló keretet.
-
-### OpenCode
-
-Az „opencode API” alatt az OpenCode Console / korábbi Zen szolgáltatást értelmeztem. A hivatalos, aktuális natív Gemini-végpontot használjuk:
-
-```text
-POST https://opencode.ai/inference/google/v1beta/models/gemini-3.8-flash:generateContent
-Authorization: Bearer <OPENCODE_API_KEY>
-```
-
-A kép `inlineData`, az eredmény JSON-sémával kért strukturált válasz. A válasz külön szerveroldali ellenőrzést is kap. Modellváltás a `OPENCODE_MODEL` beállítással lehetséges az OpenCode által támogatott **Gemini** modellek között. Más modellcsaládhoz más API-formátum és adapter kell; a mostani adapter szándékosan egy konkrét, dokumentált protokollt támogat. [OpenCode modellek](https://opencode.ai/v2/docs/console/models/), [Inference API](https://dev.opencode.ai/v2/docs/console/api/inference).
-
-### Cloudinary Free
-
-1. Hozz létre egy Free Image and Video API-fiókot a [Cloudinaryn](https://cloudinary.com/pricing), és a Dashboardból másold át a cloud name / API key / API secret értékeket.
-2. Nincs szükség unsigned upload presetre vagy fizetős kiegészítőre. A szerver a feltöltési és törlési kéréseket SHA-1 aláírással küldi.
-3. A képek `yumetrics/<véletlen UUID>` public ID-val kerülnek a képtárba. Az alkalmazás nem ír felül meglévő képet.
-4. A Free csomag az ellenőrzéskor havi **25 megosztott kreditet** tartalmazott; ez nem korlátlan tárhely vagy forgalom. A tényleges használatot a Cloudinary Dashboardban kövesd. [Díjcsomagok](https://cloudinary.com/pricing).
-
-A böngésző a fotót legfeljebb 1600 pixeles hosszabbik oldalra méretezi és JPEG-be rajzolja újra. Így a feltöltött változat nem viszi tovább az eredeti EXIF/GPS metaadatokat. Maximum 25 MB-os, 50 megapixeles bemeneti fotó és 4 MB körüli feltöltött változat fogadható el. A HEIC/HEIF megnyithatósága a böngészőtől függ; ha nem támogatott, JPEG-et kér a felület.
-
-**A képek normál Cloudinary `upload` típusú képek:** a véletlen hivatkozás ismeretében megtekinthetők. A napló és API védelme nem jelent külön fotóhozzáférés-vezérlést. Kizárólag fiókhoz kötött képmegosztáshoz authenticated delivery bevezetése szükséges. A fotómegosztásról a feltöltő felület is tájékoztat.
-
-## Használat
-
-- **Étel hozzáadása:** fájlválasztás, drag and drop vagy mobilon kamerás felvétel. Add meg a napot, időt, étkezéstípust és az ismert adagokat.
-- **Elemzés:** az AI becslése után a kép Cloudinaryba kerül. Az eredmény először piszkozat, amelyet be kell menteni a naplóba.
-- **Ellenőrzés:** módosítható az étel neve, minden összetevő neve, tömege és 100 grammra vonatkozó tápértéke. Az adagváltoztatás azonnal újraszámolja az összesítést. Összetevő hozzáadható és eltávolítható.
-- **Naptár:** hónapok között lépkedhetsz, egy nap kiválasztása megnyitja az aznap elmentett ételeket és a napi tápértékeket. A fotóra kattintva később is szerkeszthetők a részletek.
-- **Törlés:** először a Cloudinary-kép törlődik CDN-invalidation kéréssel, aztán a naplóbejegyzés. Szolgáltatói hiba esetén a bejegyzés megmarad az újrapróbáláshoz. A CDN és a korábban letöltött másolatok törlése nem azonnali és nem teljesen kontrollálható. [Cloudinary invalidation](https://cloudinary.com/documentation/invalidate_cached_media_assets_on_the_cdn).
-- **Napi keret:** a választott energiakeret eszközönkénti localStorage-beállítás. Nem személyre szabott táplálkozási ajánlás. Az étkezések szerveroldalon tárolódnak.
-
-A tápértékek kcal-ban, grammokban és nátriumnál milligrammban szerepelnek. Az ismeretlen rost/cukor/nátrium `null`; az összesítés is ismeretlen marad, ha egy összetevő értéke hiányzik. A szénhidrát az EU-jelölés szerinti emészthető szénhidrát, rost nélkül. Egyetlen fotóból nem mérhető pontosan az adag vagy a rejtett összetevő; a rendszer nem igazol allergénmentességet.
-
-## Mobil és hálózati használat
-
-Az alapbeállítás csak a saját gépen, loopback címen figyel. Ha másik eszközről is eléred, állíts be erős jelszót és a böngészőből használt külső eredetet:
-
-```dotenv
-HOST=0.0.0.0
-PORT=3000
-APP_PASSWORD=egy_hosszu_egyedi_jelszo
-APP_ORIGIN=https://naplom.pelda.hu
-```
-
-A Node-változat egy személyes napló, egy közös tulajdonossal. Hálózati binding jelszó és APP_ORIGIN nélkül nem indul el. Nyilvános használathoz HTTPS reverse proxy, tartós lemez és az adatbázis mentése szükséges. A beépített szerver nem állít elő TLS-tanúsítványt. A jelszót egyszer kell megadni a belépő felületen; a munkamenet HttpOnly, SameSite=Strict sütit használ, HTTPS-eredetnél Secure jelzővel. A szerver újraindítása kijelentkeztet. A munkamenet legfeljebb 7 napig él; 5 hibás belépés után 15 perces korlát van forráscímenként. Reverse proxy mögött ez a proxy kapcsolati címe, így ez a védelem az összes mögöttes látogatót is érintheti.
-
-Mobilon reszponzív elrendezés, alsó navigáció és natív kamerás fájlválasztás van. Az operációs rendszer kamerajogosultságát a felhasználó kezeli. A naptári napot és az időt az étkezéshez rögzítjük, az IANA-időzónával együtt; későbbi utazás nem helyezi át a régi étkezést másik napra.
-
-## Adatok, mentés és hibakezelés
-
-A pontos adattárolási terv és a modellkutatás: **[docs/RESEARCH.md](docs/RESEARCH.md)**. A táblákat a `drizzle/*.sql` tartalmazza. A Node ugyanazokat a migrációkat SQLite-on alkalmazza, a Sites változat D1-en futtatja.
-
-A SQLite-adatbázis `data/yumetrics.sqlite`, WAL módban. Teljes, egyszerű fájlmentéshez állítsd le a szervert és másold a `data` könyvtárat; futás közben SQLite-kompatibilis backup kell, egyetlen `.sqlite` fájl másolata a WAL mellett nem elég. Visszaállításkor a leállított alkalmazás adatkönyvtárát állítsd vissza. A Cloudinary-képek külön szolgáltatónál vannak, az adatbázismentés nem tartalmazza a képbájtokat. Felhős futtatásnál a `DATABASE_PATH` tartós lemezre mutasson; ephemeral fájlrendszeren a napló elveszhet.
-
-Az eredeti AI-elemzés változatlan marad a felhasználó által javított értékek mellett. Revíziószám akadályozza a másik ablakból történő véletlen felülírást. A műveletazonosító ismételt küldése nem indít új elemzést. 20/óra és 50/nap felhasználónkénti próbálkozási korlát védi az AI-keretet; a bejegyzés törlése nem nullázza a korlátot.
-
-Az elemzés indulásakor bejegyzés készül, így Cloudinary-hiba vagy megszakadt kérés után is megmarad a törléshez szükséges képazonosító. A második kép is előre ismert `-angle` utótagú azonosítót kap; a kontextus a feltöltés előtt elmentésre kerül. A félbemaradt, sikertelen és még be nem mentett elemzések külön megjelennek. Aktív elemzést 5 percig nem lehet törölni. Hálózati bizonytalanság után érdemes frissíteni és ellenőrizni a piszkozatot, mielőtt új elemzést indítasz. Cloudinary cloud name váltásakor előbb rendezd a régi képek költöztetését/törlését; az app egyetlen aktív Cloudinary-fiókkal működik.
-
-## Hosztolt Sites / Cloudflare-változat
+A mostani hordozható helyi PostgreSQL adatai `work/pgdata` alatt vannak. A könyvtár törlése törli ezt a helyi adatbázist is. Új gépindítás után indítás/leállítás:
 
 ```powershell
-npm run build
+& ./work/postgresql/pgsql/bin/pg_ctl.exe -D ./work/pgdata -l ./work/postgres.log -o '-h 127.0.0.1 -p 54329' -w start
+& ./work/postgresql/pgsql/bin/pg_ctl.exe -D ./work/pgdata -m fast -w stop
 ```
 
-A `dist/server/index.js` szabványos Worker ESM. A build a statikus fájlokat beágyazza, a közös szerverlogikát és a D1-migrációkat a csomagba másolja. Nincs bundler vagy npm-telepítés. A `.openai/hosting.json` a privát Site azonosítóját és a `DB` D1-kötést őrzi; a `r2` szándékosan nincs használva, mert a képeket Cloudinary tárolja.
+## Google és szolgáltatói kulcsok
 
-Sites esetén a környezeti kulcsokat a Site szerveroldali runtime változóiként kell beállítani. A platform kezeli a bejelentkezést; minden olvasás és írás a `oai-authenticated-user-id` alapján tulajdonoshoz kötött. **A Workert kizárólag a Sites hitelesítést végző dispatch mögött használd**, mert a közvetlen, védelem nélküli Worker-origin nem hitelesítené ezeket a fejléceket. Az `APP_PASSWORD`, `HOST`, `PORT` és `DATABASE_PATH` csak a Node-változatra vonatkozik.
+**[Minden szükséges kulcs, beszerzési hely és beállítás](docs/API-KEYS.md)**. Az OpenCode-kulcs az AI-hoz kell, a Google OAuth-kliens a belépéshez; nem ugyanaz a hozzáférés. A Northflank-adatbázis kapcsolati URI-ja nem platform-API-token.
 
-A build önmagában nem publikálás. Hosztolt URL csak sikeres, visszaigazolt deployment után tekinthető működőnek. A helyi változat a Sites-kapcsolattól függetlenül fut.
+A `.env.example` felsorolja a mezőket; a saját `.env` fájlba másold a titkokat. Módosítás után indítsd újra az alkalmazást.
+
+| Mező | Érték |
+| --- | --- |
+| `DATABASE_URL` | PostgreSQL írható primary URI; élesben Northflank |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Az ehhez az alkalmazáshoz létrehozott Google OAuth webkliens |
+| `APP_ORIGIN` | Pontosan a böngészőből használt eredet, végső perjel nélkül |
+| `OPENCODE_API_KEY` | OpenCode Console kulcs |
+| `OPENCODE_MODEL` | Alapértelmezés: `gemini-4-argon`; natív Gemini-protokoll |
+| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Saját Cloudinary-fiók |
+| `USDA_API_KEY` | Opcionális FoodData Central kulcs a bővebb referencia-kereséshez |
+
+A Google Cloud Console-ban hozz létre **Web application** OAuth-klienst, állítsd be a consent screen adatait és a tesztfelhasználókat, amíg az alkalmazás tesztmódban van. Helyi **Authorized redirect URI**:
+
+```text
+http://127.0.0.1:3000/auth/google/callback
+```
+
+Élesben a saját HTTPS domain ugyanilyen `/auth/google/callback` végződésű címe kell. Az `APP_ORIGIN` és a regisztrált callback egyezzen; a localhost és a 127.0.0.1 külön cím. Csak `openid email profile` scope kell, Gmail/Drive-hozzáférés nem. A Google-jelszót és a Google access/refresh tokent nem tároljuk. [Google OIDC-beállítás](https://developers.google.com/identity/openid-connect/openid-connect).
+
+A munkamenet 30 napos, adatbázisban tárolt, a nyers token helyett SHA-256 hashsel. A süti HttpOnly, SameSite=Lax, HTTPS-en Secure és __Host- előtagú. A felhasználó stabil Google `sub` azonosítóhoz kötött, emailváltozás nem hoz létre másik naplót. A callback egyhasználatú state-et, nonce-ot, PKCE-t és a hivatalos Google-könyvtár ID-token ellenőrzését használja. Korábbi jelszavas vagy ChatGPT-fejléces belépés nincs.
+
+## Étkezés rögzítése
+
+1. Google-belépés után válassz fotót, napot, időpontot; megadhatsz második nézetet, ismert tömeget és elkészítési információt.
+2. **A kép először Cloudinaryba kerül**, a feldolgozás tartós adatbázis-feladatként folytatódik. Az ablak bezárható; a piszkozat visszakereshető.
+3. Ellenőrizd az ehető grammokat, a nyers/főtt/sült állapotot és az olajat. Csontot/héjat külön megadhatsz levonandó tömegként. A külön lemért, elfogyasztott összetevőket megjelölheted.
+4. Válassz megfelelő USDA-referenciát vagy saját termékcímkeértéket. USDA-kulccsal angol névre kereshetsz, majd kiválaszthatod az adott elkészítés rekordját. A forrás ellenőrzött másolata megmarad a naplóban.
+5. Mentsd a naplóba. A későbbi javítás az eredeti AI-elemzést nem írja felül. A napi energiakeret is a fiókodban tárolódik.
+
+A beépített referenciatár már **44 USDA-rekordot** tartalmaz magyar konyhai alapanyagokkal és állapotokkal: [források és korlátok](docs/REFERENCE-CATALOG.md).
+
+**Saját fazék/tepsi:** a részleteknél válaszd az „Saját recept megadása” lehetőséget. Add meg a teljes recept ételben maradt alapanyagait, a kész étel és a képen látható teljes adag tömegét. Nyers alapanyaghoz nyers forrást használj; a visszamaradt/elöntött olajat ne számold elfogyasztottnak. A receptmód nem hív új AI-t, és külön, megőrzött alapanyaglistából számol. A megjelenített, adagra jutó alapanyag-mennyiségek eltérhetnek az összetevők főzés utáni tömegétől. Az adagot a „Recept és adag javítása” útvonalon módosítsd.
+
+Az adag mindig a képen látható teljes ehető étel és ital 100%-a. Nincs fogyasztási százalék, az új API-kérések részadagot nem fogadnak el. A számítás `a képen látható teljes adag ehető tömege grammban × tápérték/100 g ÷ 100`. Ismeretlen tápanyag `null`, nem nulla. A fotó és a modell önértékelése nem mért kalóriapontosság. Részletes módszertan: [PHOTO-ASSESSMENT.md](docs/PHOTO-ASSESSMENT.md), kutatási döntések: [RESEARCH.md](docs/RESEARCH.md).
+
+Magyar piaci fókusz és források: [HUNGARIAN-POSITIONING.md](docs/HUNGARIAN-POSITIONING.md). A tényleges pontosság méréséhez külön értékelő parancs készült: [BENCHMARK.md](docs/BENCHMARK.md). Saját mért tesztkészlet nélkül nincs igazolt modellpontossági százalék.
+
+A feltöltés JPEG-re rajzolja újra és legfeljebb 1600 pixelesre méretezi a képet; eredeti EXIF/GPS nincs archiválva. A kép az AI-szolgáltatóhoz és Cloudinaryhoz kerül. A normál Cloudinary delivery URL a link birtokában elérhető; a Google-belépés a naplót és az API-t védi. Ezt a feltöltő is jelzi. Szigorúan privát képhivatkozásokhoz authenticated delivery külön bevezetése kell.
+
+## Tartósság és telepítés
+
+**[Northflank telepítés, adatmodell, mentés és helyreállítás](docs/NORTHFLANK.md)**. A `Dockerfile` stateless Node-konténert épít. Nem használ app-podhoz csatolt SQLite-ot, helyi feltöltéskönyvtárat vagy memóriában tárolt munkamenetet. A `DATABASE_URL` hiánya/hibája nem indít üres tartalékadatbázist.
+
+A korábbi `data/yumetrics.sqlite` fájl megmaradt; a váltáskor nem tartalmazott étkezést. Nem rendelünk korábbi közös naplót automatikusan egy Google-fiókhoz. A SQLite-adapter és a `drizzle/` migrációk csak régi adatok és tesztek támogatására maradtak. Az új éles séma: `postgres/0001_initial.sql`.
+
+A régi `.openai/hosting.json` történeti Sites-azonosító. A korábban publikált Sites-példányt ez a helyi módosítás **nem frissítette és nem migrálta**. A build már Northflank Node-csomagot készít; a régi Worker belépési pont 503-at ad, nem fogad el hitelesítési fejlécet. Ne publikáld a régi csomagot az új alkalmazásként.
 
 ## Ellenőrzés
+
+Az alkalmazás magyarul és angolul használható. A nyelvváltó a bejelentkezőoldalon, a felső sávban és az ablakokon belül is elérhető. A választást egy egyéves, a böngészőhöz kötött nyelvi süti őrzi; ez nem bejelentkezési adat. A dátumok és számok a választott nyelvhez igazodnak. A nyelvváltás megtartja a fotókat és a szerkesztés alatt álló adatokat. A korábbi elemzések és a saját szövegek az eredeti nyelvükön maradnak. Az új elemzés nyelvét a tartósan mentett `context.language` rögzíti. Az étkezéstípusok belső értékei továbbra is közösek, a felirataik fordítottak.
 
 ```powershell
 npm test
@@ -118,28 +82,27 @@ npm run build
 node scripts/browser-check.mjs
 ```
 
-Az automatikus Node-tesztek lefedik a dátumokat, tápértékszámítást, bemenetellenőrzést, natív Gemini-kérést, Cloudinary-aláírást, az elemzés–piszkozat–javítás–mentés–naptár–törlés folyamatot, tulajdonosi határokat, költségkorlátot, SQLite-újraindítást és HTTP-belépést. A szolgáltatókat ezek a tesztek helyettesítik, nem használnak valódi kulcsot.
+A teljes böngészős folyamat külön futtatható angolul és asztali vezérlőkkel is:
 
-2026-11-06-án a Node-tesztek és a headless Chrome folyamatellenőrzés sikeres volt. A reszponzív felületet 320, 390, 768, 1024 és 1440 pixel szélességen ellenőriztük; az ételkártyák és a mobilos szerkesztő űrlap vízszintes túlfutás nélkül megjelennek. A böngészős teszt a két fotó JPEG-be alakításától a piszkozat ellenőrzésén, az elfogyasztott hányad és az adag javításán, valamint az USDA-referencia kiválasztásán át a mentésig, újratöltésig és mindkét kép törléséig végigment. A régi adatbázis migrációját és a korábbi elemzések olvashatóságát külön teszt ellenőrzi. A képernyőképeket vizuálisan is ellenőriztük.
-
-A `browser-check.mjs` telepített Chrome-mal, headless módban ellenőrzi az asztali és mobilfelületet, külön memóriabeli tesztadatbázissal és helyettesített szolgáltatókkal. Windows alapértelmezett Chrome-útvonallal indul; máshol a `CHROME_PATH` környezeti változót állítsd be. Külön, csak a teszthez létrehozott böngészőprofilt használ az `outputs/` alatt; nem nyitja meg a személyes Chrome-profilt. Siker esetén a `outputs/browser-check.json` és a képernyőképek igazolják az eredményt. GPU/renderer-indítási jogosultsághibánál a teszt hibával leáll, és `outputs/chrome-stderr.log` készül. A böngésző sandboxát nem kapcsolja ki.
-
-A valódi API-elemzést és Cloudinary-feltöltést a később megadott saját kulcsokkal lehet véglegesen ellenőrizni. Ezeket a szimulált szolgáltatókkal végzett tesztek nem igazolják.
-
-## Felépítés
-
-```text
-public/                 Magyar HTML/CSS/ES-modulos felület
-lib/domain.mjs          Közös validáció és adagszámítás
-lib/providers.mjs       OpenCode Gemini + aláírt Cloudinary REST
-lib/api.mjs             Tulajdonoshoz kötött napló API
-server.mjs              Node HTTP + SQLite + személyes belépés
-worker/index.mjs        Sites Worker belépési pont
-drizzle/                Verziózott SQL-migrációk
-scripts/build.mjs       Függőségmentes Worker build
-scripts/browser-check.mjs Headless Chrome folyamatellenőrzés
-tests/                  Node beépített tesztfuttató
-docs/RESEARCH.md         Modellkutatás és adattárolási terv
+```powershell
+$env:TEST_LANGUAGE = 'en' # hu vagy en
+$env:TEST_DEVICE = 'desktop' # mobile vagy desktop
+node scripts/browser-check.mjs
 ```
 
-Nincs React/Vue-komponens, UI-könyvtár vagy külső SDK: a jelenlegi böngészők natív ES-moduljait, CSS Gridet, dialog és fájlfeltöltési API-kat használjuk, a szerveren pedig a Node aktuális LTS-ének beépített HTTP/SQLite/crypto eszközeit. Ez megszünteti az elavuló UI-függőségeket; a további karbantartás a Node LTS és a böngészők frissítését igényli. A dekoratív és mintaételfotók az Unsplash CDN-jéről töltődnek, a saját ételfotók Cloudinaryból. A napló külső dekoratív kép nélkül is használható.
+Mind a négy nyelv/eszköz párosítást ellenőrizzük; az alapbeállítás magyar/mobil. A tesztadatokhoz és az időzónához nem nyúl a fordítás.
+
+A PostgreSQL-tesztekhez külön tesztadatbázis URL-je kell a `TEST_DATABASE_URL` folyamatváltozóban. Enélkül ez a három integrációs próba kimarad. A jelenlegi gépen az ignored `work/test-db-url` tartalmazza a helyi tesztkapcsolatot:
+
+```powershell
+$env:TEST_DATABASE_URL = Get-Content -LiteralPath work/test-db-url -Raw
+npm test
+```
+
+A tesztek számítást, bemenetellenőrzést, forráshitelességet, Google-belépési határokat, tulajdonosi elkülönítést, revízióütközést és feltöltési/törlési hibákat ellenőriznek. Valódi PostgreSQL-lel külön alkalmazásfolyamatok kényszerített leállítását, munkamenet és adatok megmaradását, feladatfolytatást, lejárt lease visszavételét és párhuzamos költségkorlátot is vizsgálnak.
+
+Publikálható használati útmutató és módszertan: [public/help.html](public/help.html). A build önálló statikus csomagot készít a `dist/documentation` könyvtárban. Közzétételi útmutató: [PUBLISHING.md](docs/PUBLISHING.md). A felület magyar szóhasználata és a nyelvi kutatás forrásai: [LANGUAGE.md](docs/LANGUAGE.md).
+
+A Chrome-teszt kizárólag headless, külön profillal fut, 320/390/768/1024/1440 px szélességen; a személyes böngészőprofilt nem használja. Eredménye és képei: `outputs/`. Külső Google/OpenCode/Cloudinary/USDA hívásokat a tesztek helyettesítenek. A valódi szolgáltatói jogosultságot, a tényleges Northflank failovert és az ételfotós kalóriapontosságot ezek nem bizonyítják.
+
+Az új arculat natív SVG logó, mérőskálával, 100-as számmal és oszlopokkal; nincs ® jel vagy mintaadat-mód. A csülök–saláta dekoráció generált kép; [asset és prompt](docs/ASSETS.md).

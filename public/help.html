@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="A Yumetrics használata és számítási módszere: a teljes képen látható adag, magyar fogások, saját receptek, adatforrások és korlátok.">
+  <meta name="theme-color" content="#526542">
+  <title>Yumetrics · Használati útmutató és módszertan</title>
+  <link rel="icon" href="./favicon.svg">
+  <style>
+    :root{color-scheme:light;--ink:#2f3b2d;--muted:#596652;--olive:#526542;--paper:#faf8f2;--line:#dfe3d5;--soft:#eff3e6;--gold:#eee5d1}
+    *{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:24px}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.8 system-ui,-apple-system,"Segoe UI",sans-serif}a{color:#405a30;text-underline-offset:4px}a:hover{color:#253c18}a:focus-visible{outline:3px solid #9eaf7e;outline-offset:5px;border-radius:3px}p{margin:0 0 18px}h1,h2,h3{line-height:1.2}h1,h2{font-family:Georgia,"Times New Roman",serif;font-weight:400;letter-spacing:-.7px}h1{font-size:clamp(37px,5vw,66px);margin:15px 0 22px;max-width:800px}h2{font-size:33px;margin:0 0 22px}h3{font-size:17px;margin:24px 0 11px}ul,ol{padding-left:24px}li{padding-left:4px;margin:9px 0}code{font-size:.9em;background:#ecefe4;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}img{display:block}header,.layout,footer{max-width:1240px;margin:auto}header{padding:35px 40px 45px}.brand{display:flex;align-items:center;gap:12px;font-weight:700;font-size:25px;letter-spacing:-1px;text-decoration:none}.brand img{width:45px;height:45px}.kicker{font-size:11px;letter-spacing:2px;font-weight:650;color:var(--olive);text-transform:uppercase;margin-top:52px}.lead{max-width:720px;color:var(--muted);font-size:19px}.version{font-size:12px;color:var(--muted)}.layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:64px;padding:0 40px}.toc{align-self:start;position:sticky;top:24px;border-top:1px solid var(--line);padding-top:16px;font-size:13px}.toc strong{font-size:11px;letter-spacing:1px;text-transform:uppercase}.toc a{display:block;text-decoration:none;margin:10px 0;line-height:1.6}.toc ol{list-style:none;padding:0;margin:14px 0}.content{min-width:0}.content>section{padding:36px 0;border-top:1px solid var(--line);scroll-margin-top:24px}.rule{background:var(--soft);border:1px solid #d9e2cb;border-radius:17px;padding:27px 28px;margin-bottom:25px}.rule>strong{font-size:23px;display:block;line-height:1.5;margin-bottom:12px}.rule p:last-child,.example p:last-child{margin:0}.example{background:#fffdf8;border:1px solid var(--line);padding:23px 25px;border-radius:13px;margin:22px 0}.example .formula{font-size:18px;color:var(--olive);font-weight:650;overflow-wrap:anywhere}.note{border-left:3px solid #b8c89e;padding-left:18px;color:var(--muted)}.table-wrap{max-width:100%;overflow-x:auto;margin:18px 0 24px;border:1px solid var(--line);border-radius:10px}table{border-collapse:collapse;width:100%;font-size:14px}th,td{text-align:left;vertical-align:top;padding:13px 15px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}th{background:var(--soft);font-size:12px}tr:last-child td{border-bottom:0}details{border-bottom:1px solid var(--line);padding:17px 0}summary{cursor:pointer;font-weight:650;padding-right:10px}details p{margin:13px 0 0;color:var(--muted)}.source-list{font-size:14px}.source-list li{margin:14px 0}.source-list a{overflow-wrap:anywhere}.small{font-size:13px;color:var(--muted)}footer{padding:42px 40px;font-size:12px;color:var(--muted);display:flex;gap:20px;justify-content:space-between}.skip{position:fixed;top:8px;left:8px;background:white;padding:12px;transform:translateY(-150%);z-index:10}.skip:focus{transform:none}
+    @media(max-width:850px){.layout{grid-template-columns:175px minmax(0,1fr);gap:30px;padding:0 25px}header,footer{padding-left:25px;padding-right:25px}.lead{font-size:17px}h2{font-size:29px}}
+    @media(max-width:650px){body{font-size:15px;line-height:1.85}header{padding:25px 20px 28px}.kicker{margin-top:35px;font-size:10px}.layout{display:block;padding:0 20px}.toc{position:static;margin:0 0 25px;font-size:13px}.toc ol{display:grid;grid-template-columns:1fr 1fr;gap:0 15px}.content>section{padding:29px 0}h2{font-size:28px}.rule{padding:22px 19px}.rule>strong{font-size:20px}.example{padding:19px}th,td{padding:10px;font-size:12px}footer{padding:28px 20px;display:block}footer span{display:block;margin:7px 0}}
+    @media print{@page{size:A4;margin:18mm}body{background:white;color:#182316;font-size:10pt;line-height:1.6}header{padding:0 0 22px}header,.layout,footer{max-width:none}.layout{display:block;padding:0}.toc,.skip{display:none}h1{font-size:31pt}h2{font-size:21pt;break-after:avoid}h3,summary{break-after:avoid}.content>section{padding:24px 0}.rule,.example{background:white;box-shadow:none;break-inside:avoid}.table-wrap{overflow:visible}tr{break-inside:avoid}a{color:inherit}footer{padding:25px 0 0}.kicker{margin-top:28px}details{display:block}details>p{display:block}p,li{orphans:3;widows:3}}
+  </style>
+</head>
+<body>
+  <a class="skip" href="#tartalom">Ugrás az útmutatóra</a>
+  <header id="eleje">
+    <a class="brand" href="#eleje"><img src="./favicon.svg" alt="" width="45" height="45">yumetrics</a>
+    <nav aria-label="Language / Nyelv"><a href="/utmutato" lang="hu" hreflang="hu">Magyar</a> · <a href="/guide" lang="en" hreflang="en">English</a></nav>
+    <p class="kicker">Használati útmutató · Módszertan</p>
+    <h1>Az egész adag.<br>Érthető számok.</h1>
+    <p class="lead">Így használhatod az ételfotókat, a lemért mennyiségeket és a saját receptjeidet az étkezéseid tápértékének becsléséhez.</p>
+    <p class="version">Módszertan: v5 · Frissítve: 2026. november 7.</p>
+  </header>
+  <div class="layout">
+    <nav class="toc" aria-label="Az útmutató tartalma"><strong>Tartalom</strong><ol>
+      <li><a href="#teljes-adag">01 · Mit jelent egy adag?</a></li>
+      <li><a href="#hasznalat">02 · Használat</a></li>
+      <li><a href="#modszer">03 · Hogyan számolunk?</a></li>
+      <li><a href="#receptek">04 · Saját receptek</a></li>
+      <li><a href="#magyar-konyha">05 · Magyar konyha</a></li>
+      <li><a href="#adatok">06 · Adatok és hozzáférés</a></li>
+      <li><a href="#korlatok">07 · Pontosság és korlátok</a></li>
+      <li><a href="#beallitas">08 · Üzemeltetői beállítás</a></li>
+      <li><a href="#gyik">09 · Gyakori kérdések</a></li>
+      <li><a href="#forrasok">10 · Források</a></li>
+    </ol></nav>
+    <main class="content" id="tartalom">
+      <section id="teljes-adag">
+        <h2>Mit jelent egy adag?</h2>
+        <div class="rule"><strong>Egy adag = a képen látható teljes ehető étel és ital.</strong><p>Úgy számolunk, hogy a képen látható teljes mennyiséget, vagyis annak 100%-át elfogyasztod. Ha kisebb mennyiséget szeretnél naplózni, csak azt az adagot fotózd le.</p></div>
+        <p>A képen látható hús, köret, saláta, szósz, kenyér és ital együtt tartozik az adaghoz. Több tányér vagy pohár esetén is a teljes látható ehető tartalom számít. A fotón kívüli mennyiséget nem találjuk ki.</p>
+        <p>A tányért, a csomagolást, a csontot és a nem ehető héjat nem számoljuk bele az adagba. Csontos ételnél a lemért teljes ételtömegből a külön megadott nem ehető rész tömegét levonjuk.</p>
+        <div class="example"><h3>Csülök és saláta</h3><p>Ha a tányér nélküli teljes ételtömeg 600 g, ebből 200 g csont, akkor 400 g ehető adagot értékelünk. A hús, bőr, zsír és saláta aránya ettől még pontosításra szorulhat.</p></div>
+        <p class="note">Ha csak kisebb mennyiséget szeretnél naplózni, azt az önálló, teljes adagot fotózd le. A főfotó és a második nézet ugyanazt a mennyiséget mutassa.</p>
+      </section>
+      <section id="hasznalat">
+        <h2>Használat lépésről lépésre</h2>
+        <p>A felület magyarul és angolul is használható. A „Magyar / English” nyelvváltót a bejelentkezőoldalon, a felső sávban és az ablakokon belül is megtalálod. A választást ez a böngésző megjegyzi. Nyelvváltáskor a kiválasztott fotók és a még nem mentett adatok is megmaradnak. A saját szövegeid és a korábbi elemzések az eredeti nyelvükön maradnak; az új elemzés a kiválasztott nyelven készül.</p>
+        <ol><li><strong>Lépj be Google-fiókkal.</strong> Első sikeres belépéskor létrejön a saját naplód.</li><li><strong>Fotózd le az egész adagot.</strong> Világos, éles képet készíts. Egy második, oldalirányú nézet segíthet, de nem jelent második adagot.</li><li><strong>Add meg, amit biztosan tudsz.</strong> A teljes tömeg tányér nélkül, a csont tömege, a tányér ismert átmérője és az elkészítés hasznos támpont. Ismeretlen adatot hagyj üresen.</li><li><strong>Nézd át a piszkozatot.</strong> Ellenőrizd az összetevőket, az elkészítési állapotot, a képen látható teljes adag tömegét és a tápértékadatok forrását.</li><li><strong>Mentsd az étkezést.</strong> A piszkozat átnézés után kerül a naplóba. A későbbi javítások mellett az eredeti AI-értékelés külön megmarad.</li></ol>
+        <p>A feldolgozás a fotó tartós feltöltése után a háttérben folytatódik. Az ablakot ezután bezárhatod: a tárolt fotó megmarad, az elemzés állapotát pedig a naplóban követheted. Ha a feldolgozás nem sikerül, újra megpróbálhatod.</p>
+      </section>
+      <section id="modszer">
+        <h2>Hogyan készül a számítás?</h2>
+        <h3>1. Az étel és az összetevők felismerése</h3><p>A mesterséges intelligencia (AI) először az ételt, az összetevőket, a hozzávetőleges mennyiségeket és az elkészítést vizsgálja. Megkülönbözteti a látható vagy megadott elemeket a feltételezett összetevőktől, például a rejtett olajtól. Az értékelhetetlen vagy nem ételt ábrázoló kép elutasítható.</p>
+        <h3>2. Tápértékforrás</h3><p>A tápértékeket lehetőség szerint az USDA, vagyis az Egyesült Államok mezőgazdasági minisztériumának élelmiszer-adatbázisából vesszük. Az alkalmazás 44 beépített élelmiszer adatait tartalmazza. Külön beállított kereséssel további adatok is választhatók. Minden forrásnál látható az étel neve, az adat azonosítója, a letöltés dátuma és az eredeti hivatkozás. Elkészült ételhez automatikusan nem rendelünk nyers alapanyagra vonatkozó értéket.</p><p>Ha nincs megfelelő forrás, az AI külön becslést készíthet a tápértékről, amelyet egyértelműen megjelölünk. Saját termékcímke adatait is megadhatod. Egy megbízható adat is csak akkor használható jól, ha valóban ahhoz az ételhez és elkészítési módhoz tartozik, amelyet fotóztál.</p>
+        <h3>3. Az egész adag tápértéke</h3><div class="example"><p class="formula">Az összetevő tápértéke = ehető tömeg grammban × 100 g-ra megadott érték ÷ 100</p><p>A teljes adaghoz az összes összetevő értékét összeadjuk. Így kapjuk meg a kalóriatartalmat, valamint a fehérje, a szénhidrát és a zsír mennyiségét. Ha van hozzá adat, a rostot, a cukrot, a telített zsírsavakat és a nátriumot is feltüntetjük. A sótartalmat a nátrium mennyiségéből számítjuk.</p></div>
+        <p>Az energiatartalmat kilokalóriában (kcal), a legtöbb tápanyagot grammban (g), a nátriumot milligrammban (mg) adjuk meg. A számított sótartalom képlete: nátrium milligrammban × 2,5 ÷ 1000; az eredmény gramm. A hiányzó tápértékadatokat „—” jelöli. Ez nem nullát, hanem ismeretlen mennyiséget jelent.</p>
+        <h3>4. Mit mutat a kalóriatartomány?</h3><p>Ha lemérted az egész ételt, a csont és más nem ehető részek levonása után az összetevők becsült mennyiségét ehhez a tömeghez igazítjuk. A kalóriatartomány ilyenkor azonos össztömegű adaggal számol, de az összetevők aránya változhat a becsült határok között. Például ugyanakkora adagban lehet valamivel több hús és kevesebb köret. Ha az össztömeg nem ismert, az összetevők becsült alsó és felső tömeghatárából számolunk.</p><p class="note">A tartomány a mennyiségből vagy az összetételből adódó lehetséges eltérést szemlélteti. Nem mutatja a becslés teljes hibáját, és nem jelenti azt, hogy a valódi érték biztosan a két határ közé esik. A téves ételfelismerés, a rejtett összetevők vagy a nem megfelelő tápértékforrás további eltérést okozhat.</p>
+        <p>A szénhidrátadat a rost nélküli, emészthető szénhidrát közelítő mennyisége. Ehhez az USDA összes szénhidrátra megadott értékéből levonjuk a rostot. Az eredmény eltérhet az európai termékcímkén szereplő adattól. Ellenőrzésként a fehérjére és a szénhidrátra grammonként 4 kcal, a zsírra 9 kcal értékkel is számolunk; ez nem írja felül az adatforrásban közölt energiatartalmat.</p>
+      </section>
+      <section id="receptek">
+        <h2>Az adag kiszámítása saját receptből</h2>
+        <p>Ismert házi receptnél add meg a teljes elkészült ételben maradt alapanyagokat, a kész étel tömegét és a fotón látható teljes adag tömegét. A recept alapján történő számításhoz nem kell újabb AI-elemzés.</p>
+        <div class="example"><p class="formula">Az adag tápértéke = az egész étel tápértéke × az adag tömege ÷ az egész elkészült étel tömege</p><p>Szemléltető példa: ha a teljes recept 2000 kcal és 1000 g kész étel, a képen pedig 250 g van, akkor a fotó teljes adagja 500 kcal. Ez a recept negyede, miközben a képen látható mennyiség 100%-a.</p></div>
+        <ul><li>Nyers alapanyaghoz nyers, főtt összetevőhöz főtt ételre vonatkozó tápértékadatot válassz.</li><li>Csak az ételben maradt zsiradékot és szaftot számold bele. Ami a sütőedényben maradt, vagy amit elöntöttél, azt vond le a felhasznált mennyiségből.</li><li>A kész étel lemért tömegével a főzés közben felvett vagy elvesztett vizet is figyelembe vesszük. A hőkezelés miatt elvesző tápanyagok teljes mennyiségét nem számítjuk ki.</li><li>Az összetevőknél az adagra jutó alapanyag-mennyiséget mutatjuk. Ennek összege a főzés közbeni vízfelvétel vagy vízveszteség miatt eltérhet az elkészült adag tömegétől. Ezért a kész adag lemért tömege külön is látható.</li></ul>
+        <p>A „Recept és adag javítása” lehetőségnél módosítható a recept és a képen látható teljes adag. Recept szerkesztése közben a teljes alapanyaglista áll össze; a naplóba mentéshez előbb ki kell számítani az adagot.</p>
+      </section>
+      <section id="magyar-konyha">
+        <h2>Magyar konyhai támpontok</h2>
+        <p>Egy ismert ételnév nem jelent egységes receptet vagy kalóriát. A kiegészítő kérdések azokra a részletekre irányulnak, amelyek leginkább befolyásolják a számítást.</p>
+        <div class="table-wrap"><table><thead><tr><th scope="col">Fogás</th><th scope="col">Mit érdemes ellenőrizni?</th></tr></thead><tbody>
+          <tr><td>Főzelék és feltét</td><td>Rántás vagy habarás, tejtermék és zsiradék, külön feltét.</td></tr>
+          <tr><td>Pörkölt, paprikás</td><td>Húsrész, szaft, tejföl és a külön köret.</td></tr>
+          <tr><td>Rántott étel, lángos</td><td>Panír vagy tészta, sütési mód, felszívott olaj és feltétek.</td></tr>
+          <tr><td>Csülök, csontos hús</td><td>Csont nélküli teljes adag; a bőr, zsír és hús aránya.</td></tr>
+          <tr><td>Rakott étel, töltött káposzta</td><td>A töltelék és a rétegek összetétele, az egész étel és a fotón látható adag tömege.</td></tr>
+          <tr><td>Tészta, leves, desszert</td><td>Száraz vagy főtt állapotban mért tömeg, lé és szilárd rész, cukor, szórat, tejföl és öntet.</td></tr>
+        </tbody></table></div>
+        <p>A kiválasztott tápértékadat korlátaira is figyelj: sült lapocka nem automatikusan csülök vagy pörkölt; egy amerikai savanyított tejszín („sour cream”) adata nem feltétlenül felel meg a magyar 12%-os vagy 20%-os tejfölnek. Konkrét terméknél a saját címke adatai lehetnek megfelelőbbek.</p>
+      </section>
+      <section id="adatok">
+        <h2>Adatok és hozzáférés</h2>
+        <p>A napló használatához Google-belépés szükséges. Az alkalmazás nem kapja meg a Google-jelszavadat. A belépéshez a Google-fiókod alapvető azonosító adatait, nevét és e-mail-címét kérjük el. Az alkalmazáson belül csak a saját fiókodhoz tartozó étkezéseket érheted el.</p>
+        <p>Az alkalmazás éles üzemeltetésre előkészített változata a fotókat a Cloudinary képtárában tárolja. A fiókod, a naplód, a bejelentkezésed és a feldolgozás adatai, valamint a mentett tápértékforrások külön PostgreSQL-adatbázisba kerülnek a Northflank szolgáltatásában. A fotó az AI-elemzéshez az OpenCode-on keresztül a modell szolgáltatójához is eljut.</p>
+        <p>Feltöltés előtt a böngésző átméretezi és új képfájlként menti a fotót. Az eredeti képfájlba ágyazott kiegészítő adatokat – például a GPS-koordinátákat – nem őrizzük meg. Az eredeti AI-elemzés és a későbbi javítások külön maradnak. Törléskor először a fotókat, majd a naplóbejegyzést távolítjuk el. A törlési feladatot az adatbázisban is rögzítjük, hogy megszakadás után folytatható legyen.</p>
+        <p class="note">A fotókat jelenleg bárki megnyithatja, aki ismeri a képhivatkozásukat. A naplóhoz be kell jelentkezni, a képhivatkozás megnyitásához azonban nem. A már letöltött másolatokat nem tudjuk visszavonni, és a képkiszolgálók gyorsítótárából sem feltétlenül tűnik el azonnal a törölt kép.</p>
+        <p>Ez a fejezet a technikai adatáramlást ismerteti. Az adott szolgáltatás üzemeltetőjének saját adatkezelési tájékoztatójában kell közölnie az adatkezelő adatait, a megőrzési időket, a választott szolgáltatási régiókat és a felhasználói kérelmek intézését.</p>
+      </section>
+      <section id="korlatok">
+        <h2>Pontosság és korlátok</h2>
+        <p>A Yumetrics megbecsüli a tápértékeket, illetve kiszámítja őket az általad megadott adatokból. A fotóból nem mindig állapítható meg megbízhatóan az adag tömege, az olaj mennyisége, a hús zsírossága vagy a recept összetétele.</p>
+        <ul><li>A jó megvilágítás, a teljes adag láthatósága és az elkészítés módjának ismerete is számít.</li><li>A mért össztömeg nem bizonyítja az összetevők arányát.</li><li>A külön lemért összetevők és a megfelelő ételhez tartozó tápértékadatok megalapozottabb számítást tesznek lehetővé.</li><li>Az AI saját maga jelzi, mennyire biztos a becslésében. Ez nem méréssel igazolt pontosság.</li><li>Ismeretlen tápanyag, só vagy zsír nem tekinthető biztos nullának.</li></ul>
+        <p>Jelenleg nincs közzétett, függetlenül lemért magyar ételfotókon igazolt pontossági százalék. A szoftveres tesztek a számítás és a folyamat működését ellenőrzik; a fotós felismerés tényleges hibájához külön mérési vizsgálat szükséges.</p>
+        <p>Allergénmentességet, vitaminbevitelt, glikémiás indexet vagy orvosi alkalmasságot nem igazolunk fotóból. A napi energiakeretet te választod meg: ehhez hasonlítjuk a mentett étkezéseid kalóriatartalmát. Ez nem személyre szabott táplálkozási ajánlás.</p>
+        <p class="small">A korábban mentett részadagok eredeti adatait megőrizzük, és külön jelezzük, ha egy ilyen bejegyzést nyitsz meg. Az új elemzéseknél mindig a képen látható teljes adaggal számolunk.</p>
+      </section>
+      <section id="beallitas">
+        <h2>Üzemeltetői beállítás</h2>
+        <p>Az API-kulcsokat és más titkos hozzáférési adatokat kizárólag a szerveren add meg. A „Beállítva” jelzés azt mutatja, hogy az adatokat megadtad; azt nem ellenőrzi, hogy a kulcs érvényes-e, vagy van-e még felhasználható szolgáltatói keret.</p>
+        <div class="table-wrap"><table><thead><tr><th scope="col">Szolgáltatás és beszerzés</th><th scope="col">Szerveroldali változók</th></tr></thead><tbody>
+          <tr><td><a href="https://developers.google.com/identity/protocols/oauth2/web-server">Google OAuth webkliens</a><br>Belépéshez szükséges.</td><td><code>GOOGLE_CLIENT_ID</code><br><code>GOOGLE_CLIENT_SECRET</code></td></tr>
+          <tr><td><a href="https://opencode.ai/console">OpenCode Console</a><br>AI-elemzéshez szükséges.</td><td><code>OPENCODE_API_KEY</code><br><code>OPENCODE_MODEL</code> – modellbeállítás</td></tr>
+          <tr><td><a href="https://cloudinary.com/documentation/developer_onboarding_faq_find_credentials">Cloudinary → API Keys</a><br>Fotófeltöltéshez és törléshez szükséges.</td><td><code>CLOUDINARY_CLOUD_NAME</code><br><code>CLOUDINARY_API_KEY</code><br><code>CLOUDINARY_API_SECRET</code></td></tr>
+          <tr><td><a href="https://northflank.com/docs/v1/application/databases-and-persistence/deploy-databases-on-northflank/deploy-postgresql-on-northflank">Northflank PostgreSQL primary URI</a><br>Tartós naplóhoz szükséges; kapcsolati titok, nem platform-API-kulcs.</td><td><code>DATABASE_URL</code></td></tr>
+          <tr><td><a href="https://fdc.nal.usda.gov/api-key-signup/">USDA FoodData Central</a><br>Az adatbázisban történő kereséshez használható; nem kötelező.</td><td><code>USDA_API_KEY</code></td></tr>
+        </tbody></table></div>
+        <p>A Google webes kliensének beállításaiban az alkalmazás HTTPS-címét a <code>/auth/google/callback</code> útvonallal együtt engedélyezd visszatérési címként. Az <code>APP_ORIGIN</code> értéke ugyanez az alapcím legyen, útvonal nélkül. A jelenlegi AI-kapcsolathoz külön Gemini- vagy OpenAI-kulcs nem szükséges, mert a hívás az OpenCode-on keresztül történik.</p>
+        <p>Az adatbázis az alkalmazást futtató konténertől elkülönítve működjön. Így az alkalmazás újraindítása vagy új verziójának telepítése nem törli a naplót, a belépési adatokat és a feldolgozásra váró feladatokat. Az adatbázis meghibásodása ellen külön védelmet kell kialakítani: megfelelő rendelkezésre állásra, biztonsági mentésekre és kipróbált helyreállításra is szükség van. Teljes adatvesztés-mentességet ez önmagában nem garantál.</p>
+      </section>
+      <section id="gyik">
+        <h2>Gyakori kérdések</h2>
+        <details open><summary>A képen két tányér van. Csak az egyik számít?</summary><p>A teljes látható ehető mennyiség számít. Egyetlen adaghoz csak az ahhoz tartozó ételt és italt fotózd le.</p></details>
+        <details open><summary>A képen a teljes fazék látszik. Megadhatom, hogy csak a negyedét ettem?</summary><p>Új elemzésnél a kép teljes ehető tartalmával számolunk. Egy kisebb adaghoz azt az önálló adagot fotózd le. Az egész elkészült étel tömege külön támpont lehet az adag tápértékének kiszámításához.</p></details>
+        <details open><summary>A második fotótól kétszeres lesz a mennyiség?</summary><p>Nem. A második fotó ugyanannak az adagnak másik nézete; nem új adag és nem előtte–utána kép.</p></details>
+        <details open><summary>Megmértem az ételt. Miért marad bizonytalanság?</summary><p>A mérleg az össztömeget adja meg. Az olaj, a bőr, a hús, a szósz és a köret aránya ettől még becsült lehet. A kijelzett kalóriatartomány ezért azonos össztömeg mellett az összetevők lehetséges arányait veszi figyelembe.</p></details>
+        <details open><summary>A milliliter ugyanannyi grammnak számít?</summary><p>Nem alkalmazunk általános 1 ml = 1 g átváltást minden ételre és italra. A tömeget mérd le, vagy használj az adott termékhez tartozó, megfelelő egységű adatot.</p></details>
+        <details open><summary>Miért nincs nulla a hiányzó rost- vagy sóadatnál?</summary><p>Az adat hiánya nem bizonyítja a tápanyag hiányát. Az alkalmazás ezért ismeretlenként jelzi, és az összesítés sem tünteti fel biztos nullaként.</p></details>
+      </section>
+      <section id="forrasok">
+        <h2>Források és szakmai háttér</h2>
+        <p>A következő források a módszertani döntések és az adatértelmezés hátterét adják. Az alkalmazás nem állít szolgáltatói, hatósági vagy dietetikusi jóváhagyást.</p>
+        <ol class="source-list">
+          <li><a href="https://www.fao.org/4/y4705e/y4705e23.htm">FAO: Calculation of the composition of dishes prepared from recipes</a> – ehető rész, az elkészült étel tömege és receptszámítás.</li>
+          <li><a href="https://www.fao.org/fileadmin/templates/food_composition/documents/Nutrition_assessment/INFOODSGuidelinesforFoodMatching_version_1_2.pdf">FAO/INFOODS: Guidelines for Food Matching</a> – megfelelő étel és tápértékforrás összerendelése.</li>
+          <li><a href="https://fdc.nal.usda.gov/api-guide/">USDA FoodData Central API Guide</a> és <a href="https://fdc.nal.usda.gov/download-datasets/">hivatalos letölthető adatok</a> – FDC-azonosítók, adatelérés és CC0 adatlicenc. Adatforrás: U.S. Department of Agriculture, Agricultural Research Service, FoodData Central.</li>
+          <li><a href="https://portal.nebih.gov.hu/documents/10182/785457/%C3%A9tkez%C3%A9si%2Bnapl%C3%B3.pdf/6bf999c7-a232-48cb-8262-9311a7510102">Nébih: étkezési napló kitöltési útmutató</a> – pontos név, elkészítés és mennyiség rögzítése.</li>
+          <li><a href="https://portal.nebih.gov.hu/projektek_kijelzo/-/asset_publisher/XZIUSA6aTnU0/content/id/745131/pop_up">Nébih: tápértékjelölési tájékoztató</a> – mértékegységek, rost és sóegyenérték.</li>
+          <li><a href="https://openaccess.thecvf.com/content/CVPR2025W/MTF/html/Khlaisamniang_Decomposing_Food_Images_for_Better_Nutrition_Analysis_A_Nutritionist-Inspired_Two-Step_CVPRW_2025_paper.html">Khlaisamniang és munkatársai, CVPR Workshop 2025</a> – a vizuális felbontás és tápértékbecslés külön lépései. A tanulmány eredményeit nem tekintjük a Yumetrics igazolt pontosságának.</li>
+        </ol>
+      </section>
+    </main>
+  </div>
+  <footer><span>Yumetrics · Használati útmutató és módszertan</span><a href="#eleje">Vissza az elejére ↑</a></footer>
+</body>
+</html>
