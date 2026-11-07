@@ -1,5 +1,7 @@
 # Yumetrics
 
+![Yumetrics — your food, in numbers](public/brand-banner.svg)
+
 Magyar és angol nyelvű étkezési napló kötelező Google-belépéssel, ellenőrizhető tápértékforrásokkal és javítható AI-becsléssel. Magyar konyhai támpontokkal kezeli a rántás/habarás, panír, csont, tejföl és feltét bizonytalanságát. A saját receptből a teljes kész étel és az elfogyasztott adag alapján számol; külön jelzi a fotós és receptalapú eredményt. A támogatott szerver **Node.js 24+ és PostgreSQL**. Élesben a felhasználói képek Cloudinaryban, minden más tartós alkalmazásadat külön **Northflank PostgreSQL addonban** van.
 
 ## Helyi indítás

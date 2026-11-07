@@ -1,6 +1,8 @@
 # Arculati elemek
 
-- `public/favicon.svg`: natív, szerkeszthető SVG. Támpont a 100 grammos számítás, körskála és három tápanyagoszlop; nincs ® jel. A belépő és a napló is ezt használja.
+- `public/favicon.svg`: saját, szerkeszthető vektoros jel. A villa és a mérőléc közös Y betűt alkot, a kör a tányér peremét idézi. A 100 a teljes adag 100%-ára és a 100 grammra megadott tápértékekre utal; nem pontossági állítás. Olívazöld, törtfehér és meleg arany színek, ® jel nélkül.
+- `public/logo.svg`: a jel és az egységes Yumetrics szólogó az alkalmazás fejlécében és belépőoldalán.
+- `public/brand-banner.svg`: azonos jelből és szólogóból készített, világos hátterű README-arculati kép, amely sötét GitHub-témában is olvasható.
 - `public/hero-pork-knuckle.webp`: élethű csülök salátával, új kép generálásával készült az ImageGen eszközben, referencia nélkül, nem átlátszó háttérrel. Az eredeti PNG megmaradt; a projektben a kisebb WebP-változat van. Dekoráció, nem mért tápanyagtartalmú ételfotó.
 
 Használt prompt:

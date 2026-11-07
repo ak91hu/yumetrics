@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 260" role="img" aria-labelledby="title desc"><title id="title">Yumetrics</title><desc id="desc">A fork and a measuring scale form a Y on a plate. 100 stands for the full portion and nutrition per 100 grams.</desc><rect width="800" height="260" rx="24" fill="#f7f4eb"/><path d="M35 27h730M35 233h730" stroke="#e3dfd1"/><g transform="translate(165 66) scale(1.23)">  <rect width="96" height="96" rx="28" fill="#40543a"/>
+  <path d="M49 13a35 35 0 1 1-26 11" fill="none" stroke="#9eaf83" stroke-width="1.6"/>
+  <g fill="none" stroke="#fff9e9" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M27 23v11a9 9 0 0 0 9 9h2l11 11v18M35 23v13M43 23v11a9 9 0 0 1-5 8"/>
+    <path d="m49 54 23-29" stroke-width="7"/>
+  </g>
+  <g stroke="#40543a" stroke-width="1.7" stroke-linecap="round"><path d="m66 30 4 3m-9 3 3 3m-8 3 4 3"/></g>
+  <circle cx="20" cy="48" r="2" fill="#d8ad70"/>
+  <text x="62" y="69" fill="#e8c18c" font-family="Arial,Helvetica,sans-serif" font-size="12" font-weight="700" letter-spacing="-.5">100</text>
+  <path d="M63 74h16" stroke="#e8c18c" stroke-width="1.4" stroke-linecap="round"/>
+<text x="116" y="65" fill="#35472f" font-family="Arial,Helvetica,sans-serif" font-size="58" font-weight="700" letter-spacing="-2.8">yumetrics</text></g><text x="400" y="215" text-anchor="middle" fill="#63715a" font-family="Arial,Helvetica,sans-serif" font-size="12" letter-spacing="3">YOUR FOOD, IN NUMBERS.</text></svg>
