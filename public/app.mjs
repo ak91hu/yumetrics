@@ -50,7 +50,7 @@ async function request(path, options = {}) {
   }
   return result;
 }
-function showLogin() { window.location.assign("/"); }
+function showLogin() { if (!state.redirectingToLogin) { state.redirectingToLogin = true; window.location.assign('/'); } }
 async function initialize() {
   try { state.status = await request('/api/status'); state.goal = state.status.user.calorieGoal; $('.profile strong').textContent = state.status.user.name; $('.profile small').textContent = state.status.user.email; $('#logout-button').hidden = false; await loadMonth(); }
   catch (error) { $('#loading').hidden = true; if (error.status !== 401) toast(error.message); }
@@ -156,7 +156,8 @@ $('#settings-form').addEventListener('submit', async event => {
   catch (error) { toast(error.message); } finally { button.disabled = false; }
 });
 $('#logout-button').addEventListener('click', async () => {
-  try { await request('/api/logout', { method: 'POST' }); window.location.reload(); } catch (error) { toast(error.message); }
+  state.redirectingToLogin = true;
+  try { await request('/api/logout', { method: 'POST' }); window.location.reload(); } catch (error) { state.redirectingToLogin = false; toast(error.message); }
 });
 function openUpload() {
   if (state.busy) { show('#upload-dialog'); return; }

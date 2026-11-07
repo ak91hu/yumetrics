@@ -30,7 +30,7 @@ export function renderProfile() {
     return `<span>${first ? escape(new Intl.DateTimeFormat(locale(), { month: 'short', timeZone: 'UTC' }).format(new Date(first.day + 'T12:00:00Z'))) : ''}</span>`;
   }).join('');
   document.querySelector('#profile-summary').innerHTML = html`
-    <div class="profile-identity"><span class="profile-initials" aria-hidden="true">${escape(initials)}</span><div><h3>${escape(profile.name)}</h3><p>${escape(profile.email)}</p><small>Csatlakozás: ${escape(date(profile.joinedAt))}</small></div></div>
+    <div class="profile-identity"><span class="profile-initials" aria-hidden="true">${escape(initials)}</span><div><h3>${escape(profile.name)}</h3><p>${escape(profile.email)}</p><small>Csatlakozás: ${escape(new Intl.DateTimeFormat(locale(), { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(profile.joinedAt)))}</small></div></div>
     <h3 class="profile-section-title">A naplód eddig</h3>
     <div class="profile-stats">${metric('Mentett étkezés', life.mealCount)}${metric('Aktív nap', life.activeDays)}${metric('Jelenlegi sorozat', life.currentStreak, dayUnit(life.currentStreak))}${metric('Leghosszabb sorozat', life.longestStreak, dayUnit(life.longestStreak))}</div>
     <p class="profile-caption">A sorozat egymást követő, naplózott napokat jelent. Ha ma még nem naplóztál, a tegnapig tartó sorozatod látszik.</p>
