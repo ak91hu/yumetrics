@@ -1,6 +1,6 @@
 # Northflank: tartós adatok és újraindítható alkalmazás
 
-Ellenőrizve: 2026-11-07. Ez telepíthető megvalósítás és üzemeltetési terv; ebben a munkamenetben **nem hoztunk létre Northflank-erőforrást és nem történt éles telepítés**.
+Ellenőrizve: 2026-11-07. A GitHub-repozitórium: [ak91hu/yumetrics](https://github.com/ak91hu/yumetrics). A külön PostgreSQL 17 addon és a Yumetricsre korlátozott runtime secret group létrejött a kezdeti projektben; a Northflank adatbázison mindhárom folyamatcsere-/feladatkezelési integrációs teszt sikeres. Az alkalmazás telepítését a kezdeti ingyenes projekt két betelt szolgáltatáshelye blokkolta. A végleges cél a felhasználó által megadott `ak91hus-team/default` projekt; a CLI-hozzáférés sikeresen összekapcsolva, a projekt europe-west régióban inicializálva. Az új csapaton az erőforrások létrehozásához a Northflank alapértelmezett fizetési módot kér; az alkalmazás még nincs publikálva.
 
 ## Választott felépítés
 
@@ -65,4 +65,4 @@ Csak órás mentésből helyreállítva a legutóbbi mentés utáni írások elv
 
 Valódi Google-fiókkal belépés, napikeret mentése, saját fotó feltöltése és egy étkezés naplózása után jegyezd fel az azonosítóját. Indíts app service restartot, majd új image-re redeploymentet ugyanazzal a DATABASE_URL-lel. Ellenőrizd ugyanazt a munkamenetet, étkezést, fotókat, napi keretet és az eredeti/javított elemzést. Folyamatban lévő elemzéssel és törléssel is ismételd meg stagingben. Végül külön addonba visszaállított mentésen is olvasd vissza az adatokat.
 
-A helyi, valódi PostgreSQL-integrációs tesztek ennek alkalmazásfolyamatot cserélő részét ellenőrzik. Éles Northflank-pod, addon-failover, backup és restore próba még nem történt.
+A helyi, valódi PostgreSQL-integrációs tesztek ennek alkalmazásfolyamatot cserélő részét ellenőrzik. A tesztek a Northflankon futó PostgreSQL-en is sikeresek. Northflank alkalmazáspod-csere, addon-failover, backup és restore próba még nem történt.
