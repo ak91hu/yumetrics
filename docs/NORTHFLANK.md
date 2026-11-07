@@ -1,6 +1,21 @@
 # Northflank: tartós adatok és újraindítható alkalmazás
 
-Ellenőrizve: 2026-11-07. A GitHub-repozitórium: [ak91hu/yumetrics](https://github.com/ak91hu/yumetrics). A külön PostgreSQL 17 addon és a Yumetricsre korlátozott runtime secret group létrejött a kezdeti projektben; a Northflank adatbázison mindhárom folyamatcsere-/feladatkezelési integrációs teszt sikeres. Az alkalmazás telepítését a kezdeti ingyenes projekt két betelt szolgáltatáshelye blokkolta. A végleges cél a felhasználó által megadott `ak91hus-team/default` projekt; a CLI-hozzáférés sikeresen összekapcsolva, a projekt europe-west régióban inicializálva. Az új csapaton az erőforrások létrehozásához a Northflank alapértelmezett fizetési módot kér; az alkalmazás még nincs publikálva.
+Ellenőrizve: 2026-11-07. Az alkalmazás és a külön PostgreSQL 17 addon az **ak91hus-team/default** projektben, europe-west régióban fut. Az image a [GitHub-repozitóriumból](https://github.com/ak91hu/yumetrics), Dockerfile alapján épül.
+
+- Alkalmazás: https://http--yumetrics--dmg6gnvmmd7s.code.run
+- Alkalmazásszolgáltatás: `yumetrics`, 1 példány, nf-compute-20, 512 MB memória.
+- Adatbázis: `yumetrics-postgres`, PostgreSQL 17, nf-compute-20, 4 GiB tartós NVMe lemez, TLS, privát hálózat. A sémát az első indítás létrehozta.
+- Titkok: `yumetrics-runtime`, kizárólag a Yumetrics alkalmazás futtatásához. A helyi adatbázis helyett az addon írható `POSTGRES_URI` értéke öröklődik `DATABASE_URL` néven. Minden feltöltött változó értéke visszaolvasva ellenőrzött. A titkok nincsenek a Gitben vagy az image-ben.
+- Egészség: `/healthz` és `/readyz` HTTPS-en 200; az utóbbi az adatbázist is ellenőrzi.
+- Automatikus mentés: heti native dump, vasárnap 02:15 UTC, 7 napos megőrzés. A napi ütemezést a Northflank az aktuális ingyenes csomagban elutasította.
+
+### Google-belépés saját domain nélkül
+
+A Google Console elutasította az automatikus code.run callbacket. A felhasználó által jóváhagyott megoldás egy kicsi, statikus visszatérő oldal a saját GitHub Pages-címen: **https://ak91hu.github.io/yumetrics/oauth.html**. Ezt kell Authorized redirect URI-ként regisztrálni; szükség esetén Authorized domain: `ak91hu.github.io`. A szerveren `GOOGLE_REDIRECT_URI` erre a címre mutat, az `APP_ORIGIN` továbbra is a Northflank HTTPS-cím.
+
+A visszatérő oldal nem tölt be külső erőforrást, nem tárol adatot vagy tokent, nem választ átirányítási célt a kérésből. Csak a `state`, `code`, `error` mezőt adja tovább a rögzített Northflank callbacknek, és előtte törli a paramétereket a címsorból. Referrer-tiltás és szigorú CSP védi. A szerver ellenőrzi az eredeti állapotsütit, az egyszer használható adatbázis-state-et, a PKCE-t, a nonce-ot és a Google ID-tokent. A tokenváltásban is ugyanaz a Pages redirect URI szerepel. A GitHub Pages kizárólag statikus közvetítő; a felhasználók, munkamenetek és étkezések a Northflanken maradnak. A valódi belépés sikerét a felhasználó visszaigazolta.
+
+A korábbi GPSART előkészítésben létrejött külön adatbázist és titokcsoportot az éles alkalmazás nem használja; törlésükhöz külön jóváhagyás szükséges.
 
 ## Választott felépítés
 
@@ -65,4 +80,4 @@ Csak órás mentésből helyreállítva a legutóbbi mentés utáni írások elv
 
 Valódi Google-fiókkal belépés, napikeret mentése, saját fotó feltöltése és egy étkezés naplózása után jegyezd fel az azonosítóját. Indíts app service restartot, majd új image-re redeploymentet ugyanazzal a DATABASE_URL-lel. Ellenőrizd ugyanazt a munkamenetet, étkezést, fotókat, napi keretet és az eredeti/javított elemzést. Folyamatban lévő elemzéssel és törléssel is ismételd meg stagingben. Végül külön addonba visszaállított mentésen is olvasd vissza az adatokat.
 
-A helyi, valódi PostgreSQL-integrációs tesztek ennek alkalmazásfolyamatot cserélő részét ellenőrzik. A tesztek a Northflankon futó PostgreSQL-en is sikeresek. Northflank alkalmazáspod-csere, addon-failover, backup és restore próba még nem történt.
+A helyi, valódi PostgreSQL-integrációs tesztek ennek alkalmazásfolyamatot cserélő részét ellenőrzik. Valódi éles HTTP-próba: Cloudinary-feltöltés, angol Gemini 4 Argon-elemzés, USDA-keresés, adatbázisba mentés, majd alkalmazás-újraindítás utáni azonos munkamenet, étkezés, napi keret és kép sikeres visszaolvasása. A fotó generált arculati próbakép, a tömeg szintetikus tesztbemenet; ez működési, nem kalóriapontossági vizsgálat. Addon-failover és mentésből visszaállítás még nem volt.

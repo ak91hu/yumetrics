@@ -45,3 +45,7 @@ Igényelj saját kulcsot a [FoodData Central API key signup](https://fdc.nal.usd
 Az `APP_ORIGIN`, `HOST`, `PORT`, `NODE_ENV` és `OPENCODE_MODEL` konfiguráció. Nébih/FAO-források olvasásához nincs API-kulcs; ezek módszertani háttérforrások, az app nem küld nekik ételfotót. Nincs automatikus adatlekérés a KalóriaBázisról és nincs átvett, licenc nélküli magyar tápanyagtábla.
 
 Miután helyben kitöltötted a szükséges mezőket, indítsd újra a szervert. A Beállítások csak konfigurációs állapotot mutat, titkokat nem küld vissza. A Google-belépést és az első valódi elemzést külön kell kipróbálni.
+
+## Google-belépés GitHub Pages-visszatérő oldallal
+
+Az éles beállításban `GOOGLE_REDIRECT_URI=https://ak91hu.github.io/yumetrics/oauth.html`; a Google OAuth-webklienshez ezt a pontos URI-t kell regisztrálni. A helyi `.env` fájlban hagyd üresen a mezőt, hogy a helyi callback maradjon használatban. Az APP_ORIGIN az alkalmazás Northflank-címe marad, nem a GitHub Pages. Részletek: [Northflank telepítés](NORTHFLANK.md).

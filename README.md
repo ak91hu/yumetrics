@@ -2,6 +2,8 @@
 
 ![Yumetrics — your food, in numbers](public/brand-banner.svg)
 
+**[Élő alkalmazás](https://http--yumetrics--dmg6gnvmmd7s.code.run)** · **[Magyar útmutató](https://http--yumetrics--dmg6gnvmmd7s.code.run/utmutato)** · **[English guide](https://http--yumetrics--dmg6gnvmmd7s.code.run/guide)**
+
 Magyar és angol nyelvű étkezési napló kötelező Google-belépéssel, ellenőrizhető tápértékforrásokkal és javítható AI-becsléssel. Magyar konyhai támpontokkal kezeli a rántás/habarás, panír, csont, tejföl és feltét bizonytalanságát. A saját receptből a teljes kész étel és az elfogyasztott adag alapján számol; külön jelzi a fotós és receptalapú eredményt. A támogatott szerver **Node.js 24+ és PostgreSQL**. Élesben a felhasználói képek Cloudinaryban, minden más tartós alkalmazásadat külön **Northflank PostgreSQL addonban** van.
 
 ## Helyi indítás
@@ -44,7 +46,7 @@ A Google Cloud Console-ban hozz létre **Web application** OAuth-klienst, állí
 http://127.0.0.1:3000/auth/google/callback
 ```
 
-Élesben a saját HTTPS domain ugyanilyen `/auth/google/callback` végződésű címe kell. Az `APP_ORIGIN` és a regisztrált callback egyezzen; a localhost és a 127.0.0.1 külön cím. Csak `openid email profile` scope kell, Gmail/Drive-hozzáférés nem. A Google-jelszót és a Google access/refresh tokent nem tároljuk. [Google OIDC-beállítás](https://developers.google.com/identity/openid-connect/openid-connect).
+Saját domainnél a HTTPS domain ugyanilyen `/auth/google/callback` végződésű címe kell. A mostani éles telepítés saját domain nélkül, jóváhagyott GitHub Pages-visszatérő oldalt használ: `https://ak91hu.github.io/yumetrics/oauth.html`, szerveroldali `GOOGLE_REDIRECT_URI` beállítással. Az `APP_ORIGIN` és a regisztrált callback egyezzen; a localhost és a 127.0.0.1 külön cím. Csak `openid email profile` scope kell, Gmail/Drive-hozzáférés nem. A Google-jelszót és a Google access/refresh tokent nem tároljuk. [Google OIDC-beállítás](https://developers.google.com/identity/openid-connect/openid-connect).
 
 A munkamenet 30 napos, adatbázisban tárolt, a nyers token helyett SHA-256 hashsel. A süti HttpOnly, SameSite=Lax, HTTPS-en Secure és __Host- előtagú. A felhasználó stabil Google `sub` azonosítóhoz kötött, emailváltozás nem hoz létre másik naplót. A callback egyhasználatú state-et, nonce-ot, PKCE-t és a hivatalos Google-könyvtár ID-token ellenőrzését használja. Korábbi jelszavas vagy ChatGPT-fejléces belépés nincs.
 
