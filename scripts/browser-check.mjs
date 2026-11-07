@@ -242,13 +242,37 @@ try {
   await evaluate("document.querySelector('#detail-form').requestSubmit()");
   await waitFor("!document.querySelector('#meal-dialog').open && document.querySelector('#calorie-total').textContent==='40'");
   await send('Page.reload'); await waitFor("document.querySelector('#calorie-total')?.textContent==='40'");
-  const savedRecipe=await db.prepare('SELECT analysis,original_analysis,analysis_context FROM meals').bind().first();
+  const savedRecipe=await db.prepare('SELECT day,analysis,original_analysis,analysis_context FROM meals').bind().first();
   assert.equal(JSON.parse(savedRecipe.analysis).recipe.cookedWeightG,800);
   assert.equal(JSON.parse(savedRecipe.original_analysis).ingredients[0].grams,100);
   assert.equal(JSON.parse(savedRecipe.analysis_context).portionScope,'full_image');
   assert.equal(JSON.parse(savedRecipe.analysis_context).consumedPercent,undefined);
   assert.equal(JSON.parse(savedRecipe.analysis_context).preparationNotes,'20%-os tejföllel habart');
   assert.equal(JSON.parse(savedRecipe.analysis_context).language,language);
+  await evaluate("document.querySelector('.mobile-nav [data-action=settings]').click()");
+  await waitFor("document.querySelectorAll('.activity-day').length === 365");
+  assert.equal(await evaluate("document.querySelector('.profile-stat strong').textContent.trim()"), '1');
+  assert.ok(await evaluate("document.querySelectorAll('.profile-stat strong')[4].textContent.startsWith('40')"));
+  assert.equal(await evaluate(`document.querySelector('[data-profile-day="${savedRecipe.day}"]').dataset.level`), '1');
+  for (const width of [320,390,768,1024,1440]) {
+    await viewport(width,900,width<768);
+    assert.ok(await evaluate("document.querySelector('#settings-dialog').scrollWidth <= document.querySelector('#settings-dialog').clientWidth"), 'Profile fits '+width);
+  }
+  await evaluate("document.querySelector('#calorie-goal').value='2355'");
+  await switchLanguage(language === 'en' ? 'hu' : 'en', '#settings-dialog'); await switchLanguage(language, '#settings-dialog');
+  assert.equal(await evaluate("document.querySelector('#calorie-goal').value"), '2355');
+  await auditEnglish();
+  await viewport(1440,1100,false); await screenshot('profile-desktop.png',false);
+  await viewport(390,844,true);
+  await evaluate("document.querySelector('.activity-scroll').scrollLeft=document.querySelector('.activity-scroll').scrollWidth");
+  await screenshot('profile-mobile.png',false);
+  await evaluate("document.querySelector('.activity-day[tabindex=\"0\"]').focus()");
+  await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Home',code:'Home'});
+  assert.ok(await evaluate("document.activeElement === document.querySelector('.activity-day')"));
+  await send('Input.dispatchKeyEvent',{type:'keyDown',key:'End',code:'End'});
+  assert.ok(await evaluate("document.activeElement === [...document.querySelectorAll('.activity-day')].at(-1)"));
+  await evaluate(`document.querySelector('[data-profile-day="${savedRecipe.day}"]').click()`);
+  await waitFor("!document.querySelector('#settings-dialog').open && document.querySelector('#meal-list [data-meal]')");
   await evaluate("document.querySelector('#meal-list [data-meal]').click()");
   await evaluate("document.querySelector('#delete-meal').click(); document.querySelector('#confirm-dialog [data-close]').click()");
   assert.ok(await evaluate("!document.querySelector('#confirm-dialog').open && document.querySelector('#meal-dialog').open"));
@@ -257,6 +281,9 @@ try {
   await waitFor("document.querySelector('#draft-list').children.length === 0");
   assert.equal(providerCalls, 13); assert.deepEqual(errors, []);
   await evaluate("document.querySelector('.mobile-nav [data-action=settings]').click()");
+  await waitFor("document.querySelectorAll('.activity-day').length === 365");
+  assert.equal(await evaluate("document.querySelector('.profile-stat strong').textContent.trim()"), '0');
+  assert.ok(await evaluate("document.querySelectorAll('.profile-stat strong')[4].textContent.startsWith('—')"));
   await evaluate("document.querySelector('#calorie-goal').value='2300'; document.querySelector('#settings-form').requestSubmit()");
   await waitFor("!document.querySelector('#settings-dialog').open");
   assert.equal((await db.prepare('SELECT calorie_goal FROM users').bind().first()).calorie_goal,2300);

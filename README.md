@@ -68,6 +68,10 @@ Magyar piaci fókusz és források: [HUNGARIAN-POSITIONING.md](docs/HUNGARIAN-PO
 
 A feltöltés JPEG-re rajzolja újra és legfeljebb 1600 pixelesre méretezi a képet; eredeti EXIF/GPS nincs archiválva. A kép az AI-szolgáltatóhoz és Cloudinaryhoz kerül. A normál Cloudinary delivery URL a link birtokában elérhető; a Google-belépés a naplót és az API-t védi. Ezt a feltöltő is jelzi. Szigorúan privát képhivatkozásokhoz authenticated delivery külön bevezetése kell.
 
+## Profil és valós naplózási statisztikák
+
+A **Fiókom** nézet a Google-nevet, e-mail-címet és csatlakozást, az összes mentett étkezést, az aktív napokat, valamint a jelenlegi és leghosszabb naplózási sorozatot mutatja. A 365 napos, zöld aktivitási naptárból megnyitható bármelyik nap. Az éves energia- és makróátlagok csak a ténylegesen naplózott napokra vonatkoznak; üres naplónál nincs kitalált átlag. A számítás a saját, mentett bejegyzésekből, a PostgreSQL-en egységes olvasási pillanatképből történik, gyorsítótárazott vagy mintaadatok nélkül. Piszkozat, hibás/törlés alatt álló elemzés és jövőbeli nap nem számít aktív napnak. A mobilos görgetés, billentyűs navigáció és nyelvváltás is támogatott.
+
 ## Tartósság és telepítés
 
 **[Northflank telepítés, adatmodell, mentés és helyreállítás](docs/NORTHFLANK.md)**. A `Dockerfile` stateless Node-konténert épít. Nem használ app-podhoz csatolt SQLite-ot, helyi feltöltéskönyvtárat vagy memóriában tárolt munkamenetet. A `DATABASE_URL` hiánya/hibája nem indít üres tartalékadatbázist.

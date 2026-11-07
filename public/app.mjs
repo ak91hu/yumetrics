@@ -3,6 +3,7 @@ import { totals, NUTRIENTS, OPTIONAL_NUTRIENTS, TYPES, validateAnalysis, metadat
 import { FOOD_REFERENCE } from '/food-reference.mjs';
 import { REFERENCE_STATES } from '/hungarian-food.mjs';
 import { installAnalysisUI, dishGuidance, reportMarkup, ingredientMarkup, refreshReport, recipeMarkup } from '/analysis-ui.mjs';
+import { loadProfile, renderProfile } from '/profile-ui.mjs';
 
 const $ = selector => document.querySelector(selector);
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -123,6 +124,8 @@ function close(dialog) {
 document.addEventListener('click', async event => {
   const closing = event.target.closest('[data-close]'); if (closing) { event.preventDefault(); close(closing.closest('dialog')); return; }
   const mealButton = event.target.closest('[data-meal]'); if (mealButton) { openMeal(mealButton.dataset.meal); return; }
+  const activityDay = event.target.closest('[data-profile-day]');
+  if (activityDay) { $('#settings-dialog').close(); await selectDay(activityDay.dataset.profileDay); $('#calendar').scrollIntoView({ behavior: 'smooth', block: 'center' }); $('#calendar').focus({ preventScroll: true }); return; }
   const dayButton = event.target.closest('[data-day]'); if (dayButton) { await selectDay(dayButton.dataset.day); return; }
   const action = event.target.closest('[data-action]')?.dataset.action;
   if (!action) return;
@@ -131,8 +134,10 @@ document.addEventListener('click', async event => {
   if (action === 'diary') window.scrollTo({ top: 0, behavior: 'smooth' });
   if (action === 'learn') show('#learn-dialog');
   if (action === 'settings') {
+    const previousGoal = String(state.goal);
     $('#calorie-goal').value = state.goal; renderConnections(); show('#settings-dialog');
-    try { state.status = await request('/api/status'); renderConnections(); } catch { /* The login dialog handles expired sessions. */ }
+    loadProfile(request);
+    try { state.status = await request('/api/status'); if ($('#calorie-goal').value === previousGoal) { state.goal = state.status.user.calorieGoal; $('#calorie-goal').value = state.goal; } renderConnections(); } catch { /* The login dialog handles expired sessions. */ }
   }
   if (action === 'today') await selectDay(today());
   if (action === 'prev-month' || action === 'next-month') await changeMonth(action === 'prev-month' ? -1 : 1);
@@ -361,7 +366,7 @@ window.addEventListener('languagechanging', () => {
   };
 });
 window.addEventListener('languagechange', () => {
-  render(); renderConnections();
+  render(); renderConnections(); renderProfile();
   $('#dish-guidance').innerHTML = dishGuidance($('#dish-profile').value);
   $('#analyze-button').innerHTML = `${icon('sparkles')}${t('Elemzés indítása')}`;
   if (state.edit && $('#meal-dialog').open) {
