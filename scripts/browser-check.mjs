@@ -137,6 +137,12 @@ try {
   await evaluate("document.querySelector('.mobile-nav [data-action=learn]').click()");
   assert.ok(await evaluate("document.querySelector('#learn-dialog').open"));
   assert.ok((await evaluate("document.querySelector('#learn-dialog a').getAttribute('href')")).endsWith(language === 'en' ? '/guide' : '/utmutato'));
+  for (const width of [320,390,768,1024,1440]) {
+    await viewport(width,900,width<768);
+    assert.ok(await evaluate("document.querySelector('#learn-dialog').scrollWidth <= document.querySelector('#learn-dialog').clientWidth"), 'Methodology fits '+width);
+  }
+  await viewport(1440,1100,false); await screenshot('methodology-desktop.png',false);
+  await viewport(390,844,true); await screenshot('methodology-mobile.png',false);
   await auditEnglish();
   await evaluate("document.querySelector('#learn-dialog [data-close]').click()");
   await evaluate("document.querySelector('.mobile-nav [data-action=upload]').click()");
@@ -312,6 +318,8 @@ try {
   result.checks.push('language preference survives reload and sign-out', 'language switching keeps selected photos, dirty notes, canonical meal type and unfinished recipe values', 'English interface translation audit', 'native camera file chooser and environment capture configuration (fixture image)', 'second-photo removal and replacement', 'ingredient addition and removal', 'recoverable analysis failure and retry', 'calendar month/day navigation and guide dialog', 'cancel deletion and confirm deletion');
   result.checks.push('real saved-meal profile counts and averages, then empty state after deletion', '365-day activity graph: keyboard navigation, language changes and diary navigation', 'profile fits five viewport widths without losing unsaved energy goal');
   result.screenshots.push('profile-desktop.png', 'profile-mobile.png');
+  result.checks.push('expanded AI methodology fits five viewport widths and links to the selected language guide');
+  result.screenshots.push('methodology-desktop.png', 'methodology-mobile.png');
   writeFileSync(resolve(out, 'browser-check.json'), JSON.stringify(result, null, 2)); console.log(JSON.stringify(result, null, 2));
 } catch (error) {
   writeFileSync(resolve(out, 'browser-check.json'), JSON.stringify({ passed: false, status: 'failed', error: error.message }, null, 2));

@@ -29,9 +29,6 @@ export function installAnalysisUI() {
   document.querySelector('.daily-section').insertAdjacentHTML('beforeend', '<div class="daily-details" id="daily-details"></div>');
   document.querySelector('#analysis-progress').textContent = t('Az összetevők felismerése és a tápértékek becslése folyamatban… Ez néhány percig is tarthat. Az eredményt mentés előtt átnézheted.');
   document.querySelector('.hero-content small').textContent = t('Felismerés · Ellenőrzés · Mentés a naplóba');
-  document.querySelector('#learn-dialog ol').innerHTML = html('<li><strong>A képen látható összes étel egy adagnak számít.</strong> Minden látható ehető ételt és italt 100%-ban számolunk. A két nézet ugyanazt a mennyiséget mutassa.</li><li><strong>Add meg, amit lemértél.</strong> Az egész étel tányér nélkül mért tömege és a csont külön tömege is segít. Az elkészítés módját is írd le, ha ismered.</li><li><strong>Ellenőrizd a tápértékadatokat.</strong> A főtt rizshez a főtt rizs adatait válaszd. Az ételben maradt olajat egyszer számold. Minden összetevőnél a képen látható teljes mennyiséget add meg grammban.</li>');
-  document.querySelector('#learn-dialog .learn-content').insertAdjacentHTML('beforeend', html('<p>Minden összetevőnél láthatod, honnan származik a tápérték: az USDA élelmiszer-adatbázisából, az AI becsléséből vagy a saját adataidból. Ellenőrizd, hogy a kiválasztott adat valóban az ételedhez illik-e. A kijelzett kalóriatartomány a mennyiség vagy az összetétel lehetséges eltérését mutatja; a becslés összes hibáját nem foglalja magában.</p>'));
-  document.querySelector('#learn-dialog .learn-content').insertAdjacentHTML('beforeend', html('<a class="button outline" href="/utmutato">Teljes útmutató és módszertan</a>'));
   document.querySelector('#dish-profile').addEventListener('change', event => { document.querySelector('#dish-guidance').innerHTML = dishGuidance(event.target.value); });
 }
 export function recipeMarkup(analysis, editing) {

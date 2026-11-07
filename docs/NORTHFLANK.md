@@ -15,7 +15,7 @@ A Google Console elutasította az automatikus code.run callbacket. A felhasznál
 
 A visszatérő oldal nem tölt be külső erőforrást, nem tárol adatot vagy tokent, nem választ átirányítási célt a kérésből. Csak a `state`, `code`, `error` mezőt adja tovább a rögzített Northflank callbacknek, és előtte törli a paramétereket a címsorból. Referrer-tiltás és szigorú CSP védi. A szerver ellenőrzi az eredeti állapotsütit, az egyszer használható adatbázis-state-et, a PKCE-t, a nonce-ot és a Google ID-tokent. A tokenváltásban is ugyanaz a Pages redirect URI szerepel. A GitHub Pages kizárólag statikus közvetítő; a felhasználók, munkamenetek és étkezések a Northflanken maradnak. A valódi belépés sikerét a felhasználó visszaigazolta.
 
-A korábbi GPSART előkészítésben létrejött külön adatbázist és titokcsoportot az éles alkalmazás nem használja; törlésükhöz külön jóváhagyás szükséges.
+A korábbi GPSART-előkészítésben létrejött tesztadatbázist a felhasználó kérésére megtartottuk. Az ottani titokcsoport szintén megmaradt; az éles alkalmazás ezeket nem használja.
 
 ## Választott felépítés
 

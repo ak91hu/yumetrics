@@ -4,113 +4,86 @@
 
 **[Élő alkalmazás](https://http--yumetrics--dmg6gnvmmd7s.code.run)** · **[Magyar útmutató](https://http--yumetrics--dmg6gnvmmd7s.code.run/utmutato)** · **[English guide](https://http--yumetrics--dmg6gnvmmd7s.code.run/guide)**
 
-Magyar és angol nyelvű étkezési napló kötelező Google-belépéssel, ellenőrizhető tápértékforrásokkal és javítható AI-becsléssel. Magyar konyhai támpontokkal kezeli a rántás/habarás, panír, csont, tejföl és feltét bizonytalanságát. A saját receptből a teljes kész étel és az elfogyasztott adag alapján számol; külön jelzi a fotós és receptalapú eredményt. A támogatott szerver **Node.js 24+ és PostgreSQL**. Élesben a felhasználói képek Cloudinaryban, minden más tartós alkalmazásadat külön **Northflank PostgreSQL addonban** van.
+Magyar és angol nyelvű étkezési napló Google-belépéssel, fotó alapján becsült tápértékekkel és javítható összetevőkkel. Az alkalmazás a képen látható **teljes ehető étel és ital 100%-át** tekinti egy adagnak. A fotós elemzés nem közvetlen kalóriamérés: a felismerést, a mennyiségi becslést, a tápértékforrást és a számítást külön kezeljük.
 
-## Helyi indítás
+## A számítás módszere és az AI szerepe
+
+1. **Vizuális leltár.** A Gemini 4 Argon a fotó és a megadott információk alapján javaslatot tesz az ételre, az összetevőkre, az elkészítési állapotra és az ehető grammokra. A köretet, szószt és italt is számba kell vennie. Megkülönbözteti a látható vagy megadott elemeket a feltételezésektől, például a nem látható olajtól. Ez az első AI-lépés még nem ad tápértékeket.
+2. **Tápértékforrás választása.** Az AI a 44 beépített USDA-rekordból javasolhat az ételhez és annak elkészítéséhez illő forrást. A szerver a referencia értékeit használja, nem az AI által újraírt számokat. Nyers ételhez tartozó referencia nem kerülhet automatikusan elkészült összetevőhöz. A forrás ellenőrizhetősége és az ételhez való helyes párosítása két külön kérdés; a párosítást a felhasználó is ellenőrzi.
+3. **Külön AI-becslés a hiányzó adatokhoz.** Csak azokhoz az összetevőkhöz kérünk második AI-választ, amelyekhez nincs megfelelő referencia. Ez az adott elkészített étel **100 grammjára** becsül tápértéket. Az ilyen adat AI-becslésként jelenik meg, nem adatbázisból igazolt értékként. Ha minden összetevőhöz van megfelelő referencia, második AI-hívás nem szükséges.
+4. **Mennyiség pontosítása.** Mérleg nélkül a grammok képi becslések. A megadott teljes ételtömegből levonjuk a külön lemért nem ehető részt, majd az összetevőket az így kapott ehető mennyiséghez arányosítjuk. A hús, köret és zsiradék egymáshoz viszonyított aránya ettől még becsült marad. Két fotó ugyanannak az adagnak két nézete; a mennyiséget nem duplázzuk.
+5. **Szerveroldali számítás.** Az összetevő ehető grammjait megszorozzuk a 100 grammra megadott tápértékkel, majd elosztjuk százzal. Az összes összetevő eredményét összeadjuk. A végső adagérték tehát ellenőrizhető számítás eredménye, amelynek pontossága a bevitt tömegtől, az étel felismerésétől és a választott forrástól függ.
+6. **Felhasználói ellenőrzés.** Az étel neve, mennyisége, elkészítése és tápértékforrása mentés előtt és után is javítható. Választható másik USDA-rekord vagy megadható termékcímke. Az eredeti AI-elemzést, a modell és a prompt verzióját, valamint a mentett javításokat külön őrizzük meg. Értékelhetetlen kép vagy hiányos AI-válasz esetén nem készítünk helyette kitalált eredményt.
+
+```text
+Összetevő tápértéke = ehető tömeg (g) × 100 g-ra megadott érték ÷ 100
+Teljes adag tápértéke = az összes ehető összetevő tápértékének összege
+```
+
+Szemléltető példa: 150 g összetevő 200 kcal/100 g értékkel 300 kcal-t ad az adaghoz. Ezek példaszámok, nem egy konkrét étel forrásadatai. Az energián kívül ugyanígy számoljuk a fehérjét, szénhidrátot és zsírt; további tápanyagot csak akkor közlünk, ha van hozzá adat. Az ismeretlen érték `null`, a felületen „—”, nem nulla.
+
+### Mitől lehet megalapozottabb az eredmény?
+
+| Megadott adat | Mit segít tisztázni? | Mi marad bizonytalan? |
+| --- | --- | --- |
+| Teljes ételtömeg és külön lemért csont/héj | Az egész adag ehető össztömegét | Az összetevők arányát továbbra is becsüljük |
+| Külön lemért összetevők | Az adott összetevő grammjait | Az azonosságot, elkészítést és a tápértékforrást ellenőrizni kell |
+| Második fotó, ismert tányérátmérő | A láthatóságot és a képi léptéket | Nem térfogatmérés és nem helyettesíti a mérleget |
+| Elkészítés, hozzáadott olaj és szósz | A képről nem egyértelmű összetételt | A nem ismert receptet nem lehet biztosan rekonstruálni |
+| Saját recept és lemért kész tömeg | A teljes recept tápértékének adagra osztását | A veszteségeket és az alapanyagok forrásadatait megfelelően kell megadni |
+
+**Saját recept:** a teljes elkészült ételben maradt alapanyagok tápértékét összeadjuk, majd a képen látható adag tömegét a teljes kész étel tömegéhez viszonyítjuk. Ehhez nem kell újabb AI-hívás. A főzés előtti alapanyagtömegek összege nem helyettesíti a kész étel lemért tömegét; a visszamaradt vagy elöntött zsiradékot sem szabad elfogyasztottként számolni.
+
+### A bizonytalanság értelmezése
+
+A kalóriatartomány mennyiségi és összetételi forgatókönyveket mutat. Ismert ehető össztömegnél azonos össztömeg mellett változtatjuk az összetevőarányokat a becsült határaikon belül; ismeretlen össztömegnél az összetevők alsó és felső tömegbecsléseiből indulunk ki. Ez **nem statisztikai konfidenciaintervallum**, és nem garantálja, hogy a valódi érték a két határ közé esik. A téves felismerés, rejtett hozzávaló vagy rossz forráspárosítás további hibát okozhat.
+
+Az AI saját bizonyossági jelzése nem méréssel igazolt pontosság. Nincs közzétett, lemért magyar ételfotókon igazolt Yumetrics-pontossági százalék. A szoftvertesztek a számítást és a működést ellenőrzik; a fotós becslés tényleges hibáját külön, ismert referenciaértékekkel kell megmérni. A napi energiakeret felhasználói beállítás, nem személyre szabott táplálkozási ajánlás.
+
+Részletes módszertan: [PHOTO-ASSESSMENT.md](docs/PHOTO-ASSESSMENT.md). Források és kutatási döntések: [RESEARCH.md](docs/RESEARCH.md), [REFERENCE-CATALOG.md](docs/REFERENCE-CATALOG.md). A pontosságmérés eszköze: [BENCHMARK.md](docs/BENCHMARK.md).
+
+## Használat és profil
+
+Google-belépés után tölts fel fotót az egész adagról, add meg a biztosan ismert adatokat, majd nézd át és mentsd a piszkozatot. A feldolgozás a fotó tartós feltöltése után a háttérben folytatódik. Az eredmény később is javítható.
+
+A **Fiókom** nézet a Google-nevet, e-mail-címet, csatlakozást, mentett étkezéseket, aktív napokat és naplózási sorozatokat mutatja. A 365 napos, zöld aktivitási naptárból megnyithatók az adott nap bejegyzései. Az energia- és makróátlagok csak a ténylegesen naplózott napokra vonatkoznak. Piszkozat, hibás vagy törlés alatt álló elemzés és jövőbeli nap nem növeli a statisztikát; üres naplóhoz nem készülnek mintaadatok.
+
+A felület és az új AI-elemzés magyarul és angolul is használható. A nyelvváltás megőrzi a kiválasztott fotókat és a szerkesztés alatt álló adatokat; a saját szövegek és a korábbi elemzések az eredeti nyelvükön maradnak. A mobilos, asztali és billentyűzettel történő használat is támogatott.
+
+## Belépés, adattárolás és telepítés
+
+Az alkalmazás **Node.js 24+** szerveren fut. Az éles alkalmazás és a külön, tartós lemezes **PostgreSQL 17** adatbázis az `ak91hus-team/default` Northflank-projektben található. A felhasználói fotók Cloudinaryba kerülnek; a fiókok, munkamenetek, étkezések, forrásmásolatok és feldolgozási feladatok Northflanken tárolódnak. Újraindítás és új image-re történő telepítés után az adatok megőrzését éles próbával is ellenőriztük.
+
+A jelenlegi Google OAuth-visszatérő cím: **https://ak91hu.github.io/yumetrics/oauth.html**. A statikus GitHub Pages-oldal csak továbbítja az egyszer használható választ a Northflank szerverének. A state-, nonce-, PKCE- és ID-token-ellenőrzés, valamint a munkamenet létrehozása szerveroldalon történik. A Google-jelszót és az access/refresh tokeneket nem tároljuk; Gmail- vagy Drive-hozzáférést nem kérünk.
+
+A `GOOGLE_REDIRECT_URI` értékének pontosan egyeznie kell a Google-klienshez regisztrált visszatérő címmel. Az `APP_ORIGIN` az alkalmazás éles Northflank HTTPS-alapcíme; a Pages-visszatérő cím használatakor ez a két beállítás szándékosan eltér. Saját domain esetén közvetlen szerveroldali callback is használható.
+
+A titkok kizárólag Northflank futtatási változóként kerülnek az alkalmazásba. A `.env.example` a szükséges mezők mintája; a valódi `.env`, kulcsok és felhasználói adatok nincsenek a Gitben vagy a Docker image-ben. Az adatbázis írható kapcsolati URI-ja addonkapcsolaton keresztül, `DATABASE_URL` néven érkezik.
+
+| Beállítás | Szerepe |
+| --- | --- |
+| `DATABASE_URL` | A Northflank PostgreSQL írható kapcsolata |
+| `APP_ORIGIN` | Az alkalmazás éles HTTPS-alapcíme |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google OAuth-webkliens |
+| `GOOGLE_REDIRECT_URI` | A Google-nél regisztrált visszatérő cím |
+| `OPENCODE_API_KEY`, `OPENCODE_MODEL` | Szerveroldali AI-hozzáférés; alapmodell: `gemini-4-argon` |
+| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Képtárolás |
+| `USDA_API_KEY` | FoodData Central keresés a beépített referenciákon túl |
+
+A normál Cloudinary-képlink a hivatkozás birtokában megnyitható. A Google-belépés a naplót és az alkalmazás API-ját védi. A képek feltöltéskor újrarajzolt, átméretezett JPEG-ek; eredeti EXIF/GPS-adatot nem archiválunk.
+
+Kulcsok és OAuth-beállítás: [API-KEYS.md](docs/API-KEYS.md). Telepítés, heti mentés, helyreállítás és adatmodell: [NORTHFLANK.md](docs/NORTHFLANK.md).
+
+## Fejlesztés és ellenőrzés
 
 ```powershell
 npm ci
-npm start
-```
-
-Cím: **http://127.0.0.1:3000**. A `.env` már létrejött, Git és a Docker build nem tartalmazza. A helyi gépen külön PostgreSQL 17.11 példány indult a `127.0.0.1:54329` címen, külön alkalmazás- és tesztadatbázissal; a helyi `DATABASE_URL` beállítva. A hozzáféréseket a saját `.env` fájlban kell beállítani; a nyilvános repó csak üres mintát tartalmaz. A bejelentkezőoldal konfiguráció nélkül is megjelenik, de a naplóhoz nincs kerülő belépés.
-
-Tiszta gépen állíts be saját fejlesztői PostgreSQL-t vagy használd a `compose.yaml` adatbázisát: adj meg `LOCAL_POSTGRES_PASSWORD` környezeti változót, majd `docker compose up -d database`. A `.env` `DATABASE_URL` mezőjében ugyanaz a jelszó, `127.0.0.1:54329/yumetrics` szerepeljen. Ez fejlesztői adatbázis; élesben a Northflank kapcsolatát használd.
-
-A mostani hordozható helyi PostgreSQL adatai `work/pgdata` alatt vannak. A könyvtár törlése törli ezt a helyi adatbázist is. Új gépindítás után indítás/leállítás:
-
-```powershell
-& ./work/postgresql/pgsql/bin/pg_ctl.exe -D ./work/pgdata -l ./work/postgres.log -o '-h 127.0.0.1 -p 54329' -w start
-& ./work/postgresql/pgsql/bin/pg_ctl.exe -D ./work/pgdata -m fast -w stop
-```
-
-## Google és szolgáltatói kulcsok
-
-**[Minden szükséges kulcs, beszerzési hely és beállítás](docs/API-KEYS.md)**. Az OpenCode-kulcs az AI-hoz kell, a Google OAuth-kliens a belépéshez; nem ugyanaz a hozzáférés. A Northflank-adatbázis kapcsolati URI-ja nem platform-API-token.
-
-A `.env.example` felsorolja a mezőket; a saját `.env` fájlba másold a titkokat. Módosítás után indítsd újra az alkalmazást.
-
-| Mező | Érték |
-| --- | --- |
-| `DATABASE_URL` | PostgreSQL írható primary URI; élesben Northflank |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Az ehhez az alkalmazáshoz létrehozott Google OAuth webkliens |
-| `APP_ORIGIN` | Pontosan a böngészőből használt eredet, végső perjel nélkül |
-| `OPENCODE_API_KEY` | OpenCode Console kulcs |
-| `OPENCODE_MODEL` | Alapértelmezés: `gemini-4-argon`; natív Gemini-protokoll |
-| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Saját Cloudinary-fiók |
-| `USDA_API_KEY` | Opcionális FoodData Central kulcs a bővebb referencia-kereséshez |
-
-A Google Cloud Console-ban hozz létre **Web application** OAuth-klienst, állítsd be a consent screen adatait és a tesztfelhasználókat, amíg az alkalmazás tesztmódban van. Helyi **Authorized redirect URI**:
-
-```text
-http://127.0.0.1:3000/auth/google/callback
-```
-
-Saját domainnél a HTTPS domain ugyanilyen `/auth/google/callback` végződésű címe kell. A mostani éles telepítés saját domain nélkül, jóváhagyott GitHub Pages-visszatérő oldalt használ: `https://ak91hu.github.io/yumetrics/oauth.html`, szerveroldali `GOOGLE_REDIRECT_URI` beállítással. Az `APP_ORIGIN` és a regisztrált callback egyezzen; a localhost és a 127.0.0.1 külön cím. Csak `openid email profile` scope kell, Gmail/Drive-hozzáférés nem. A Google-jelszót és a Google access/refresh tokent nem tároljuk. [Google OIDC-beállítás](https://developers.google.com/identity/openid-connect/openid-connect).
-
-A munkamenet 30 napos, adatbázisban tárolt, a nyers token helyett SHA-256 hashsel. A süti HttpOnly, SameSite=Lax, HTTPS-en Secure és __Host- előtagú. A felhasználó stabil Google `sub` azonosítóhoz kötött, emailváltozás nem hoz létre másik naplót. A callback egyhasználatú state-et, nonce-ot, PKCE-t és a hivatalos Google-könyvtár ID-token ellenőrzését használja. Korábbi jelszavas vagy ChatGPT-fejléces belépés nincs.
-
-## Étkezés rögzítése
-
-1. Google-belépés után válassz fotót, napot, időpontot; megadhatsz második nézetet, ismert tömeget és elkészítési információt.
-2. **A kép először Cloudinaryba kerül**, a feldolgozás tartós adatbázis-feladatként folytatódik. Az ablak bezárható; a piszkozat visszakereshető.
-3. Ellenőrizd az ehető grammokat, a nyers/főtt/sült állapotot és az olajat. Csontot/héjat külön megadhatsz levonandó tömegként. A külön lemért, elfogyasztott összetevőket megjelölheted.
-4. Válassz megfelelő USDA-referenciát vagy saját termékcímkeértéket. USDA-kulccsal angol névre kereshetsz, majd kiválaszthatod az adott elkészítés rekordját. A forrás ellenőrzött másolata megmarad a naplóban.
-5. Mentsd a naplóba. A későbbi javítás az eredeti AI-elemzést nem írja felül. A napi energiakeret is a fiókodban tárolódik.
-
-A beépített referenciatár már **44 USDA-rekordot** tartalmaz magyar konyhai alapanyagokkal és állapotokkal: [források és korlátok](docs/REFERENCE-CATALOG.md).
-
-**Saját fazék/tepsi:** a részleteknél válaszd az „Saját recept megadása” lehetőséget. Add meg a teljes recept ételben maradt alapanyagait, a kész étel és a képen látható teljes adag tömegét. Nyers alapanyaghoz nyers forrást használj; a visszamaradt/elöntött olajat ne számold elfogyasztottnak. A receptmód nem hív új AI-t, és külön, megőrzött alapanyaglistából számol. A megjelenített, adagra jutó alapanyag-mennyiségek eltérhetnek az összetevők főzés utáni tömegétől. Az adagot a „Recept és adag javítása” útvonalon módosítsd.
-
-Az adag mindig a képen látható teljes ehető étel és ital 100%-a. Nincs fogyasztási százalék, az új API-kérések részadagot nem fogadnak el. A számítás `a képen látható teljes adag ehető tömege grammban × tápérték/100 g ÷ 100`. Ismeretlen tápanyag `null`, nem nulla. A fotó és a modell önértékelése nem mért kalóriapontosság. Részletes módszertan: [PHOTO-ASSESSMENT.md](docs/PHOTO-ASSESSMENT.md), kutatási döntések: [RESEARCH.md](docs/RESEARCH.md).
-
-Magyar piaci fókusz és források: [HUNGARIAN-POSITIONING.md](docs/HUNGARIAN-POSITIONING.md). A tényleges pontosság méréséhez külön értékelő parancs készült: [BENCHMARK.md](docs/BENCHMARK.md). Saját mért tesztkészlet nélkül nincs igazolt modellpontossági százalék.
-
-A feltöltés JPEG-re rajzolja újra és legfeljebb 1600 pixelesre méretezi a képet; eredeti EXIF/GPS nincs archiválva. A kép az AI-szolgáltatóhoz és Cloudinaryhoz kerül. A normál Cloudinary delivery URL a link birtokában elérhető; a Google-belépés a naplót és az API-t védi. Ezt a feltöltő is jelzi. Szigorúan privát képhivatkozásokhoz authenticated delivery külön bevezetése kell.
-
-## Profil és valós naplózási statisztikák
-
-A **Fiókom** nézet a Google-nevet, e-mail-címet és csatlakozást, az összes mentett étkezést, az aktív napokat, valamint a jelenlegi és leghosszabb naplózási sorozatot mutatja. A 365 napos, zöld aktivitási naptárból megnyitható bármelyik nap. Az éves energia- és makróátlagok csak a ténylegesen naplózott napokra vonatkoznak; üres naplónál nincs kitalált átlag. A számítás a saját, mentett bejegyzésekből, a PostgreSQL-en egységes olvasási pillanatképből történik, gyorsítótárazott vagy mintaadatok nélkül. Piszkozat, hibás/törlés alatt álló elemzés és jövőbeli nap nem számít aktív napnak. A mobilos görgetés, billentyűs navigáció és nyelvváltás is támogatott.
-
-## Tartósság és telepítés
-
-**[Northflank telepítés, adatmodell, mentés és helyreállítás](docs/NORTHFLANK.md)**. A `Dockerfile` stateless Node-konténert épít. Nem használ app-podhoz csatolt SQLite-ot, helyi feltöltéskönyvtárat vagy memóriában tárolt munkamenetet. A `DATABASE_URL` hiánya/hibája nem indít üres tartalékadatbázist.
-
-A korábbi `data/yumetrics.sqlite` fájl megmaradt; a váltáskor nem tartalmazott étkezést. Nem rendelünk korábbi közös naplót automatikusan egy Google-fiókhoz. A SQLite-adapter és a `drizzle/` migrációk csak régi adatok és tesztek támogatására maradtak. Az új éles séma: `postgres/0001_initial.sql`.
-
-A régi `.openai/hosting.json` történeti Sites-azonosító. A korábban publikált Sites-példányt ez a helyi módosítás **nem frissítette és nem migrálta**. A build már Northflank Node-csomagot készít; a régi Worker belépési pont 503-at ad, nem fogad el hitelesítési fejlécet. Ne publikáld a régi csomagot az új alkalmazásként.
-
-## Ellenőrzés
-
-Az alkalmazás magyarul és angolul használható. A nyelvváltó a bejelentkezőoldalon, a felső sávban és az ablakokon belül is elérhető. A választást egy egyéves, a böngészőhöz kötött nyelvi süti őrzi; ez nem bejelentkezési adat. A dátumok és számok a választott nyelvhez igazodnak. A nyelvváltás megtartja a fotókat és a szerkesztés alatt álló adatokat. A korábbi elemzések és a saját szövegek az eredeti nyelvükön maradnak. Az új elemzés nyelvét a tartósan mentett `context.language` rögzíti. Az étkezéstípusok belső értékei továbbra is közösek, a felirataik fordítottak.
-
-```powershell
 npm test
 npm run build
-node scripts/browser-check.mjs
 ```
 
-A teljes böngészős folyamat külön futtatható angolul és asztali vezérlőkkel is:
+A PostgreSQL-integrációs tesztekhez külön tesztadatbázis kapcsolatát kell megadni a `TEST_DATABASE_URL` folyamatváltozóban; enélkül ezek kimaradnak. A böngészős ellenőrzés `node scripts/browser-check.mjs` paranccsal fut, headless Chrome-ban. A `TEST_LANGUAGE=hu|en` és `TEST_DEVICE=mobile|desktop` választja ki a nyelvet és a kezelőfelületet.
 
-```powershell
-$env:TEST_LANGUAGE = 'en' # hu vagy en
-$env:TEST_DEVICE = 'desktop' # mobile vagy desktop
-node scripts/browser-check.mjs
-```
+A tesztek a teljes adagot, a receptszámítást, a tápértékforrások kezelését, a Google-belépési határokat, a felhasználók elkülönítését, az adatmegőrzést, a profil statisztikáit és a mobilos/asztali működést ellenőrzik. Részletes bizonyítékok és a nem ellenőrzött területek: [VERIFICATION.md](docs/VERIFICATION.md).
 
-Mind a négy nyelv/eszköz párosítást ellenőrizzük; az alapbeállítás magyar/mobil. A tesztadatokhoz és az időzónához nem nyúl a fordítás.
-
-A PostgreSQL-tesztekhez külön tesztadatbázis URL-je kell a `TEST_DATABASE_URL` folyamatváltozóban. Enélkül ez a három integrációs próba kimarad. A jelenlegi gépen az ignored `work/test-db-url` tartalmazza a helyi tesztkapcsolatot:
-
-```powershell
-$env:TEST_DATABASE_URL = Get-Content -LiteralPath work/test-db-url -Raw
-npm test
-```
-
-A tesztek számítást, bemenetellenőrzést, forráshitelességet, Google-belépési határokat, tulajdonosi elkülönítést, revízióütközést és feltöltési/törlési hibákat ellenőriznek. Valódi PostgreSQL-lel külön alkalmazásfolyamatok kényszerített leállítását, munkamenet és adatok megmaradását, feladatfolytatást, lejárt lease visszavételét és párhuzamos költségkorlátot is vizsgálnak.
-
-Publikálható használati útmutató és módszertan: [public/help.html](public/help.html). A build önálló statikus csomagot készít a `dist/documentation` könyvtárban. Közzétételi útmutató: [PUBLISHING.md](docs/PUBLISHING.md). A felület magyar szóhasználata és a nyelvi kutatás forrásai: [LANGUAGE.md](docs/LANGUAGE.md).
-
-A Chrome-teszt kizárólag headless, külön profillal fut, 320/390/768/1024/1440 px szélességen; a személyes böngészőprofilt nem használja. Eredménye és képei: `outputs/`. Külső Google/OpenCode/Cloudinary/USDA hívásokat a tesztek helyettesítenek. A valódi szolgáltatói jogosultságot, a tényleges Northflank failovert és az ételfotós kalóriapontosságot ezek nem bizonyítják.
-
-Az új arculat natív SVG logó, mérőskálával, 100-as számmal és oszlopokkal; nincs ® jel vagy mintaadat-mód. A csülök–saláta dekoráció generált kép; [asset és prompt](docs/ASSETS.md).
+A publikálható útmutató forrása a [public/help.html](public/help.html). A build önálló magyar és angol HTML-csomagot készít a `dist/documentation` könyvtárban. Közzététel: [PUBLISHING.md](docs/PUBLISHING.md). Arculati elemek: [ASSETS.md](docs/ASSETS.md).
