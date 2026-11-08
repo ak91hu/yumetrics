@@ -4,8 +4,28 @@ const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&a
 const number = value => value == null ? '—' : new Intl.NumberFormat(locale(), { maximumFractionDigits: 1 }).format(value);
 const date = day => new Intl.DateTimeFormat(locale(), { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(day.slice(0, 10) + 'T12:00:00Z'));
 const quantity = (count, one, many) => count === 1 ? t(one) : t(many).replace('{0}', number(count));
+const dayUnit = count => locale().startsWith('en') && count !== 1 ? t('napok') : t('nap');
 let data;
+let loadVersion = 0;
 let period = 30;
+const plant = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 22V11M12 15C4 16 2 11 3 6c6-1 10 3 9 9ZM12 11c-1-7 3-9 9-9 1 6-3 10-9 9Z"/></svg>';
+function weeklyMarkup(weekly) {
+  return html`<div class="growth-week"><strong>Heti ritmus</strong><span>${escape(number(Math.min(weekly.activeDays, weekly.target)))} / ${weekly.target} ${escape(dayUnit(weekly.target))}</span><div class="growth-steps" aria-hidden="true">${Array.from({ length: weekly.target }, (_, i) => `<i class="${weekly.activeDays > i ? 'complete' : ''}">✓</i>`).join('')}</div><p>${escape(t(weekly.activeDays >= weekly.target ? 'A heti cél teljesült. Szép munka, a saját ritmusodban haladj tovább!' : 'Az elmúlt 7 napból legalább 3 napon legyen mentett étkezésed.'))}</p></div>`;
+}
+function growthMarkup(m) {
+  return html`<section class="profile-growth" aria-labelledby="growth-title"><div class="growth-heading"><span class="growth-plant" aria-hidden="true">${plant}</span><div><span class="eyebrow">A NAPLÓD NÖVEKSZIK</span><h3 id="growth-title">${escape(t(m.stage.name))}</h3><p>${escape(t`${m.level}. szint / ${m.levelCount}`)} · ${escape(quantity(m.activeDays, '1 aktív nap', '{0} aktív nap'))}</p></div></div>
+    ${m.nextStage ? html`<label class="growth-next" for="growth-level-progress">${escape(t('Következő szint:'))} ${escape(t(m.nextStage.name))} · ${m.activeDays} / ${m.nextStage.days} ${escape(dayUnit(m.nextStage.days))}</label><progress id="growth-level-progress" value="${m.activeDays}" max="${m.nextStage.days}"></progress>` : html`<p class="growth-next">Elérted a legmagasabb szintet. A naplód minden új nappal tovább gazdagodik.</p>`}
+    ${weeklyMarkup(m.weekly)}<p class="profile-caption">Különböző napok számítanak, a régebbi bejegyzéseid is. A kihagyott napokért nem jár levonás.</p>
+    <div class="profile-section-heading"><h3>Jelvényeid</h3><span>${m.badges.filter(badge => badge.earned).length} / ${m.badges.length} ${escape(t('megszerezve'))}</span></div><ul class="growth-badges">${m.badges.map(badge => `<li class="growth-badge ${badge.earned ? 'earned' : ''}" data-badge="${badge.id}" data-earned="${badge.earned}"><span class="growth-badge-mark" aria-hidden="true">${badge.earned ? '✦' : '◇'}</span><strong>${escape(t(badge.name))}</strong><span>${escape(badge.days === 1 ? t('1 nap naplózva') : t`${badge.days} különböző nap naplózva`)}</span><small>${escape(t(badge.earned ? 'Megszerezve' : 'Még előtted áll'))}</small></li>`).join('')}</ul>
+    <p class="profile-caption">A fejlődésed a jelenleg mentett étkezésekből számolódik. Törlés vagy dátummódosítás után a szintek és jelvények is változhatnak.</p><button type="button" class="button outline" data-action="log-today">Mai étkezés naplózása</button></section>`;
+}
+export function renderMotivation() {
+  const root = document.querySelector('#motivation-card');
+  if (!data || !root) return;
+  const m = data.statistics.motivation;
+  root.innerHTML = html`<div class="growth-heading"><span class="growth-plant" aria-hidden="true">${plant}</span><div><span class="eyebrow">A NAPLÓD NÖVEKSZIK</span><h2>${escape(t(m.stage.name))} <small>${escape(t`${m.level}. szint`)}</small></h2><p>${escape(t(m.weekly.todayLogged ? 'A mai napod már számít. Köszönjük, hogy naplóztál!' : 'Egy mai bejegyzés is egy lépés a következő mérföldkő felé.'))}</p></div></div>${weeklyMarkup(m.weekly)}<div class="growth-actions"><button type="button" class="button primary" data-action="log-today">Mai étkezés naplózása</button><button type="button" class="text-button" data-action="settings">Jelvényeim <span aria-hidden="true">↗</span></button></div>`;
+  root.hidden = false;
+}
 const metric = (label, value, unit = '') => `<div class="profile-stat"><strong>${escape(number(value))}<small>${escape(unit)}</small></strong><span>${escape(t(label))}</span></div>`;
 function renderPeriod() {
   if (!data) return;
@@ -29,19 +49,35 @@ export function renderAvatar(element, profile) {
   image.addEventListener('error', () => image.remove(), { once: true });
   image.src = url.href; element.append(image);
 }
-export async function loadProfile(request) {
+export async function loadProfile(request, { quiet = false, celebrate = false } = {}) {
   const root = document.querySelector('#profile-summary');
-  data = null; root.setAttribute('aria-busy', 'true'); root.textContent = t('A statisztikák betöltése folyamatban…');
-  try { data = await request('/api/profile?timezone=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone)); renderProfile(); }
-  catch (error) { root.textContent = error.message; }
-  finally { root.setAttribute('aria-busy', 'false'); }
+  const version = ++loadVersion, previous = data?.statistics.motivation;
+  if (!quiet) { root.setAttribute('aria-busy', 'true'); root.textContent = t('A statisztikák betöltése folyamatban…'); }
+  try {
+    const result = await request('/api/profile?timezone=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone));
+    if (version !== loadVersion) return;
+    data = result; renderMotivation();
+    if (!quiet || document.querySelector('#settings-dialog').open) renderProfile();
+    if (celebrate && previous) {
+      const m = data.statistics.motivation;
+      const badge = m.badges.findLast(badge => badge.earned && !previous.badges.some(old => old.id === badge.id && old.earned));
+      if (badge) return t`Új jelvényed: ${t(badge.name)}! Elmentettük az étkezésedet.`;
+      if (previous.weekly.activeDays < m.weekly.target && m.weekly.activeDays >= m.weekly.target) return t('Elmentettük az étkezésedet. A heti naplózási célod is teljesült!');
+    }
+  }
+  catch (error) {
+    if (version !== loadVersion) return;
+    data = null;
+    if (!quiet) root.textContent = error.message;
+    document.querySelector('#motivation-card').hidden = true;
+  }
+  finally { if (version === loadVersion) root.setAttribute('aria-busy', 'false'); }
 }
 export function renderProfile() {
   if (!data) return;
   const openSections = [...document.querySelectorAll('#profile-summary details[open]')].map(element => element.id);
   const { profile, statistics: s } = data, life = s.lifetime;
   const today = s.calendar.at(-1), remaining = today.calories == null ? null : profile.calorieGoal - today.calories;
-  const dayUnit = count => locale().startsWith('en') && count !== 1 ? t('napok') : t('nap');
   const offset = (new Date(s.period.start + 'T12:00:00Z').getUTCDay() + 6) % 7;
   const cells = s.calendar.map((day, index) => {
     const description = `${date(day.day)} · ${quantity(day.count, '1 naplózott étkezés', '{0} naplózott étkezés')}${day.calories == null ? '' : ` · ${number(day.calories)} kcal`}`;
@@ -56,6 +92,7 @@ export function renderProfile() {
   document.querySelector('#profile-summary').innerHTML = html`
     <div class="profile-identity"><span class="profile-initials" aria-hidden="true"></span><div><h3>${escape(profile.name)}</h3><p>${escape(profile.email)}</p><small>Google-fiókkal bejelentkezve</small></div></div>
     <section class="profile-today" aria-labelledby="profile-today-title"><div class="profile-section-heading"><h3 id="profile-today-title">Mai összesítés</h3><span>${escape(date(s.period.end))}</span></div><p class="profile-energy"><strong>${escape(number(today.calories))}</strong> / ${escape(number(profile.calorieGoal))} kcal</p><label class="sr-only" for="profile-energy-progress">A mai naplózott energia a napi kerethez képest</label><progress id="profile-energy-progress" max="${profile.calorieGoal}" value="${today.calories ?? 0}"></progress><p class="profile-caption">${today.count ? escape(quantity(today.count, '1 naplózott étkezés', '{0} naplózott étkezés')) + ' · ' + escape(remaining >= 0 ? t`${number(remaining)} kcal a beállított keretig` : t`${number(-remaining)} kcal a beállított keret felett`) : t('Ma még nincs mentett étkezésed. A hiányzó adat nem jelent nulla fogyasztást.')}</p><button type="button" class="text-button" data-profile-day="${s.period.end}">Mai nap megnyitása</button><a class="text-button" href="#calorie-goal">Energiakeret módosítása</a></section>
+    ${growthMarkup(s.motivation)}
     <h3 class="profile-section-title">A naplód eddig</h3>
     <div class="profile-stats">${metric('Mentett étkezés', life.mealCount)}${metric('Aktív nap', life.activeDays)}${metric('Jelenlegi sorozat', life.currentStreak, dayUnit(life.currentStreak))}${metric('Leghosszabb sorozat', life.longestStreak, dayUnit(life.longestStreak))}</div>
     <p class="profile-caption">A sorozat egymást követő, naplózott napokat jelent. Ha ma még nem naplóztál, a tegnapig tartó sorozatod látszik.</p>

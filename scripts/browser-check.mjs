@@ -129,6 +129,12 @@ try {
   await evaluate("document.querySelector('#google-signin').click()");
   await waitFor("document.querySelector('#loading')?.hidden === true");
   assert.equal(await evaluate("document.querySelector('#meal-count').textContent"),'0');
+  await waitFor("!document.querySelector('#motivation-card').hidden");
+  assert.equal(await evaluate("document.querySelectorAll('#motivation-card .growth-steps .complete').length"),0);
+  await evaluate("document.querySelector('[data-action=prev-day]').click(); document.querySelector('#motivation-card [data-action=log-today]').click()");
+  await waitFor("document.querySelector('#upload-dialog').open");
+  assert.ok(await evaluate("new Date(document.querySelector('#upload-day').value+'T12:00:00').toDateString() === new Date().toDateString()"));
+  await evaluate("document.querySelector('#upload-dialog [data-close]').click()");
   await waitFor("document.querySelector('.avatar img')?.naturalWidth === 64");
   assert.equal(await evaluate("document.querySelector('.avatar img').referrerPolicy"), 'no-referrer');
   await evaluate(`(async () => { const {renderAvatar} = await import('/profile-ui.mjs'); const element = document.createElement('span'); element.id = 'avatar-test'; document.body.append(element); for (const avatarUrl of [null, 'javascript:alert(1)', 'https://evil.test/photo', 'https://lh3.googleusercontent.com.evil.test/photo', 'http://lh3.googleusercontent.com/photo']) { renderAvatar(element, { name: 'Teszt Elek', avatarUrl }); if (element.querySelector('img') || element.textContent !== 'TE') throw Error('Invalid avatar fallback'); } renderAvatar(element, { name: 'Teszt Elek', avatarUrl: 'https://lh3.googleusercontent.com/missing' }); })()`);
@@ -262,6 +268,8 @@ try {
   await screenshot('mobile-ingredients.png', false);
   await evaluate("document.querySelector('#detail-form').requestSubmit()");
   await waitFor("document.querySelector('#meal-count').textContent === '1' && !document.querySelector('#meal-dialog').open");
+  await waitFor(`document.querySelector('#toast').textContent.includes(${JSON.stringify(expected('Új jelvényed:', 'New badge:'))})`);
+  assert.equal(await evaluate("document.querySelectorAll('#motivation-card .growth-steps .complete').length"),1);
   assert.equal(await evaluate("document.querySelector('#calorie-total').textContent"), '320');
   for (const width of [320,390,768,1024,1440]) { await viewport(width,844,width<768); assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth'), 'Saved meal fits '+width); assert.ok(await evaluate("document.querySelector('.meal-card').getBoundingClientRect().right <= document.querySelector('main').getBoundingClientRect().right")); }
   await viewport(device === 'desktop' ? 1440 : 390, device === 'desktop' ? 1100 : 844, device !== 'desktop');
@@ -299,6 +307,10 @@ try {
   await evaluate("document.querySelector('.mobile-nav [data-action=settings]').click()");
   await waitFor("document.querySelectorAll('.activity-day').length === 365");
   await waitFor("document.querySelector('.profile-initials img')?.naturalWidth === 64");
+  assert.equal(await evaluate("document.querySelectorAll('.growth-badge').length"),6);
+  assert.equal(await evaluate("document.querySelectorAll('.growth-badge.earned').length"),1);
+  assert.equal(await evaluate("document.querySelector('[data-badge=first]').dataset.earned"),'true');
+  assert.equal(await evaluate("document.querySelector('#growth-level-progress').value"),1);
   assert.equal(await evaluate("document.querySelector('.profile-stat strong').textContent.trim()"), '1');
   assert.ok(await evaluate("document.querySelectorAll('.profile-stat strong')[4].textContent.startsWith('40')"));
   assert.equal(await evaluate(`document.querySelector('.activity-day[data-profile-day="${savedRecipe.day}"]').dataset.level`), '1');
@@ -322,6 +334,9 @@ try {
   assert.equal(await evaluate("document.querySelector('#calorie-goal').value"), '2355');
   assert.equal(await evaluate("document.querySelector('#profile-period').value"), '365');
   await auditEnglish();
+  await viewport(390,844,true);
+  await evaluate("document.querySelector('.profile-growth').scrollIntoView({block:'start'})");
+  await screenshot('growth-mobile.png',false);
   await evaluate("document.querySelector('#profile-nutrition-details').open=true; document.querySelector('#profile-daily-details').open=true");
   for (const width of [320,390,768,1024,1440]) {
     await viewport(width,900,width<768);
@@ -352,6 +367,7 @@ try {
   await evaluate("document.querySelector('.mobile-nav [data-action=settings]').click()");
   await waitFor("document.querySelectorAll('.activity-day').length === 365");
   assert.equal(await evaluate("document.querySelector('.profile-stat strong').textContent.trim()"), '0');
+  assert.equal(await evaluate("document.querySelectorAll('.growth-badge.earned').length"),0);
   assert.ok(await evaluate("document.querySelectorAll('.profile-stat strong')[4].textContent.startsWith('—')"));
   await evaluate("document.querySelector('#calorie-goal').value='2300'; document.querySelector('#settings-form').requestSubmit()");
   await waitFor("!document.querySelector('#settings-dialog').open");
@@ -383,6 +399,8 @@ try {
   result.screenshots.push('profile-desktop.png', 'profile-mobile.png');
   result.checks.push('7/30/365-day profile periods, per-meal averages and meal-type table; expanded details fit five viewport widths');
   result.screenshots.push('profile-details-mobile.png');
+  result.checks.push('diary-growth card, today CTA from a past selection, first-badge celebration, six badges and reset after last saved meal is deleted');
+  result.screenshots.push('growth-mobile.png');
   result.checks.push('Google avatar in sidebar and profile, safe URL checks and failed-image initials fallback', 'all supplementary upload fields collapsed, valid automatic metadata and reset on reopening', 'optional review questions and notes collapsed');
   result.screenshots.push('upload-simple.png');
   result.checks.push('expanded AI methodology fits five viewport widths and links to the selected language guide');

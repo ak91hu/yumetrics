@@ -3,7 +3,7 @@ import { totals, NUTRIENTS, OPTIONAL_NUTRIENTS, TYPES, validateAnalysis, validat
 import { FOOD_REFERENCE } from '/food-reference.mjs';
 import { REFERENCE_STATES } from '/hungarian-food.mjs';
 import { installAnalysisUI, dishGuidance, reportMarkup, ingredientMarkup, refreshReport, recipeMarkup } from '/analysis-ui.mjs';
-import { loadProfile, renderProfile, renderAvatar } from '/profile-ui.mjs';
+import { loadProfile, renderProfile, renderAvatar, renderMotivation } from '/profile-ui.mjs';
 
 const $ = selector => document.querySelector(selector);
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -52,7 +52,7 @@ async function request(path, options = {}) {
 }
 function showLogin() { if (!state.redirectingToLogin) { state.redirectingToLogin = true; window.location.assign('/'); } }
 async function initialize() {
-  try { state.status = await request('/api/status'); state.goal = state.status.user.calorieGoal; $('.profile strong').textContent = state.status.user.name; $('.profile small').textContent = state.status.user.email; renderAvatar($('.avatar'), state.status.user); $('#logout-button').hidden = false; await loadMonth(); }
+  try { state.status = await request('/api/status'); state.goal = state.status.user.calorieGoal; $('.profile strong').textContent = state.status.user.name; $('.profile small').textContent = state.status.user.email; renderAvatar($('.avatar'), state.status.user); $('#logout-button').hidden = false; await loadMonth(); await loadProfile(request, { quiet: true }); }
   catch (error) { $('#loading').hidden = true; if (error.status !== 401) toast(error.message); }
 }
 async function loadMonth() {
@@ -130,6 +130,7 @@ document.addEventListener('click', async event => {
   const action = event.target.closest('[data-action]')?.dataset.action;
   if (!action) return;
   if (action === 'upload') openUpload();
+  if (action === 'log-today') { if ($('#settings-dialog').open) $('#settings-dialog').close(); await selectDay(today()); openUpload(); }
   if (action === 'calendar') { $('#calendar').scrollIntoView({ behavior: 'smooth', block: 'center' }); $('#calendar').focus({ preventScroll: true }); }
   if (action === 'diary') window.scrollTo({ top: 0, behavior: 'smooth' });
   if (action === 'learn') show('#learn-dialog');
@@ -350,18 +351,18 @@ async function saveMeal(event) {
   const button = $('#save-meal'); button.disabled = true;
   try {
     const { meal } = await request(`/api/meals/${state.edit.id}`, { method: 'PATCH', body: JSON.stringify(state.edit) });
-    state.dirty = false; $('#meal-dialog').close(); state.meals = [...state.meals.filter(item => item.id !== meal.id), meal]; state.selected = meal.day; state.month = meal.day.slice(0, 7); render(); await loadMonth(); toast(t('Elmentettük az étkezést a naplódba.'));
+    state.dirty = false; $('#meal-dialog').close(); state.meals = [...state.meals.filter(item => item.id !== meal.id), meal]; state.selected = meal.day; state.month = meal.day.slice(0, 7); render(); await loadMonth(); const reward = await loadProfile(request, { quiet: true, celebrate: true }); toast(reward || t('Elmentettük az étkezést a naplódba.'));
   } catch (error) { errorAt('#detail-error', error); } finally { button.disabled = false; }
 }
 function askDelete() { state.deleting = state.edit.id; $('#delete-error').hidden = true; show('#confirm-dialog'); }
 $('#confirm-delete').addEventListener('click', async event => {
   const button = event.currentTarget; button.disabled = true; $('#delete-error').hidden = true;
-  try { await request(`/api/meals/${state.deleting}`, { method: 'DELETE' }); state.dirty = false; $('#confirm-dialog').close(); $('#meal-dialog').close(); await loadMonth(); toast(t('A törlés elindult. A képek törlése után a bejegyzést is eltávolítjuk.')); }
+  try { await request(`/api/meals/${state.deleting}`, { method: 'DELETE' }); state.dirty = false; $('#confirm-dialog').close(); $('#meal-dialog').close(); await loadMonth(); await loadProfile(request, { quiet: true }); toast(t('A törlés elindult. A képek törlése után a bejegyzést is eltávolítjuk.')); }
   catch (error) { errorAt('#delete-error', error); } finally { button.disabled = false; }
 });
 render(); await initialize();
 setInterval(() => { if (!document.hidden && state.meals.some(meal => ['uploading', 'queued', 'running'].includes(meal.job?.state))) loadMonth(); }, 3000);
-document.addEventListener('visibilitychange', () => { if (!document.hidden) loadMonth(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { loadMonth(); loadProfile(request, { quiet: true }); } });
 let languageSnapshot;
 window.addEventListener('languagechanging', () => {
   if ($('#detail-form')) syncDetail();
@@ -373,7 +374,7 @@ window.addEventListener('languagechanging', () => {
   };
 });
 window.addEventListener('languagechange', () => {
-  render(); renderConnections(); renderProfile();
+  render(); renderConnections(); renderProfile(); renderMotivation();
   $('#dish-guidance').innerHTML = dishGuidance($('#dish-profile').value);
   $('#analyze-button').innerHTML = `${icon('sparkles')}${t('Elemzés indítása')}`;
   if (state.edit && $('#meal-dialog').open) {

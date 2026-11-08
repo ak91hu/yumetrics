@@ -57,6 +57,31 @@ test('profile periods include their boundary days and distinguish logged-day, pe
   }
 });
 
+test('diary growth rewards distinct saved days, preserves milestones across breaks and bounds the rolling weekly goal', () => {
+  const today = '2026-11-08';
+  const motivation = rows => profileStatistics(rows, [], today).motivation;
+  const empty = motivation([]);
+  assert.equal(empty.level, 1); assert.equal(empty.activeDays, 0); assert.equal(empty.nextStage.days, 3);
+  assert.ok(empty.badges.every(badge => !badge.earned));
+  const rows = ['2026-10-01', '2026-11-02', today].map(day => ({ day, meal_count: 1 }));
+  const three = motivation([...rows, { day: '2026-11-09', meal_count: 500 }]);
+  assert.equal(three.level, 2); assert.equal(three.activeDays, 3); assert.equal(three.nextStage.days, 7);
+  assert.deepEqual(three.badges.filter(badge => badge.earned).map(badge => badge.id), ['first', 'three']);
+  assert.equal(three.weekly.start, '2026-11-02'); assert.equal(three.weekly.activeDays, 2);
+  assert.equal(three.weekly.target, 3); assert.equal(three.weekly.todayLogged, true);
+  assert.deepEqual(motivation(rows.map(row => ({ ...row, meal_count: 1000 }))), three, 'More meals on the same days do not increase growth');
+  const oldRows = Array.from({ length: 100 }, (_, i) => ({ day: new Date(Date.UTC(2026, 0, i + 1)).toISOString().slice(0, 10), meal_count: 1 }));
+  const grown = motivation(oldRows);
+  assert.equal(grown.level, grown.levelCount); assert.equal(grown.nextStage, null);
+  assert.ok(grown.badges.every(badge => badge.earned)); assert.equal(grown.weekly.activeDays, 0);
+  assert.equal(grown.weekly.todayLogged, false);
+  for (const count of [1, 3, 7, 14, 30, 100]) {
+    const m = motivation(oldRows.slice(0, count));
+    assert.equal(m.badges.find(badge => badge.days === count).earned, true);
+    assert.ok(m.badges.filter(badge => badge.days > count).every(badge => !badge.earned));
+  }
+});
+
 test('profile reads real owner-scoped saved data, excludes drafts, deletion and future days, and retains fractional nutrients', async t => {
   const db = openDatabase(':memory:'); t.after(() => db.close()); const now = '2026-11-07T12:00:00.000Z';
   for (const id of ['alice', 'bob']) await db.prepare('INSERT INTO users(id,google_sub,email,name,created_at,updated_at) VALUES(?,?,?,?,?,?)').bind(id, id, id + '@example.test', id, now, now).run();
@@ -78,6 +103,8 @@ test('profile reads real owner-scoped saved data, excludes drafts, deletion and 
   assert.equal(result.statistics.periods[7].mealCount, 3);
   assert.equal(result.statistics.periods[7].mealTypes.find(row => row.type === 'Ebéd').count, 3);
   assert.equal(result.statistics.periods[7].averagePerMeal.calories, 104.4);
+  assert.equal(result.statistics.motivation.activeDays, 2);
+  assert.deepEqual(result.statistics.motivation.badges.filter(badge => badge.earned).map(badge => badge.id), ['first']);
   await db.prepare('UPDATE meals SET status=? WHERE id=?').bind('draft', editable).run();
   assert.equal((await userProfile(db, 'alice', 'Europe/Budapest', new Date(now))).statistics.lifetime.mealCount, 2);
   const get = (path, userId) => api(new Request('http://localhost' + path), { db, env: {}, userId });
@@ -85,4 +112,8 @@ test('profile reads real owner-scoped saved data, excludes drafts, deletion and 
   assert.equal((await get('/api/profile?timezone=invalid', 'alice')).status, 400);
   const own = await (await get('/api/profile?userId=bob', 'alice')).json();
   assert.equal(own.profile.email, 'alice@example.test'); assert.ok(!JSON.stringify(own).includes('bob@example.test'));
+  await db.prepare("UPDATE meals SET status='draft' WHERE user_id=?").bind('alice').run();
+  const cleared = await userProfile(db, 'alice', 'Europe/Budapest', new Date(now));
+  assert.equal(cleared.statistics.motivation.activeDays, 0);
+  assert.ok(cleared.statistics.motivation.badges.every(badge => !badge.earned));
 });

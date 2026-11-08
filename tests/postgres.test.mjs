@@ -50,6 +50,9 @@ test('PostgreSQL: real process replacement retains Google session, profile, queu
   assert.equal(profile.statistics.periods[7].mealCount,1);
   assert.equal(profile.statistics.periods[7].averagePerMeal.calories,200);
   assert.deepEqual(profile.statistics.periods[7].mealTypes.find(row=>row.type==='Ebéd'),{type:'Ebéd',count:1,averageCalories:200});
+  assert.equal(profile.statistics.motivation.activeDays,1);
+  assert.equal(profile.statistics.motivation.badges.find(badge=>badge.id==='first').earned,true);
+  assert.equal(profile.statistics.motivation.weekly.activeDays,1);
   assert.equal(JSON.parse((await db.prepare('SELECT original_analysis FROM meals WHERE id=?').bind(meal.id).first()).original_analysis).ingredients[0].grams,150);
   assert.equal((await fetch(app.origin+'/api/meals/'+meal.id,{method:'DELETE',headers})).status,202);
   await kill(app.child);app=await start(true);

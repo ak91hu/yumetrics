@@ -1,5 +1,9 @@
 # Ellenőrzés
 
+## Naplózási motiváció, 2026-11-08
+
+A teljes Node-futás 67/67 sikeres, valódi helyi PostgreSQL-lel, kihagyás nélkül. Az új próbák a különböző mentett napokra számolt növényszinteket, mind a hat jelvény küszöbét, a gördülő hét határait, az üres naplót, a jövőbeli/piszkozat/törlendő tételek kizárását és a kihagyások utáni megmaradó mérföldköveket ellenőrzik. Azonos nap több étkezése nem növeli a szintet; az utolsó mentett bejegyzés eltávolítása újraszámítja a jelvényeket. A PostgreSQL-próba mentett recept alapján is ellenőrzi a fejlődést. A magyar/mobil és angol/asztali böngészőfolyamat ellenőrzi a főoldali kártyát, a mai napra irányító feltöltőgombot korábbi nap kiválasztása után, az első jelvény mentéskori visszajelzését, a hat jelvény megjelenítését, a törlés utáni frissítést és az elrendezést öt szélességen. A külső szolgáltatók helyettesített válaszokat adnak; a szolgáltatói hívásszám változatlan. Valódi telefonos ellenőrzés és motivációs hatásmérés nem történt.
+
 ## Profilbővítés, 2026-11-08
 
 A teljes Node-tesztsor 66/66 sikeres, helyi PostgreSQL-lel, kihagyás nélkül. Az új ellenőrzések a 7/30/365 napos időszakhatárokat, a naplózott naponkénti és étkezésenkénti átlagok különbségét, az étkezéstípusok bontását és a hiányzó értékek megőrzését vizsgálják. Az új PostgreSQL-próba a mentett receptből számolt profilt is ellenőrzi. A magyar/mobil és angol/asztali Chrome-folyamatok sikeresek: időszakváltás, nyelvváltáskor megőrzött választás és energiakeret, üres állapot, valamint összecsukott és kinyitott részletek öt szélességen. A mobilos és asztali képernyőképeket vizuálisan ellenőriztük. A böngészőteszt helyi adatbázist és helyettesített Google-/AI-/képtár-válaszokat használ; valódi telefonon nem történt ellenőrzés.
