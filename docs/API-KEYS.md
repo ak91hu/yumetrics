@@ -48,4 +48,4 @@ Miután helyben kitöltötted a szükséges mezőket, indítsd újra a szervert.
 
 ## Google-belépés GitHub Pages-visszatérő oldallal
 
-Az éles beállításban `GOOGLE_REDIRECT_URI=https://ak91hu.github.io/yumetrics/oauth.html`; a Google OAuth-webklienshez ezt a pontos URI-t kell regisztrálni. A helyi `.env` fájlban hagyd üresen a mezőt, hogy a helyi callback maradjon használatban. Az APP_ORIGIN az alkalmazás Northflank-címe marad, nem a GitHub Pages. Részletek: [Northflank telepítés](NORTHFLANK.md).
+Az éles beállításban `GOOGLE_REDIRECT_URI=https://ak91hu.github.io/yumetrics/oauth.html`; a Google OAuth-webklienshez ezt a pontos URI-t kell regisztrálni. A helyi `.env` fájlban hagyd üresen a mezőt, hogy a helyi callback maradjon használatban. Az éles APP_ORIGIN értéke https://yumetrics.app, nem a GitHub Pages. Részletek: [Northflank telepítés](NORTHFLANK.md).

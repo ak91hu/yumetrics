@@ -1,17 +1,18 @@
 # Northflank: tartós adatok és újraindítható alkalmazás
 
-Ellenőrizve: 2026-11-07. Az alkalmazás és a külön PostgreSQL 17 addon az **ak91hus-team/default** projektben, europe-west régióban fut. Az image a [GitHub-repozitóriumból](https://github.com/ak91hu/yumetrics), Dockerfile alapján épül.
+Frissítve: 2026-11-08. Az alkalmazás és a külön PostgreSQL 17 addon az **ak91hus-team/default** projektben, europe-west régióban fut. Az image a [GitHub-repozitóriumból](https://github.com/ak91hu/yumetrics), Dockerfile alapján épül.
 
-- Alkalmazás: https://http--yumetrics--dmg6gnvmmd7s.code.run
+- Elsődleges alkalmazáscím: https://yumetrics.app
+- További címek: `www.yumetrics.app` és `http--yumetrics--dmg6gnvmmd7s.code.run`; az alkalmazás a beállított elsődleges címre irányítja át a GET/HEAD kéréseket, az útvonal és paraméterek megtartásával.
 - Alkalmazásszolgáltatás: `yumetrics`, 1 példány, nf-compute-20, 512 MB memória.
 - Adatbázis: `yumetrics-postgres`, PostgreSQL 17, nf-compute-20, 4 GiB tartós NVMe lemez, TLS, privát hálózat. A sémát az első indítás létrehozta.
 - Titkok: `yumetrics-runtime`, kizárólag a Yumetrics alkalmazás futtatásához. A helyi adatbázis helyett az addon írható `POSTGRES_URI` értéke öröklődik `DATABASE_URL` néven. Minden feltöltött változó értéke visszaolvasva ellenőrzött. A titkok nincsenek a Gitben vagy az image-ben.
 - Egészség: `/healthz` és `/readyz` HTTPS-en 200; az utóbbi az adatbázist is ellenőrzi.
 - Automatikus mentés: heti native dump, vasárnap 02:15 UTC, 7 napos megőrzés. A napi ütemezést a Northflank az aktuális ingyenes csomagban elutasította.
 
-### Google-belépés saját domain nélkül
+### Google-belépés regisztrált Pages-visszatérő címmel
 
-A Google Console elutasította az automatikus code.run callbacket. A felhasználó által jóváhagyott megoldás egy kicsi, statikus visszatérő oldal a saját GitHub Pages-címen: **https://ak91hu.github.io/yumetrics/oauth.html**. Ezt kell Authorized redirect URI-ként regisztrálni; szükség esetén Authorized domain: `ak91hu.github.io`. A szerveren `GOOGLE_REDIRECT_URI` erre a címre mutat, az `APP_ORIGIN` továbbra is a Northflank HTTPS-cím.
+A Google Console elutasította az automatikus code.run callbacket. A felhasználó által jóváhagyott megoldás egy kicsi, statikus visszatérő oldal a saját GitHub Pages-címen: **https://ak91hu.github.io/yumetrics/oauth.html**. Ezt kell Authorized redirect URI-ként regisztrálni; szükség esetén Authorized domain: `ak91hu.github.io`. A szerveren `GOOGLE_REDIRECT_URI` erre a címre mutat, az `APP_ORIGIN=https://yumetrics.app`. A Pages-oldal rögzített Northflank-visszatérési címéről a szerver az elsődleges domainre irányítja a kérést; a state-, code- és error-paraméterek megmaradnak, így az elsődleges domainen beállított biztonságos süti ellenőrizhető.
 
 A visszatérő oldal nem tölt be külső erőforrást, nem tárol adatot vagy tokent, nem választ átirányítási célt a kérésből. Csak a `state`, `code`, `error` mezőt adja tovább a rögzített Northflank callbacknek, és előtte törli a paramétereket a címsorból. Referrer-tiltás és szigorú CSP védi. A szerver ellenőrzi az eredeti állapotsütit, az egyszer használható adatbázis-state-et, a PKCE-t, a nonce-ot és a Google ID-tokent. A tokenváltásban is ugyanaz a Pages redirect URI szerepel. A GitHub Pages kizárólag statikus közvetítő; a felhasználók, munkamenetek és étkezések a Northflanken maradnak. A valódi belépés sikerét a felhasználó visszaigazolta.
 
@@ -81,3 +82,9 @@ Csak órás mentésből helyreállítva a legutóbbi mentés utáni írások elv
 Valódi Google-fiókkal belépés, napikeret mentése, saját fotó feltöltése és egy étkezés naplózása után jegyezd fel az azonosítóját. Indíts app service restartot, majd új image-re redeploymentet ugyanazzal a DATABASE_URL-lel. Ellenőrizd ugyanazt a munkamenetet, étkezést, fotókat, napi keretet és az eredeti/javított elemzést. Folyamatban lévő elemzéssel és törléssel is ismételd meg stagingben. Végül külön addonba visszaállított mentésen is olvasd vissza az adatokat.
 
 A helyi, valódi PostgreSQL-integrációs tesztek ennek alkalmazásfolyamatot cserélő részét ellenőrzik. Valódi éles HTTP-próba: Cloudinary-feltöltés, angol Gemini 4 Argon-elemzés, USDA-keresés, adatbázisba mentés, majd alkalmazás-újraindítás utáni azonos munkamenet, étkezés, napi keret és kép sikeres visszaolvasása. A fotó generált arculati próbakép, a tömeg szintetikus tesztbemenet; ez működési, nem kalóriapontossági vizsgálat. Addon-failover és mentésből visszaállítás még nem volt.
+
+## Saját domain és ingyenes HTTPS
+
+A `yumetrics.app` Name.com DNS-zónát használ. A Northflank domainhitelesítő TXT-rekordját meg kell tartani. A gyökérhez ANAME (üres Host vagy `@`) kell, célja `yumetrics.app.ak91-7vzw.dns.northflank.app`; a `www` CNAME célja `www.yumetrics.app.ak91-7vzw.dns.northflank.app`. Mindkét név a `default/yumetrics` szolgáltatás `http` portjához kapcsolódik. A Name.com parkoló A-rekordja helyett az ANAME használatos.
+
+A TLS-t a Northflank automatikus Let’s Encrypt tanúsítványa és megújítása kezeli, külön Certbot vagy fizetős SSL nem kell. A HTTPS ellenőrzésekor érvényes láncot, megfelelő hostnevet és lejáratot kell látni. Az alkalmazás HTTPS eredetnél HSTS-fejlécet ad. A belső `/healthz` és `/readyz` ellenőrzéseket nem irányítja át. A régi hoston érkező módosító kéréseket elutasítja, a böngészős belépés az elsődleges címen történik; a régi domain munkamenetsütije nem kerül át az új domainre, ezért új bejelentkezés szükséges lehet.

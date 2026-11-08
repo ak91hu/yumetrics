@@ -2,13 +2,14 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createApp, openDatabase } from '../server.mjs';
 import { tokenHash, authRoute, currentUser } from '../lib/auth.mjs';
-import { testGoogleClient, aiPayloadFor } from './fixtures.mjs';
+import { secondImage, testGoogleClient, aiPayloadFor } from './fixtures.mjs';
 import { foodRecord, fetchFood, analysisReferences, searchFoods } from '../lib/food-data.mjs';
 import { analysisContext, validateAnalysis } from '../lib/domain.mjs';
 import { analyze } from '../lib/providers.mjs';
 
 test('Google-only gate, one-use state, durable hashed session, profile and logout', async t => {
-  const db = openDatabase(':memory:'), env = { GOOGLE_CLIENT_ID: 'test-client', GOOGLE_CLIENT_SECRET: 'test-secret' }, client = testGoogleClient();
+  const avatarUrl = 'https://lh3.googleusercontent.com/a/test-photo';
+  const db = openDatabase(':memory:'), env = { GOOGLE_CLIENT_ID: 'test-client', GOOGLE_CLIENT_SECRET: 'test-secret' }, client = testGoogleClient({ picture: avatarUrl });
   let server, origin;
   async function start() {
     server = createApp({ db, env, googleClient: client });
@@ -34,6 +35,11 @@ test('Google-only gate, one-use state, durable hashed session, profile and logou
   assert.equal((await fetch(`${origin}/api/profile`, { method: 'PATCH', headers: { ...headers, Origin: 'https://evil.test' }, body: JSON.stringify({ calorieGoal: 1000 }) })).status, 403);
   await new Promise(resolve => server.close(resolve)); await start();
   const profile = await (await fetch(`${origin}/api/status`, { headers: { Cookie: sessionCookie } })).json(); assert.equal(profile.user.calorieGoal, 2300); assert.equal(profile.user.email, 'teszt@example.test');
+  assert.equal(profile.user.avatarUrl, avatarUrl);
+  const account = await (await fetch(`${origin}/api/profile`, { headers: { Cookie: sessionCookie } })).json();
+  assert.equal(account.profile.avatarUrl, avatarUrl);
+  const policy = (await fetch(origin, { headers: { Cookie: sessionCookie } })).headers.get('content-security-policy');
+  assert.ok(policy.includes('https://*.googleusercontent.com')); assert.ok(!policy.includes('img-src *'));
   assert.ok((await (await fetch(origin, { headers: { Cookie: sessionCookie } })).text()).includes('id="upload-form"'));
   assert.equal((await fetch(`${origin}/api/logout`, { method: 'POST', headers: { Cookie: sessionCookie } })).status, 200);
   assert.equal((await fetch(`${origin}/api/status`, { headers: { Cookie: sessionCookie } })).status, 401);
@@ -77,7 +83,7 @@ test('USDA values retain identifiers, units, nulls and immutable source snapshot
 test('bones are removed from the full image portion, never silently counted as food', async () => {
   const image = 'data:image/jpeg;base64,' + Buffer.concat([Buffer.from([255,216,255,224]),Buffer.alloc(200)]).toString('base64');
   const analysis = {name:'Hús',confidence:'medium',assumptions:'Teszt',ingredients:[{name:'Hús',grams:100,calories:200,protein:25,carbs:0,fat:11,fiber:0,sugar:0,sodium:0}]};
-  const result = await analyze(image,'',{OPENCODE_API_KEY:'test'},async (url,options)=>Response.json(aiPayloadFor(analysis,options)),{context:{totalWeightG:600,inedibleWeightG:200}});
+  const result = await analyze(image,'',{OPENCODE_API_KEY:'test'},async (url,options)=>Response.json(aiPayloadFor(analysis,options)),{secondImage,context:{totalWeightG:600,inedibleWeightG:200}});
   assert.equal(result.analysis.ingredients[0].grams,400);
   for (const context of [{totalWeightG:100,inedibleWeightG:100},{inedibleWeightG:50},{inedibleWeightG:-1}]) assert.throws(()=>analysisContext(context));
 });

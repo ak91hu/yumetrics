@@ -5,7 +5,7 @@ import { validateAnalysis, totals, analysisReport, analysisContext } from '../li
 import { HUNGARIAN_DISHES, REFERENCE_STATES } from '../lib/hungarian-food.mjs';
 import { FOOD_REFERENCE } from '../lib/food-reference.mjs';
 import { analyze } from '../lib/providers.mjs';
-import { visualInventory, aiPayloadFor } from './fixtures.mjs';
+import { secondImage, visualInventory, aiPayloadFor } from './fixtures.mjs';
 import { openDatabase } from '../lib/database.mjs';
 import { api } from '../lib/api.mjs';
 
@@ -61,13 +61,34 @@ test('Hungarian groups have no fabricated dish calories; preparation context is 
   assert.equal(analysisContext({dishProfile:'fozelek',preparationNotes:'20%-os tejföllel habart'}).dishProfile,'fozelek');
   assert.throws(()=>analysisContext({dishProfile:'invented'}));assert.throws(()=>analysisContext({preparationNotes:'x'.repeat(1201)}));
 });
-test('a prepared ingredient cannot inherit a raw USDA reference; the nutrient pass receives actual preparation facts',async()=>{
+test('a prepared ingredient cannot inherit a raw USDA reference; the single request includes actual preparation facts',async()=>{
   const inventory=visualInventory({...base,ingredients:[base.ingredients[0]]});inventory.ingredients[0].referenceKey='fdc-169756';inventory.ingredients[0].foodState='prepared';inventory.dishProfile='teszta';
   let calls=0,lastRequest;
   const fetcher=async(url,request)=>{calls++;lastRequest=JSON.parse(request.body);return Response.json(aiPayloadFor({...base,ingredients:[base.ingredients[0]]},request,inventory));};
-  const result=await analyze(image,'Teszt',{OPENCODE_API_KEY:'test'},fetcher,{context:{dishProfile:'teszta',preparationNotes:'A tészta főtt tömegét adtam meg.'}});
-  assert.equal(calls,2);assert.equal(result.analysis.ingredients[0].sourceType,'ai');assert.equal(result.analysis.ingredients[0].referenceKey,null);assert.ok(result.analysis.ingredients[0].portionNote.includes('más elkészítési módhoz'));
-  assert.ok(JSON.parse(lastRequest.contents[0].parts[0].text).context.preparationNotes.includes('főtt tömeg'));
+  const result=await analyze(image,'Teszt',{OPENCODE_API_KEY:'test'},fetcher,{secondImage,context:{dishProfile:'teszta',preparationNotes:'A tészta főtt tömegét adtam meg.'}});
+  assert.equal(calls,1);assert.equal(result.analysis.ingredients[0].sourceType,'ai');assert.equal(result.analysis.ingredients[0].referenceKey,null);assert.ok(result.analysis.ingredients[0].portionNote.includes('más elkészítési módhoz'));
+  assert.ok(JSON.parse(lastRequest.contents[0].parts.find(part => part.text).text).context.preparationNotes.includes('főtt tömeg'));
+});
+test('two photos without supplementary fields produce a complete editable estimate with at most one optional question', async () => {
+  const inventory = visualInventory(base); inventory.dishProfile = 'rakott';
+  inventory.questions = ['Milyen tejföl került bele?', 'Mennyi olajat használtál?'];
+  const calls = [];
+  const result = await analyze(image, '', { OPENCODE_API_KEY: 'test' }, async (url, request) => {
+    calls.push(JSON.parse(request.body)); return Response.json(aiPayloadFor(base, request, inventory));
+  }, { secondImage });
+  assert.equal(calls.length, 1);
+  const context = JSON.parse(calls[0].contents[0].parts.find(part => part.text).text).context;
+  assert.ok(!context.dishProfile || context.dishProfile === 'generic'); assert.equal(context.totalWeightG, null); assert.ok(!context.preparationNotes);
+  assert.ok(calls[0].systemInstruction.parts[0].text.includes('questions alapból üres lista'));
+  assert.ok(calls[0].systemInstruction.parts[0].text.includes('context.dishProfile=generic automatikus felismerést jelent'));
+  assert.equal(result.analysis.name, base.name); assert.equal(result.analysis.dishProfile, 'rakott');
+  assert.equal(result.analysis.ingredients[0].preparation, inventory.ingredients[0].preparation);
+  assert.equal(result.analysis.ingredients[0].weightBasis, 'visual');
+  assert.ok(totals(result.analysis.ingredients).calories > 0);
+  assert.deepEqual(result.analysis.questions, [inventory.questions[0]]);
+  const noQuestions = { ...inventory, questions: [] };
+  const automatic = await analyze(image, '', { OPENCODE_API_KEY: 'test' }, async (url, request) => Response.json(aiPayloadFor(base, request, noQuestions)), { secondImage });
+  assert.deepEqual(automatic.analysis.questions, []);
 });
 test('server save normalises recipe nutrients, keeps the original photo analysis and is owner-scoped',async t=>{
   const db=openDatabase(':memory:');t.after(()=>db.close());const id=randomUUID(),initial=JSON.stringify(base),now=new Date().toISOString();

@@ -1,9 +1,9 @@
 import { t, html, initializeLanguage, getLanguage, locale, messageSource } from '/localization.mjs';
-import { totals, NUTRIENTS, OPTIONAL_NUTRIENTS, TYPES, validateAnalysis, metadata } from '/domain.mjs';
+import { totals, NUTRIENTS, OPTIONAL_NUTRIENTS, TYPES, validateAnalysis, validateImagePair, metadata } from '/domain.mjs';
 import { FOOD_REFERENCE } from '/food-reference.mjs';
 import { REFERENCE_STATES } from '/hungarian-food.mjs';
 import { installAnalysisUI, dishGuidance, reportMarkup, ingredientMarkup, refreshReport, recipeMarkup } from '/analysis-ui.mjs';
-import { loadProfile, renderProfile } from '/profile-ui.mjs';
+import { loadProfile, renderProfile, renderAvatar } from '/profile-ui.mjs';
 
 const $ = selector => document.querySelector(selector);
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -52,7 +52,7 @@ async function request(path, options = {}) {
 }
 function showLogin() { if (!state.redirectingToLogin) { state.redirectingToLogin = true; window.location.assign('/'); } }
 async function initialize() {
-  try { state.status = await request('/api/status'); state.goal = state.status.user.calorieGoal; $('.profile strong').textContent = state.status.user.name; $('.profile small').textContent = state.status.user.email; $('#logout-button').hidden = false; await loadMonth(); }
+  try { state.status = await request('/api/status'); state.goal = state.status.user.calorieGoal; $('.profile strong').textContent = state.status.user.name; $('.profile small').textContent = state.status.user.email; renderAvatar($('.avatar'), state.status.user); $('#logout-button').hidden = false; await loadMonth(); }
   catch (error) { $('#loading').hidden = true; if (error.status !== 401) toast(error.message); }
 }
 async function loadMonth() {
@@ -163,6 +163,7 @@ function openUpload() {
   if (state.busy) { show('#upload-dialog'); return; }
   state.photo = null; state.secondPhoto = null; state.uploadId = crypto.randomUUID(); photoVersion++; secondPhotoVersion++;
   $('#upload-form').reset(); $('#upload-day').value = state.selected; $('#upload-time').value = new Date().toTimeString().slice(0, 5);
+  $('#upload-form').querySelectorAll('details').forEach(element => { element.open = false; });
   const hour = new Date().getHours(); $('#upload-type').value = hour < 11 ? 'Reggeli' : hour < 16 ? 'Ebéd' : hour < 22 ? 'Vacsora' : 'Kisétkezés';
   $('#photo-preview').hidden = true; $('#upload-zone').hidden = false; $('#change-photo').hidden = true; $('#upload-error').hidden = true; $('#analysis-progress').hidden = true;
   $('.second-preview-wrap').hidden = true;
@@ -173,7 +174,8 @@ function openUpload() {
 async function choosePhoto(file, secondary = false) {
   if (!file || state.busy) return;
   const version = secondary ? ++secondPhotoVersion : ++photoVersion;
-  if (secondary) state.secondPhoto = null; else state.photo = null;
+  if (secondary) { state.secondPhoto = null; $('.second-preview-wrap').hidden = true; }
+  else { state.photo = null; $('#photo-preview').hidden = true; $('#upload-zone').hidden = false; $('#change-photo').hidden = true; }
   processingPhotos++; $('#upload-error').hidden = true; $('#analyze-button').disabled = true;
   const objectUrl = URL.createObjectURL(file);
   try {
@@ -182,18 +184,21 @@ async function choosePhoto(file, secondary = false) {
     const image = new Image(); image.src = objectUrl;
     try { await image.decode(); } catch { throw new Error(t('A böngésző nem tudja megnyitni ezt a képet. Ha HEIC- vagy HEIF-fájlt választottál, alakítsd át JPEG-formátumra, majd töltsd fel újra.')); }
     if (!image.naturalWidth || image.naturalWidth * image.naturalHeight > 50_000_000) throw new Error(t('A kép felbontása túl nagy. Válassz legfeljebb 50 megapixeles képet.'));
-    const ratio = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight)), canvas = document.createElement('canvas');
+    const ratio = Math.min(1, 2048 / Math.max(image.naturalWidth, image.naturalHeight)), canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(image.naturalWidth * ratio)); canvas.height = Math.max(1, Math.round(image.naturalHeight * ratio));
     const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL('image/jpeg', .86);
+    const dataUrl = canvas.toDataURL('image/jpeg', .92);
     if (dataUrl.length > 5_590_000) throw new Error(t('A tömörített kép túl nagy. Válassz kisebb fotót.'));
     if (version !== (secondary ? secondPhotoVersion : photoVersion)) return;
+    if (dataUrl === (secondary ? state.photo : state.secondPhoto)) throw new Error(t('Ugyanazt a képet választottad kétszer. Készíts második fotót eltérő szögből.'));
     if (secondary) { state.secondPhoto = dataUrl; $('#second-photo-preview').src = dataUrl; $('.second-preview-wrap').hidden = false; }
     else { state.photo = dataUrl; $('#photo-preview').src = dataUrl; $('#photo-preview').hidden = false; $('#upload-zone').hidden = true; $('#change-photo').hidden = false; }
   } catch (error) { if (version === (secondary ? secondPhotoVersion : photoVersion)) errorAt('#upload-error', error); }
   finally { URL.revokeObjectURL(objectUrl); processingPhotos--; $('#analyze-button').disabled = state.busy || processingPhotos > 0; }
 }
 $('#second-photo-input').addEventListener('change', event => choosePhoto(event.target.files[0], true));
+$('#second-camera-input').addEventListener('change', event => choosePhoto(event.target.files[0], true));
+$('#second-camera-button').addEventListener('click', () => { if (!state.busy) { $('#second-camera-input').value = ''; $('#second-camera-input').click(); } });
 $('#remove-second-photo').addEventListener('click', () => { if (state.busy) return; state.secondPhoto = null; secondPhotoVersion++; $('#second-photo-input').value = ''; $('.second-preview-wrap').hidden = true; });
 $('#photo-input').addEventListener('change', event => choosePhoto(event.target.files[0]));
 $('#camera-input').addEventListener('change', event => choosePhoto(event.target.files[0]));
@@ -202,9 +207,10 @@ $('#change-photo').addEventListener('click', () => { if (!state.busy) { $('#phot
 for (const name of ['dragenter', 'dragover']) $('#upload-zone').addEventListener(name, event => { event.preventDefault(); $('#upload-zone').classList.add('dragging'); });
 for (const name of ['dragleave', 'drop']) $('#upload-zone').addEventListener(name, event => { event.preventDefault(); $('#upload-zone').classList.remove('dragging'); if (name === 'drop') choosePhoto(event.dataTransfer.files[0]); });
 $('#upload-form').addEventListener('submit', async event => {
-  event.preventDefault(); if (state.busy) return;
+  event.preventDefault(); if (state.busy || processingPhotos > 0) return;
   $('#upload-error').hidden = true;
   if (!state.photo) { errorAt('#upload-error', new Error(t('Válassz egy ételfotót az elemzéshez.'))); return; }
+  try { validateImagePair(state.photo, state.secondPhoto); } catch (error) { errorAt('#upload-error', error); return; }
   state.busy = true; $('#analyze-button').disabled = true; $('#analysis-progress').hidden = false;
   const id = state.uploadId;
   try {
@@ -237,7 +243,7 @@ function renderDetail() {
     $('#delete-meal').addEventListener('click', askDelete); return;
   }
   const total = totals(analysis.ingredients);
-  $('#meal-detail').innerHTML = html`<form id="detail-form"><div class="detail-top"><img src="${escape(meal.photo.url)}" alt="${escape(analysis.name)}"><div class="detail-summary"><strong id="detail-calories">${integer(total.calories)}</strong><small> kcal</small><div class="detail-totals" id="detail-macros"></div><span class="confidence ${analysis.confidence}">Az AI saját értékelése: ${{ low: t('bizonytalan'), medium: t('részben biztos'), high: t('biztos') }[analysis.confidence]}</span></div></div><fieldset  class="detail-fields">${field(t('Az étel neve'), 'name', analysis.name, 'required maxlength="160"')}<div class="form-grid">${field(t('Dátum'), 'day', meal.day, 'type="date" required min="1900-01-01" max="2100-12-31"')}${field(t('Időpont'), 'time', meal.time, 'type="time" required')}<label class="full-width">Étkezés<select name="type">${TYPES.map(type => `<option value="${type}" ${type === meal.type ? 'selected' : ''}>${t(type)}</option>`).join('')}</select></label></div><div class="ingredient-heading"><h3>Összetevők és adagok</h3><button type="button" class="text-button" id="add-ingredient">${icon('plus')}Hozzáadás</button></div><div id="ingredient-list">${analysis.ingredients.map((item, index) => html`<div class="ingredient-row" data-ingredient="${index}"><div class="ingredient-main">${field(t('Összetevő'), `i-${index}-name`, item.name, 'required maxlength="160"')}${field(t('Az összetevő teljes tömege (g)'), `i-${index}-grams`, item.grams, 'type="number" step="any" min="0.1" max="5000" required')}<button class="icon-button" type="button" data-remove="${index}" aria-label="Összetevő törlése">${icon('x')}</button></div><details><summary>Tápértékek 100 g-ban · szerkesztés</summary><div class="nutrient-inputs">${NUTRIENTS.map(key => field(nutrientNames[key], `i-${index}-${key}`, item[key] ?? '', `type="number" step="any" min="0" max="${key === 'calories' ? 1000 : key === 'sodium' ? 100000 : 100}" ${['fiber', 'sugar', 'sodium'].includes(key) ? 'placeholder="Ismeretlen"' : 'required'}`)).join('')}</div></details></div>`).join('')}</div><div class="detail-extra" id="detail-extra"></div><label>Megjegyzés<textarea name="notes" rows="2" maxlength="2000">${escape(meal.notes)}</textarea></label></fieldset><div class="assumptions"><strong>A becslés bizonytalanságai</strong>${escape(analysis.assumptions || t('Az adag és a rejtett összetevők egy fotóból nem mérhetők pontosan.'))}</div><p class="form-error" id="detail-error" role="alert" hidden></p><div class="detail-footer">${html`<button type="button" class="delete-button" id="delete-meal">${icon('trash')}Törlés</button><button type="submit" class="button primary" id="save-meal">${meal.status === 'draft' ? t('Mentés a naplómba') : t('Módosítások mentése')}</button>`}</div><p class="detail-provenance">${t`Az eredeti AI-becslést külön megőrizzük. Elemzőmodell: ${escape(meal.model)} · Módszerváltozat: ${escape(meal.promptVersion)}.`}</p></form>`;
+  $('#meal-detail').innerHTML = html`<form id="detail-form"><div class="detail-top"><img src="${escape(meal.photo.url)}" alt="${escape(analysis.name)}"><div class="detail-summary"><strong id="detail-calories">${integer(total.calories)}</strong><small> kcal</small><div class="detail-totals" id="detail-macros"></div><span class="confidence ${analysis.confidence}">Az AI saját értékelése: ${{ low: t('bizonytalan'), medium: t('részben biztos'), high: t('biztos') }[analysis.confidence]}</span></div></div><fieldset  class="detail-fields">${field(t('Az étel neve'), 'name', analysis.name, 'required maxlength="160"')}<div class="form-grid">${field(t('Dátum'), 'day', meal.day, 'type="date" required min="1900-01-01" max="2100-12-31"')}${field(t('Időpont'), 'time', meal.time, 'type="time" required')}<label class="full-width">Étkezés<select name="type">${TYPES.map(type => `<option value="${type}" ${type === meal.type ? 'selected' : ''}>${t(type)}</option>`).join('')}</select></label></div><div class="ingredient-heading"><h3>Összetevők és adagok</h3><button type="button" class="text-button" id="add-ingredient">${icon('plus')}Hozzáadás</button></div><div id="ingredient-list">${analysis.ingredients.map((item, index) => html`<div class="ingredient-row" data-ingredient="${index}"><div class="ingredient-main">${field(t('Összetevő'), `i-${index}-name`, item.name, 'required maxlength="160"')}${field(t('Az összetevő teljes tömege (g)'), `i-${index}-grams`, item.grams, 'type="number" step="any" min="0.1" max="5000" required')}<button class="icon-button" type="button" data-remove="${index}" aria-label="Összetevő törlése">${icon('x')}</button></div><details><summary>Tápértékek 100 g-ban · szerkesztés</summary><div class="nutrient-inputs">${NUTRIENTS.map(key => field(nutrientNames[key], `i-${index}-${key}`, item[key] ?? '', `type="number" step="any" min="0" max="${key === 'calories' ? 1000 : key === 'sodium' ? 100000 : 100}" ${['fiber', 'sugar', 'sodium'].includes(key) ? 'placeholder="Ismeretlen"' : 'required'}`)).join('')}</div></details></div>`).join('')}</div><div class="detail-extra" id="detail-extra"></div><details class="report-disclosure"><summary>Megjegyzés <span>nem kötelező</span></summary><label>Megjegyzés<textarea name="notes" rows="2" maxlength="2000">${escape(meal.notes)}</textarea></label></details></fieldset><div class="assumptions"><strong>A becslés bizonytalanságai</strong>${escape(analysis.assumptions || t('Az adag és a rejtett összetevők egy fotóból nem mérhetők pontosan.'))}</div><p class="form-error" id="detail-error" role="alert" hidden></p><div class="detail-footer">${html`<button type="button" class="delete-button" id="delete-meal">${icon('trash')}Törlés</button><button type="submit" class="button primary" id="save-meal">${meal.status === 'draft' ? t('Mentés a naplómba') : t('Módosítások mentése')}</button>`}</div><p class="detail-provenance">${t`Az eredeti AI-becslést külön megőrizzük. Elemzőmodell: ${escape(meal.model)} · Módszerváltozat: ${escape(meal.promptVersion)}.`}</p></form>`;
   $('#detail-form fieldset').insertAdjacentHTML('beforebegin', reportMarkup(meal));
   $('.ingredient-heading').insertAdjacentHTML('beforebegin', recipeMarkup(analysis, state.recipeEditing));
   if (state.recipeEditing) {

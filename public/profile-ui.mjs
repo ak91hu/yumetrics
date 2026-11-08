@@ -5,6 +5,17 @@ const number = value => value == null ? '—' : new Intl.NumberFormat(locale(), 
 const date = day => new Intl.DateTimeFormat(locale(), { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(day.slice(0, 10) + 'T12:00:00Z'));
 const quantity = (count, one, many) => count === 1 ? t(one) : t(many).replace('{0}', number(count));
 let data;
+export function renderAvatar(element, profile) {
+  element.textContent = profile.name.trim().split(/\s+/).slice(0, 2).map(part => [...part][0] || '').join('').toUpperCase();
+  element.setAttribute('aria-hidden', 'true');
+  let url;
+  try { url = new URL(profile.avatarUrl); } catch { return; }
+  if (url.protocol !== 'https:' || !url.hostname.endsWith('.googleusercontent.com') || url.username || url.password) return;
+  const image = document.createElement('img');
+  image.alt = ''; image.referrerPolicy = 'no-referrer';
+  image.addEventListener('error', () => image.remove(), { once: true });
+  image.src = url.href; element.append(image);
+}
 export async function loadProfile(request) {
   const root = document.querySelector('#profile-summary');
   data = null; root.setAttribute('aria-busy', 'true'); root.textContent = t('A statisztikák betöltése folyamatban…');
@@ -15,7 +26,6 @@ export async function loadProfile(request) {
 export function renderProfile() {
   if (!data) return;
   const { profile, statistics: s } = data, life = s.lifetime, recent = s.recent;
-  const initials = profile.name.trim().split(/\s+/).slice(0, 2).map(part => [...part][0] || '').join('').toUpperCase();
   const metric = (label, value, unit = '') => `<div class="profile-stat"><strong>${escape(number(value))}<small>${escape(unit)}</small></strong><span>${escape(t(label))}</span></div>`;
   const dayUnit = count => locale().startsWith('en') && count !== 1 ? t('napok') : t('nap');
   const offset = (new Date(s.period.start + 'T12:00:00Z').getUTCDay() + 6) % 7;
@@ -30,7 +40,7 @@ export function renderProfile() {
     return `<span>${first ? escape(new Intl.DateTimeFormat(locale(), { month: 'short', timeZone: 'UTC' }).format(new Date(first.day + 'T12:00:00Z'))) : ''}</span>`;
   }).join('');
   document.querySelector('#profile-summary').innerHTML = html`
-    <div class="profile-identity"><span class="profile-initials" aria-hidden="true">${escape(initials)}</span><div><h3>${escape(profile.name)}</h3><p>${escape(profile.email)}</p><small>Csatlakozás: ${escape(new Intl.DateTimeFormat(locale(), { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(profile.joinedAt)))}</small></div></div>
+    <div class="profile-identity"><span class="profile-initials" aria-hidden="true"></span><div><h3>${escape(profile.name)}</h3><p>${escape(profile.email)}</p><small>Csatlakozás: ${escape(new Intl.DateTimeFormat(locale(), { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(profile.joinedAt)))}</small></div></div>
     <h3 class="profile-section-title">A naplód eddig</h3>
     <div class="profile-stats">${metric('Mentett étkezés', life.mealCount)}${metric('Aktív nap', life.activeDays)}${metric('Jelenlegi sorozat', life.currentStreak, dayUnit(life.currentStreak))}${metric('Leghosszabb sorozat', life.longestStreak, dayUnit(life.longestStreak))}</div>
     <p class="profile-caption">A sorozat egymást követő, naplózott napokat jelent. Ha ma még nem naplóztál, a tegnapig tartó sorozatod látszik.</p>
@@ -46,6 +56,7 @@ export function renderProfile() {
     ${life.lastLoggedDay ? `<p class="profile-caption">${escape(t('Legutóbbi naplózott nap:'))} ${escape(date(life.lastLoggedDay))}</p>` : html`<p class="profile-empty">Még nincs mentett étkezésed. Az első mentés után itt jelennek meg a saját statisztikáid.</p>`}
     <p class="profile-method">Az átlagok csak a naplózott napokra vonatkoznak. Egy hiányzó nap nem jelent nulla fogyasztást. A tápértékek a mentett bejegyzések becsült értékei.</p>
     <p class="profile-caption">${escape(t('A mai napot meghatározó időzóna:'))} ${escape(s.timeZone)}</p>`;
+  renderAvatar(document.querySelector('.profile-initials'), profile);
   const scroll = document.querySelector('.activity-scroll'); scroll.scrollLeft = scroll.scrollWidth;
 }
 document.addEventListener('keydown', event => {

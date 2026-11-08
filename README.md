@@ -2,15 +2,15 @@
 
 ![Yumetrics — your food, in numbers](public/brand-banner.svg)
 
-**[Élő alkalmazás](https://http--yumetrics--dmg6gnvmmd7s.code.run)** · **[Magyar útmutató](https://http--yumetrics--dmg6gnvmmd7s.code.run/utmutato)** · **[English guide](https://http--yumetrics--dmg6gnvmmd7s.code.run/guide)**
+**[Élő alkalmazás](https://yumetrics.app)** · **[Magyar útmutató](https://yumetrics.app/utmutato)** · **[English guide](https://yumetrics.app/guide)**
 
 Magyar és angol nyelvű étkezési napló Google-belépéssel, fotó alapján becsült tápértékekkel és javítható összetevőkkel. Az alkalmazás a képen látható **teljes ehető étel és ital 100%-át** tekinti egy adagnak. A fotós elemzés nem közvetlen kalóriamérés: a felismerést, a mennyiségi becslést, a tápértékforrást és a számítást külön kezeljük.
 
 ## A számítás módszere és az AI szerepe
 
-1. **Vizuális leltár.** A Gemini 4 Argon a fotó és a megadott információk alapján javaslatot tesz az ételre, az összetevőkre, az elkészítési állapotra és az ehető grammokra. A köretet, szószt és italt is számba kell vennie. Megkülönbözteti a látható vagy megadott elemeket a feltételezésektől, például a nem látható olajtól. Ez az első AI-lépés még nem ad tápértékeket.
-2. **Tápértékforrás választása.** Az AI a 44 beépített USDA-rekordból javasolhat az ételhez és annak elkészítéséhez illő forrást. A szerver a referencia értékeit használja, nem az AI által újraírt számokat. Nyers ételhez tartozó referencia nem kerülhet automatikusan elkészült összetevőhöz. A forrás ellenőrizhetősége és az ételhez való helyes párosítása két külön kérdés; a párosítást a felhasználó is ellenőrzi.
-3. **Külön AI-becslés a hiányzó adatokhoz.** Csak azokhoz az összetevőkhöz kérünk második AI-választ, amelyekhez nincs megfelelő referencia. Ez az adott elkészített étel **100 grammjára** becsül tápértéket. Az ilyen adat AI-becslésként jelenik meg, nem adatbázisból igazolt értékként. Ha minden összetevőhöz van megfelelő referencia, második AI-hívás nem szükséges.
+1. **Két nézet és vizuális leltár.** Kötelező egy felülről és egy ferdén oldalról készült fotó ugyanarról a változatlan, teljes adagról. Az azonos képtartalmat feltöltés előtt elutasítjuk. A Gemini 4 Argon a képpár és a megadott információk alapján javaslatot tesz az ételre, az összetevőkre, az elkészítési állapotra és az ehető grammokra. A köretet, szószt és italt is számba kell vennie. Megkülönbözteti a látható vagy megadott elemeket a feltételezésektől, például a nem látható olajtól. Egyetlen részletes AI-kérés tartalmazza a képpár ellenőrzését, a leltárt, az adag- és tápértékbecslést, valamint a végső ellenőrzést.
+2. **Ellenőrzés és forrásválasztás ugyanabban a válaszban.** Az AI ellenőrzi az adag azonosságát, az eltérő szöget, a képminőséget, a kihagyott/duplázott összetevőket és az elkészítést. A 44 USDA-rekord közül javasolhat megfelelő forrást; a szerver annak rögzített értékeit használja. Nyers referencia nem párosítható elkészített összetevőhöz.
+3. **Tápértékek ugyanabban az AI-válaszban.** Minden összetevőhöz 100 g-ra vonatkozó becslés is érkezik. Megfelelő USDA-forrás esetén a szerver a rögzített adatot használja, egyébként a becslést ellenőrzi. Hiányos vagy ellentmondó válaszra nem indít kiegészítő AI-hívást. A megszakadt elemzéshez új kérés csak kifejezett kézi újrapróbáláskor indul; azonos feltöltés ismétlése nem küld új kérést.
 4. **Mennyiség pontosítása.** Mérleg nélkül a grammok képi becslések. A megadott teljes ételtömegből levonjuk a külön lemért nem ehető részt, majd az összetevőket az így kapott ehető mennyiséghez arányosítjuk. A hús, köret és zsiradék egymáshoz viszonyított aránya ettől még becsült marad. Két fotó ugyanannak az adagnak két nézete; a mennyiséget nem duplázzuk.
 5. **Szerveroldali számítás.** Az összetevő ehető grammjait megszorozzuk a 100 grammra megadott tápértékkel, majd elosztjuk százzal. Az összes összetevő eredményét összeadjuk. A végső adagérték tehát ellenőrizhető számítás eredménye, amelynek pontossága a bevitt tömegtől, az étel felismerésétől és a választott forrástól függ.
 6. **Felhasználói ellenőrzés.** Az étel neve, mennyisége, elkészítése és tápértékforrása mentés előtt és után is javítható. Választható másik USDA-rekord vagy megadható termékcímke. Az eredeti AI-elemzést, a modell és a prompt verzióját, valamint a mentett javításokat külön őrizzük meg. Értékelhetetlen kép vagy hiányos AI-válasz esetén nem készítünk helyette kitalált eredményt.
@@ -44,7 +44,7 @@ Részletes módszertan: [PHOTO-ASSESSMENT.md](docs/PHOTO-ASSESSMENT.md). Forrás
 
 ## Használat és profil
 
-Google-belépés után tölts fel fotót az egész adagról, add meg a biztosan ismert adatokat, majd nézd át és mentsd a piszkozatot. A feldolgozás a fotó tartós feltöltése után a háttérben folytatódik. Az eredmény később is javítható.
+Google-belépés után tölts fel két fotót ugyanarról az egész adagról (felülről és ferdén oldalról), majd nézd át és mentsd a piszkozatot. A kiegészítő adatokat csak akkor add meg, ha ismered őket. A feldolgozás a fotó tartós feltöltése után a háttérben folytatódik. Az eredmény később is javítható.
 
 A **Fiókom** nézet a Google-nevet, e-mail-címet, csatlakozást, mentett étkezéseket, aktív napokat és naplózási sorozatokat mutatja. A 365 napos, zöld aktivitási naptárból megnyithatók az adott nap bejegyzései. Az energia- és makróátlagok csak a ténylegesen naplózott napokra vonatkoznak. Piszkozat, hibás vagy törlés alatt álló elemzés és jövőbeli nap nem növeli a statisztikát; üres naplóhoz nem készülnek mintaadatok.
 
@@ -56,7 +56,7 @@ Az alkalmazás **Node.js 24+** szerveren fut. Az éles alkalmazás és a külön
 
 A jelenlegi Google OAuth-visszatérő cím: **https://ak91hu.github.io/yumetrics/oauth.html**. A statikus GitHub Pages-oldal csak továbbítja az egyszer használható választ a Northflank szerverének. A state-, nonce-, PKCE- és ID-token-ellenőrzés, valamint a munkamenet létrehozása szerveroldalon történik. A Google-jelszót és az access/refresh tokeneket nem tároljuk; Gmail- vagy Drive-hozzáférést nem kérünk.
 
-A `GOOGLE_REDIRECT_URI` értékének pontosan egyeznie kell a Google-klienshez regisztrált visszatérő címmel. Az `APP_ORIGIN` az alkalmazás éles Northflank HTTPS-alapcíme; a Pages-visszatérő cím használatakor ez a két beállítás szándékosan eltér. Saját domain esetén közvetlen szerveroldali callback is használható.
+A `GOOGLE_REDIRECT_URI` értékének pontosan egyeznie kell a Google-klienshez regisztrált visszatérő címmel. Az `APP_ORIGIN=https://yumetrics.app` az alkalmazás elsődleges HTTPS-alapcíme; a Pages-visszatérő cím használatakor ez a két beállítás szándékosan eltér. Saját domain esetén közvetlen szerveroldali callback is használható.
 
 A titkok kizárólag Northflank futtatási változóként kerülnek az alkalmazásba. A `.env.example` a szükséges mezők mintája; a valódi `.env`, kulcsok és felhasználói adatok nincsenek a Gitben vagy a Docker image-ben. Az adatbázis írható kapcsolati URI-ja addonkapcsolaton keresztül, `DATABASE_URL` néven érkezik.
 

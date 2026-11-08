@@ -43,6 +43,7 @@ test('profile reads real owner-scoped saved data, excludes drafts, deletion and 
   await meal('alice', '2026-11-07', 999, 'draft'); await meal('alice', '2026-11-08', 999);
   await meal('alice', '2026-11-07', 999, 'saved', 100, true); await meal('bob', '2026-11-07', 999);
   const result = await userProfile(db, 'alice', 'Europe/Budapest', new Date(now));
+  assert.equal(result.profile.avatarUrl, null);
   assert.equal(result.profile.email, 'alice@example.test'); assert.equal(result.statistics.lifetime.mealCount, 3);
   assert.equal(result.statistics.lifetime.activeDays, 2); assert.equal(result.statistics.recent.averagePerLoggedDay.calories, 156.6);
   assert.equal(result.statistics.calendar.find(day => day.day === '2026-11-06').calories, 13.1);

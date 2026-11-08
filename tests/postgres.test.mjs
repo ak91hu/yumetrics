@@ -7,17 +7,17 @@ import { openPostgresDatabase } from '../lib/database.mjs';
 import { currentUser, tokenHash } from '../lib/auth.mjs';
 import { processNextJob } from '../lib/jobs.mjs';
 import { api } from '../lib/api.mjs';
-import { aiPayloadFor } from './fixtures.mjs';
+import { secondImage, aiPayloadFor } from './fixtures.mjs';
 
 const connection = process.env.TEST_DATABASE_URL;
 const image = 'data:image/jpeg;base64,'+Buffer.concat([Buffer.from([255,216,255,224]),Buffer.alloc(200)]).toString('base64');
 const env={OPENCODE_API_KEY:'test',CLOUDINARY_CLOUD_NAME:'test-cloud',CLOUDINARY_API_KEY:'test',CLOUDINARY_API_SECRET:'test'};
 const analysis={name:'Teszt',confidence:'medium',assumptions:'Teszt',ingredients:[{name:'Hús',grams:100,calories:200,protein:25,carbs:0,fat:11,fiber:0,sugar:0,sodium:70}]};
-const fetcher=async(url,options)=>url.startsWith('https://res.cloudinary.com/')?new Response(Buffer.from(image.split(',')[1],'base64'),{headers:{'Content-Type':'image/jpeg'}}):url.endsWith('/upload')?Response.json({public_id:options.body.get('public_id'),secure_url:`https://res.cloudinary.com/test-cloud/image/upload/v1/${options.body.get('public_id')}.jpg`,width:100,height:80}):url.endsWith('/destroy')?Response.json({result:'ok'}):Response.json(aiPayloadFor(analysis,options));
+const fetcher=async(url,options)=>url.startsWith('https://res.cloudinary.com/')?new Response(Buffer.from((url.includes('-angle')?secondImage:image).split(',')[1],'base64'),{headers:{'Content-Type':'image/jpeg'}}):url.endsWith('/upload')?Response.json({public_id:options.body.get('public_id'),secure_url:`https://res.cloudinary.com/test-cloud/image/upload/v1/${options.body.get('public_id')}.jpg`,width:100,height:80}):url.endsWith('/destroy')?Response.json({result:'ok'}):Response.json(aiPayloadFor(analysis,options));
 async function seed(db,id) {const now=new Date().toISOString();await db.prepare('INSERT INTO users(id,google_sub,email,name,created_at,updated_at) VALUES(?,?,?,?,?,?)').bind(id,id,'test@example.test','Test',now,now).run();}
 async function cleanup(db,id){await db.prepare('DELETE FROM meals WHERE user_id=?').bind(id).run();await db.prepare('DELETE FROM analysis_attempts WHERE user_id=?').bind(id).run();await db.prepare('DELETE FROM users WHERE id=?').bind(id).run();}
 function invoke(db,userId,path,method='GET',payload,provider=fetcher){return api(new Request('http://localhost'+path,{method,headers:payload?{'Content-Type':'application/json'}:{},...(payload?{body:JSON.stringify(payload)}:{})}),{db,env,userId,fetcher:provider});}
-const input=()=>({id:randomUUID(),image,day:'2026-11-07',time:'12:30',type:'Ebéd',notes:''});
+const input=()=>({id:randomUUID(),image,secondImage,day:'2026-11-07',time:'12:30',type:'Ebéd',notes:''});
 async function eventually(fn){const end=Date.now()+12000;do{const result=await fn();if(result)return result;await new Promise(resolve=>setTimeout(resolve,80));}while(Date.now()<end);assert.fail('Timed out waiting for persisted state');}
 
 test('PostgreSQL: real process replacement retains Google session, profile, queued/saved meals and deletion', {skip:!connection,timeout:45000}, async t=>{
@@ -51,7 +51,7 @@ test('PostgreSQL: real process replacement retains Google session, profile, queu
   assert.ok(await currentUser(new Request('http://localhost',{headers:{Cookie:cookie}}),db));
 });
 
-test('PostgreSQL: expired leases resume and stale workers cannot overwrite the recovered result', {skip:!connection,timeout:20000},async t=>{
+test('PostgreSQL: expired analyses require an explicit retry and stale workers cannot commit', {skip:!connection,timeout:20000},async t=>{
   const db=await openPostgresDatabase(connection),other=await openPostgresDatabase(connection),owner=randomUUID();await seed(db,owner);
   t.after(async()=>{await cleanup(db,owner);await db.close();await other.close();});
   const meal=input();assert.equal((await invoke(db,owner,'/api/analyze','POST',meal)).status,202);
@@ -59,9 +59,13 @@ test('PostgreSQL: expired leases resume and stale workers cannot overwrite the r
   const slow=async(url,options)=>{if(url.startsWith('https://opencode.ai/')){if(first){first=false;started();await pause;}return Response.json(aiPayloadFor({...analysis,name:'Stale result'},options));}return fetcher(url,options);};
   const stale=processNextJob({db,env,fetcher:slow});await began;
   await other.prepare('UPDATE analysis_jobs SET lease_until=? WHERE meal_id=?').bind('2000-01-01T00:00:00.000Z',meal.id).run();
-  assert.equal(await processNextJob({db:other,env,fetcher}),true);resume();await stale;
+  assert.equal(await processNextJob({db:other,env,fetcher}),false);resume();await stale;
+  const interrupted=await db.prepare('SELECT status,analysis FROM meals WHERE id=?').bind(meal.id).first();assert.equal(interrupted.status,'failed');assert.equal(interrupted.analysis,null);
+  assert.equal((await db.prepare('SELECT attempts FROM analysis_jobs WHERE meal_id=?').bind(meal.id).first()).attempts,1);
+  assert.equal((await invoke(db,owner,'/api/meals/'+meal.id+'/retry','POST')).status,202);
+  assert.equal(await processNextJob({db:other,env,fetcher}),true);
   const row=await db.prepare('SELECT analysis,original_analysis FROM meals WHERE id=?').bind(meal.id).first();assert.equal(JSON.parse(row.analysis).name,'Teszt');assert.equal(row.analysis,row.original_analysis);
-  assert.equal((await db.prepare('SELECT attempts FROM analysis_jobs WHERE meal_id=?').bind(meal.id).first()).attempts,2);
+  assert.equal((await db.prepare('SELECT attempts FROM analysis_jobs WHERE meal_id=?').bind(meal.id).first()).attempts,1);
   assert.equal(await processNextJob({db,env,fetcher}),false);
 });
 

@@ -1,18 +1,19 @@
 # A megvalósított ételértékelés
 
-Verzió: `food-v5-full-image-portion`, 2026-11-07. A JSON-riport formátuma visszafelé kompatibilis v2; a korábbi étkezések olvashatók. A magyar piaci fókusz és forrásai: [HUNGARIAN-POSITIONING.md](HUNGARIAN-POSITIONING.md).
+Verzió: `food-v9-compact-prompt`, 2026-11-08. A JSON-riport formátuma visszafelé kompatibilis v2; a korábbi étkezések olvashatók. A magyar piaci fókusz és forrásai: [HUNGARIAN-POSITIONING.md](HUNGARIAN-POSITIONING.md).
 
 ## A számítás menete
 
-1. A böngésző újrarajzolja a képet JPEG-ként. Legfeljebb két kép adható ugyanarról az adagról; nem két adagként számoljuk.
+1. Két kötelező fotó készül ugyanarról a teljes adagról: felülről és ferdén oldalról. A böngésző legfeljebb 2048 pixeles hosszabb oldallal, 0,92 JPEG-minőséggel újrarajzolja őket. Az azonos képtartalmat a kliens és a szerver is elutasítja feltöltés és fizetős modellhívás előtt; a két nézet egy adagnak számít.
 2. A szerver előre menti az étkezés tulajdonosát, metaadatait, képazonosítóit és a tartós feladatot; majd feltölti a képeket Cloudinaryba. Csak ezután ad elfogadott választ. Az elemző worker innen tölti vissza a képeket.
-3. Az első AI-hívás vizuális leltár: látható/feltételezett összetevők, elkészítés, ehető grammok, alsó/felső adag, alternatívák, kérdések, képminőség. Nem megfelelő kép vagy nem étel esetén nincs tápértékbecslés; a feltöltött kép a hibás bejegyzésben megmarad és törölhető.
-4. A 44 rögzített USDA-referenciához való párosításnál a szerver a tényleges rekord tápértékét másolja be, az AI nem találhat ki hozzá számokat. Referencia nélküli összetevőknél második hívás ad jelölt AI-becslést, kizárólag 100 g-ra.
-5. Ismert teljes tömegnél a szerver levonja a lemért csont/héj tömegét, az ehető összetevőket ehhez arányosítja, és a teljes képen látható ehető mennyiség 100%-ával számol. Az összetevőarányok továbbra is becslések.
-6. A felhasználó javíthatja a teljes képadag ehető grammjait és a tápértékeket; a külön lemért összetevőket megjelölheti. A beépített források mellett USDA-kulccsal angol keresésből választhat Foundation/SR Legacy rekordot. A választás nem bizonyítja automatikusan, hogy a fotón ugyanaz az étel van.
-7. A szerver mentéskor újra ellenőrzi a forrást a saját rögzített katalógusából/adatbázisából. Kézi tápértékmódosítás elveszi az USDA-címkét. Az eredeti AI-riport külön megmarad.
+3. Pontosan egy AI-kérés kapja meg mindkét eredeti fotót és a megadott kontextust. Egy válaszban adja a képpár ellenőrzését, a látható/feltételezett összetevőket, az elkészítést, az ehető grammokat és határaikat, az alternatívákat, legfeljebb egy opcionális kérdést, a képminőséget, a referenciakulcsokat és minden összetevő 100 g-ra vonatkozó tápértékét.
+4. A részletes prompt ugyanebben a kérésben végső ellenőrzést kér az adagmagasságra, a kihagyásra/duplázásra, a nyers/főtt állapotra, az ehető részre és a referenciára. Hiányos ellenőrzés vagy elutasított képpár esetén nincs menthető becslés és nem indul újabb AI-hívás.
+5. A 44 rögzített USDA-referenciához való párosításnál a szerver a tényleges rekord tápértékét másolja be, az AI számait figyelmen kívül hagyja. Referencia nélkül ugyanebből a válaszból használja a jelölt 100 g-os becslést. A fizikailag ellentmondó AI-tápanyagösszetételt elutasítja; nincs kiegészítő vagy javító AI-hívás.
+6. Ismert teljes tömegnél a szerver levonja a lemért csont/héj tömegét, az ehető összetevőket ehhez arányosítja, és a teljes képen látható ehető mennyiség 100%-ával számol. Az összetevőarányok továbbra is becslések.
+7. A felhasználó javíthatja a teljes képadag ehető grammjait és a tápértékeket; a külön lemért összetevőket megjelölheti. A beépített források mellett USDA-kulccsal angol keresésből választhat Foundation/SR Legacy rekordot. A választás nem bizonyítja automatikusan, hogy a fotón ugyanaz az étel van.
+8. A szerver mentéskor újra ellenőrzi a forrást a saját rögzített katalógusából/adatbázisából. Kézi tápértékmódosítás elveszi az USDA-címkét. Az eredeti AI-riport külön megmarad.
 
-A v4 a magyar ételcsoportot és az ismert elkészítést is eltárolja. Az AI minden összetevőnél nyers/elkészített/változatlan termék/ismeretlen állapotot ad. A beépített referenciák állapota külön, kézzel ellenőrzött metaadat; eltérésnél a modell által javasolt referenciát nem vesszük át. A második becslési lépés megkapja az elkészítési kontextust is. Ez egy ismert hibatípust kizár, de a fotón látható étel tényleges azonosságát nem bizonyítja.
+A v4 a magyar ételcsoportot és az ismert elkészítést is eltárolja. Az AI minden összetevőnél nyers/elkészített/változatlan termék/ismeretlen állapotot ad. A beépített referenciák állapota külön, kézzel ellenőrzött metaadat; eltérésnél a modell által javasolt referenciát nem vesszük át. A tápértékbecslés megkapja az elkészítési kontextust és mindkét fotót is. Ez egy ismert hibatípust kizár, de a fotón látható étel tényleges azonosságát nem bizonyítja.
 
 ## Saját recept: teljes fazékból elfogyasztott adag
 
@@ -34,7 +35,7 @@ Ismeretlen opcionális érték `null`. Ha egy összetevőnél ismeretlen, az ét
 
 ## Mit nem bizonyít a riport?
 
-A `confidence` kizárólag AI-önértékelés; nincs belőle pontossági százalék. Mérleg nélkül a magas önértékelést is legfeljebb közepesként tároljuk. Az energia-forgatókönyv ismeretlen össztömegnél a kisebb/nagyobb adagot mutatja. Ha minden összetevő mért össztömeghez arányosított, az össztömeg rögzített: a szerver a megadott összetevőhatárokon belül a kis/nagy energiasűrűségű elemekhez osztja a fennmaradó tömeget. Ez a rögzített tömegű keverék minimális/maximális energiája a megadott határok mellett; nem konfidenciaintervallum, és nem tartalmaz minden rejtett összetevő- vagy forráshibát. A kézzel megadott grammok a tömegforgatókönyvet szűkítik, az étel összetételének bizonytalanságát nem.
+A `confidence` kizárólag AI-önértékelés; nincs belőle pontossági százalék. Mérleg nélkül, korlátozott képminőségnél, feltételezett összetevőnél vagy AI-tápértékbecslés mellett a magas önértékelést is legfeljebb közepesként tároljuk. Az energia-forgatókönyv ismeretlen össztömegnél a kisebb/nagyobb adagot mutatja. Ha minden összetevő mért össztömeghez arányosított, az össztömeg rögzített: a szerver a megadott összetevőhatárokon belül a kis/nagy energiasűrűségű elemekhez osztja a fennmaradó tömeget. Ez a rögzített tömegű keverék minimális/maximális energiája a megadott határok mellett; nem konfidenciaintervallum, és nem tartalmaz minden rejtett összetevő- vagy forráshibát. A kézzel megadott grammok a tömegforgatókönyvet szűkítik, az étel összetételének bizonytalanságát nem.
 
 A saját recept pontosabb rögzítéséhez ismert alapanyagok és tényleges készétel-kihozatal szükséges. Mérd az alapanyagokat, az olajat és a kész ételt; kezeld a visszamaradt zsiradékot és a veszteséget. Nyers adatot kész összetevő grammjával ne párosíts. A kihozatalt a felhasználó lemért kész tömege adja, nem egy kitalált átlagfaktor. Általános tápanyagretenció-modell nincs beépítve; bizonytalan összetételt a rendszer nem változtat igazolt receptté.
 
@@ -45,3 +46,17 @@ A futtatható mérési eszköz: [BENCHMARK.md](BENCHMARK.md). Nem keveri a siker
 ## Kompatibilitás
 
 Az új elemzések `portionScope=full_image` jelölést kapnak. A régi `consumedPercent` bemenetből csak a numerikus 100 fogadható el, és ezt sem tároljuk új fogyasztási beállításként. Más részarány 400-as hibát ad a képfeltöltés vagy AI-hívás előtt. A korábban mentett részadagokat nem számoljuk újra; a riport történeti jelzést ad hozzájuk. Régi részadagos, be nem fejezett feladat az új módszerrel nem folytatható féladagként, és megőrzött bejegyzésként hibát jelezhet.
+
+A v7 új elemzéseihez két fotó kötelező. A régi egyképes mentett étkezések változatlanul olvashatók és szerkeszthetők. Egyképes félbemaradt elemzés újrapróbálása helyett új bejegyzést kell indítani két képpel; a meglévő adatokat nem töröljük.
+
+## A két nézet szakmai indoka és korlátai
+
+A [Two-view 3D Reconstruction for Food Volume Estimation](https://arxiv.org/abs/1701.03330) különböző nézetekből rekonstruált térfogattal foglalkozik. A Yumetrics itt multimodális modellbecslést használ, kalibrált kamerás 3D-rekonstrukciót nem végez; a cikk hibaarányai nem vihetők át rá. A [Gemini képfeldolgozási dokumentációja](https://ai.google.dev/gemini-api/docs/image-understanding) támogatja több kép együttes bemenetét. Az ismert tányérméret vagy lemért tömeg továbbra is hasznos opcionális támpont: két nézet önmagában nem oldja meg az abszolút lépték és a rejtett olaj/recept bizonytalanságát. Az egykéréses módszer pontosságát is a benchmarkkal kell igazolni.
+
+A v8 háttérfeldolgozója lejárt, futó elemzést nem indít automatikusan újra: a korábbi kérés már eljuthatott az AI-hoz. A bejegyzés hibás állapotba kerül, a képek megmaradnak; új kéréshez kézi újrapróbálás szükséges. A még el nem indult, sorban álló munkák és a képtörlési feladatok továbbra is folytathatók.
+
+## Költségcsökkentés a pontossági követelmények megtartásával
+
+A v9 az ismétlődő utasításokat összevonja, és behúzás nélküli kompakt JSON-t kér, a szöveges mezők közötti ismétlés nélkül. A számokat, egységeket, összetevőket, adagtartományokat és érdemi bizonytalanságokat nem szabad helytakarékosság miatt elhagyni vagy kerekíteni. Mind a 44 referencia teljes neve, leírása, állapota és helyettesítési megkötése, valamint a magyar ételcsoportok útmutatása változatlanul szerepel a kérésben.
+
+A magyar utasítás 15 784-ről 14 710 karakterre rövidült (6,8%). Ez szöveghossz-mérés, nem számlázott token- vagy költségmegtakarítás. A modell, a gondolkodási beállítás, a 10 000 tokenes kimeneti keret, a válaszséma és a két fotó feldolgozása változatlan. A közös prompt a nyelvi kiegészítés és a felhasználói adatok előtt marad; tényleges cache-találatot nem garantálunk. A teljes szolgáltatói `usageMetadata` megmarad, beleértve a gondolkodási/cache-tokeneket és a szolgáltató által közölt költséget. Az éles költség és fotós pontosság összehasonlításához azonos, lemért tesztkészlet szükséges.

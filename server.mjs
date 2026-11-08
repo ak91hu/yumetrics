@@ -20,6 +20,11 @@ export function createApp({ db, env = process.env, fetcher = fetch, publicOrigin
       const origin = publicOrigin || env.APP_ORIGIN || `http://${incoming.headers.host}`;
       const url = new URL(incoming.url, origin);
       if (!['http:', 'https:'].includes(url.protocol) || url.origin !== new URL(origin).origin || (!env.APP_ORIGIN && !publicOrigin && !['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname))) response = json({ error: 'Érvénytelen kiszolgálócím.' }, 403);
+      else if (origin.startsWith('https:') && incoming.headers.host?.toLowerCase() !== new URL(origin).host.toLowerCase() && !['/healthz', '/readyz'].includes(url.pathname)) {
+        response = ['GET', 'HEAD'].includes(incoming.method)
+          ? new Response(null, { status: 308, headers: { Location: url.href, 'Cache-Control': 'public, max-age=300' } })
+          : json({ error: 'Érvénytelen kiszolgálócím.' }, 403);
+      }
       else {
         const request = new Request(url, { method: incoming.method, headers: incoming.headers, ...(incoming.method !== 'GET' && incoming.method !== 'HEAD' ? { body: Readable.toWeb(incoming), duplex: 'half' } : {}) });
         language = requestLanguage(request);
@@ -52,6 +57,7 @@ export function createApp({ db, env = process.env, fetcher = fetch, publicOrigin
       response.headers.set('Content-Language', language);
     }
     for (const [name, value] of Object.entries(SECURITY_HEADERS)) response.headers.set(name, value);
+    if ((publicOrigin || env.APP_ORIGIN)?.startsWith('https:')) response.headers.set('Strict-Transport-Security', 'max-age=31536000');
     const headers = Object.fromEntries(response.headers); const cookies = response.headers.getSetCookie();
     if (cookies.length) headers['set-cookie'] = cookies;
     outgoing.writeHead(response.status, headers); outgoing.end(Buffer.from(await response.arrayBuffer()));
