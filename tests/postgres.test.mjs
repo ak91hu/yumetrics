@@ -7,6 +7,7 @@ import { openPostgresDatabase } from '../lib/database.mjs';
 import { currentUser, tokenHash } from '../lib/auth.mjs';
 import { processNextJob } from '../lib/jobs.mjs';
 import { api } from '../lib/api.mjs';
+import { userProfile } from '../lib/profile-stats.mjs';
 import { secondImage, aiPayloadFor } from './fixtures.mjs';
 
 const connection = process.env.TEST_DATABASE_URL;
@@ -44,6 +45,11 @@ test('PostgreSQL: real process replacement retains Google session, profile, queu
   const saved=await(await fetch(app.origin+'/api/meals/'+meal.id,{headers})).json();assert.equal(saved.meal.status,'saved');assert.equal(saved.meal.totals.calories,200);
   assert.equal(saved.meal.analysis.recipe.ingredients[0].grams,400);assert.equal(saved.meal.analysis.ingredients[0].grams,100);assert.equal(saved.meal.report.weight,150);
   assert.equal(saved.meal.context.language,'en');
+  const profile=await userProfile(db,owner,'Europe/Budapest',new Date('2026-11-08T12:00:00Z'));
+  assert.equal(profile.profile.calorieGoal,2400);
+  assert.equal(profile.statistics.periods[7].mealCount,1);
+  assert.equal(profile.statistics.periods[7].averagePerMeal.calories,200);
+  assert.deepEqual(profile.statistics.periods[7].mealTypes.find(row=>row.type==='Ebéd'),{type:'Ebéd',count:1,averageCalories:200});
   assert.equal(JSON.parse((await db.prepare('SELECT original_analysis FROM meals WHERE id=?').bind(meal.id).first()).original_analysis).ingredients[0].grams,150);
   assert.equal((await fetch(app.origin+'/api/meals/'+meal.id,{method:'DELETE',headers})).status,202);
   await kill(app.child);app=await start(true);

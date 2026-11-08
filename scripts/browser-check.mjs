@@ -301,7 +301,18 @@ try {
   await waitFor("document.querySelector('.profile-initials img')?.naturalWidth === 64");
   assert.equal(await evaluate("document.querySelector('.profile-stat strong').textContent.trim()"), '1');
   assert.ok(await evaluate("document.querySelectorAll('.profile-stat strong')[4].textContent.startsWith('40')"));
-  assert.equal(await evaluate(`document.querySelector('[data-profile-day="${savedRecipe.day}"]').dataset.level`), '1');
+  assert.equal(await evaluate(`document.querySelector('.activity-day[data-profile-day="${savedRecipe.day}"]').dataset.level`), '1');
+  assert.equal(await evaluate("document.querySelector('#profile-period').value"), '30');
+  assert.equal(await evaluate("document.querySelectorAll('.profile-day-list li').length"), 7);
+  assert.ok(await evaluate("[...document.querySelectorAll('#profile-summary details')].every(section => !section.open)"));
+  assert.ok(await evaluate("document.querySelector('#profile-energy-progress').max > 0"));
+  await evaluate("document.querySelector('#profile-period').value='7'; document.querySelector('#profile-period').dispatchEvent(new Event('change',{bubbles:true}))");
+  assert.equal(await evaluate("document.querySelector('#profile-period').value"), '7');
+  assert.equal(await evaluate("document.querySelectorAll('#profile-period-content tbody tr').length"), 4);
+  await evaluate("document.querySelector('#profile-nutrition-details').open=true");
+  await auditEnglish();
+  await evaluate("document.querySelector('#profile-period').value='365'; document.querySelector('#profile-period').dispatchEvent(new Event('change',{bubbles:true}))");
+  assert.ok(await evaluate("document.querySelectorAll('#profile-period-content .profile-stat strong')[0].textContent.startsWith('40')"));
   for (const width of [320,390,768,1024,1440]) {
     await viewport(width,900,width<768);
     assert.ok(await evaluate("document.querySelector('#settings-dialog').scrollWidth <= document.querySelector('#settings-dialog').clientWidth"), 'Profile fits '+width);
@@ -309,7 +320,17 @@ try {
   await evaluate("document.querySelector('#calorie-goal').value='2355'");
   await switchLanguage(language === 'en' ? 'hu' : 'en', '#settings-dialog'); await switchLanguage(language, '#settings-dialog');
   assert.equal(await evaluate("document.querySelector('#calorie-goal').value"), '2355');
+  assert.equal(await evaluate("document.querySelector('#profile-period').value"), '365');
   await auditEnglish();
+  await evaluate("document.querySelector('#profile-nutrition-details').open=true; document.querySelector('#profile-daily-details').open=true");
+  for (const width of [320,390,768,1024,1440]) {
+    await viewport(width,900,width<768);
+    assert.ok(await evaluate("document.querySelector('#settings-dialog').scrollWidth <= document.querySelector('#settings-dialog').clientWidth"), 'Expanded profile fits '+width);
+  }
+  await viewport(390,844,true);
+  await evaluate("document.querySelector('#profile-nutrition-details').scrollIntoView({block:'start'})");
+  await screenshot('profile-details-mobile.png',false);
+  await evaluate("document.querySelector('#profile-nutrition-details').open=false; document.querySelector('#profile-daily-details').open=false; document.querySelector('#settings-dialog').scrollTop=0");
   await viewport(1440,1100,false); await screenshot('profile-desktop.png',false);
   await viewport(390,844,true);
   await evaluate("document.querySelector('.activity-scroll').scrollLeft=document.querySelector('.activity-scroll').scrollWidth");
@@ -319,7 +340,7 @@ try {
   assert.ok(await evaluate("document.activeElement === document.querySelector('.activity-day')"));
   await send('Input.dispatchKeyEvent',{type:'keyDown',key:'End',code:'End'});
   assert.ok(await evaluate("document.activeElement === [...document.querySelectorAll('.activity-day')].at(-1)"));
-  await evaluate(`document.querySelector('[data-profile-day="${savedRecipe.day}"]').click()`);
+  await evaluate(`document.querySelector('.activity-day[data-profile-day="${savedRecipe.day}"]').click()`);
   await waitFor("!document.querySelector('#settings-dialog').open && document.querySelector('#meal-list [data-meal]')");
   await evaluate("document.querySelector('#meal-list [data-meal]').click()");
   await evaluate("document.querySelector('#delete-meal').click(); document.querySelector('#confirm-dialog [data-close]').click()");
@@ -360,6 +381,8 @@ try {
   result.checks.push('language preference survives reload and sign-out', 'language switching keeps selected photos, dirty notes, canonical meal type and unfinished recipe values', 'English interface translation audit', 'native camera file chooser and environment capture configuration (fixture image)', 'second-photo removal and replacement', 'ingredient addition and removal', 'recoverable analysis failure and retry', 'calendar month/day navigation and guide dialog', 'cancel deletion and confirm deletion');
   result.checks.push('real saved-meal profile counts and averages, then empty state after deletion', '365-day activity graph: keyboard navigation, language changes and diary navigation', 'profile fits five viewport widths without losing unsaved energy goal');
   result.screenshots.push('profile-desktop.png', 'profile-mobile.png');
+  result.checks.push('7/30/365-day profile periods, per-meal averages and meal-type table; expanded details fit five viewport widths');
+  result.screenshots.push('profile-details-mobile.png');
   result.checks.push('Google avatar in sidebar and profile, safe URL checks and failed-image initials fallback', 'all supplementary upload fields collapsed, valid automatic metadata and reset on reopening', 'optional review questions and notes collapsed');
   result.screenshots.push('upload-simple.png');
   result.checks.push('expanded AI methodology fits five viewport widths and links to the selected language guide');

@@ -1,4 +1,10 @@
-# Ellenőrzés, 2026-11-07
+# Ellenőrzés
+
+## Profilbővítés, 2026-11-08
+
+A teljes Node-tesztsor 66/66 sikeres, helyi PostgreSQL-lel, kihagyás nélkül. Az új ellenőrzések a 7/30/365 napos időszakhatárokat, a naplózott naponkénti és étkezésenkénti átlagok különbségét, az étkezéstípusok bontását és a hiányzó értékek megőrzését vizsgálják. Az új PostgreSQL-próba a mentett receptből számolt profilt is ellenőrzi. A magyar/mobil és angol/asztali Chrome-folyamatok sikeresek: időszakváltás, nyelvváltáskor megőrzött választás és energiakeret, üres állapot, valamint összecsukott és kinyitott részletek öt szélességen. A mobilos és asztali képernyőképeket vizuálisan ellenőriztük. A böngészőteszt helyi adatbázist és helyettesített Google-/AI-/képtár-válaszokat használ; valódi telefonon nem történt ellenőrzés.
+
+## Korábbi ellenőrzések, 2026-11-07
 
 - **56/56 Node-teszt sikeres**, valódi helyi PostgreSQL 17.11 adatbázissal, kihagyott teszt nélkül. A teljes futás után a hibaüzenetek nyelvváltási javítását az öt nyelvi teszttel külön is újra ellenőriztük.
 - **Mind a négy nyelv/eszköz párosítás sikeres headless Chrome-ban:** magyar/mobil, magyar/asztali, angol/mobil, angol/asztali. Minden futás öt szélességet ellenőriz: 320, 390, 768, 1024 és 1440 px. A mobilhoz a mobilmenüt, az asztalihoz az oldalsávot és a főoldali feltöltőgombot használja a teszt.

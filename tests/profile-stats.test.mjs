@@ -29,6 +29,34 @@ test('profile calendar uses the chosen time zone and handles leap days without D
   assert.equal(new Set(stats.calendar.map(day => day.day)).size, 365);
 });
 
+test('profile periods include their boundary days and distinguish logged-day, per-meal and meal-type averages', () => {
+  const meals = [
+    { day: '2025-11-08', type: 'Reggeli', calories: 100, protein: 5, carbs: 10, fat: 2 },
+    { day: '2026-10-09', type: 'Reggeli', calories: 200, protein: 10, carbs: 20, fat: 4 },
+    { day: '2026-10-10', type: 'Ebéd', calories: 300, protein: 15, carbs: 30, fat: 6 },
+    { day: '2026-11-01', type: 'Vacsora', calories: 400, protein: 20, carbs: 40, fat: 8 },
+    { day: '2026-11-02', type: 'Ebéd', calories: 500, protein: 25, carbs: 50, fat: 10 },
+    { day: '2026-11-08', type: 'Ebéd', calories: 600, protein: 30, carbs: 60, fat: 12 },
+    { day: '2026-11-08', type: 'Kisétkezés', calories: 0, protein: 0, carbs: 0, fat: 0 },
+    { day: '2026-11-09', type: 'Ebéd', calories: 999, protein: 0, carbs: 0, fat: 0 },
+  ];
+  const stats = profileStatistics([], meals, '2026-11-08'), week = stats.periods[7];
+  assert.equal(week.start, '2026-11-02'); assert.equal(week.end, '2026-11-08');
+  assert.equal(week.mealCount, 3); assert.equal(week.activeDays, 2);
+  assert.equal(week.averagePerLoggedDay.calories, 550); assert.equal(week.averagePerMeal.calories, 366.7);
+  assert.equal(week.averagePerMeal.protein, 18.3); assert.equal(week.averageMealsPerDay, 1.5);
+  assert.deepEqual(week.mealTypes.find(row => row.type === 'Ebéd'), { type: 'Ebéd', count: 2, averageCalories: 550 });
+  assert.deepEqual(week.mealTypes.find(row => row.type === 'Kisétkezés'), { type: 'Kisétkezés', count: 1, averageCalories: 0 });
+  assert.equal(week.mealTypes.find(row => row.type === 'Reggeli').averageCalories, null);
+  assert.equal(stats.periods[30].start, '2026-10-10'); assert.equal(stats.periods[30].mealCount, 5);
+  assert.equal(stats.periods[365].start, '2025-11-09'); assert.equal(stats.periods[365].mealCount, 6);
+  assert.deepEqual(stats.recent, stats.periods[365]);
+  for (const summary of Object.values(profileStatistics([], [], '2026-11-08').periods)) {
+    assert.equal(summary.mealCount, 0); assert.equal(summary.activeDays, 0);
+    assert.equal(summary.averagePerMeal.calories, null); assert.equal(summary.averagePerLoggedDay.calories, null);
+  }
+});
+
 test('profile reads real owner-scoped saved data, excludes drafts, deletion and future days, and retains fractional nutrients', async t => {
   const db = openDatabase(':memory:'); t.after(() => db.close()); const now = '2026-11-07T12:00:00.000Z';
   for (const id of ['alice', 'bob']) await db.prepare('INSERT INTO users(id,google_sub,email,name,created_at,updated_at) VALUES(?,?,?,?,?,?)').bind(id, id, id + '@example.test', id, now, now).run();
@@ -47,6 +75,9 @@ test('profile reads real owner-scoped saved data, excludes drafts, deletion and 
   assert.equal(result.profile.email, 'alice@example.test'); assert.equal(result.statistics.lifetime.mealCount, 3);
   assert.equal(result.statistics.lifetime.activeDays, 2); assert.equal(result.statistics.recent.averagePerLoggedDay.calories, 156.6);
   assert.equal(result.statistics.calendar.find(day => day.day === '2026-11-06').calories, 13.1);
+  assert.equal(result.statistics.periods[7].mealCount, 3);
+  assert.equal(result.statistics.periods[7].mealTypes.find(row => row.type === 'Ebéd').count, 3);
+  assert.equal(result.statistics.periods[7].averagePerMeal.calories, 104.4);
   await db.prepare('UPDATE meals SET status=? WHERE id=?').bind('draft', editable).run();
   assert.equal((await userProfile(db, 'alice', 'Europe/Budapest', new Date(now))).statistics.lifetime.mealCount, 2);
   const get = (path, userId) => api(new Request('http://localhost' + path), { db, env: {}, userId });

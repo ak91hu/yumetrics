@@ -5,6 +5,19 @@ const number = value => value == null ? '—' : new Intl.NumberFormat(locale(), 
 const date = day => new Intl.DateTimeFormat(locale(), { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(day.slice(0, 10) + 'T12:00:00Z'));
 const quantity = (count, one, many) => count === 1 ? t(one) : t(many).replace('{0}', number(count));
 let data;
+let period = 30;
+const metric = (label, value, unit = '') => `<div class="profile-stat"><strong>${escape(number(value))}<small>${escape(unit)}</small></strong><span>${escape(t(label))}</span></div>`;
+function renderPeriod() {
+  if (!data) return;
+  const s = data.statistics, selected = s.periods[period];
+  document.querySelector('#profile-period').value = String(period);
+  document.querySelector('#profile-period-content').innerHTML = html`
+    <p class="profile-caption">${escape(date(selected.start))} – ${escape(date(selected.end))}</p>
+    <div class="profile-stats">${metric('Energia naplózott naponként', selected.averagePerLoggedDay.calories, 'kcal')}${metric('Fehérje naplózott naponként', selected.averagePerLoggedDay.protein, 'g')}${metric('Szénhidrát naplózott naponként', selected.averagePerLoggedDay.carbs, 'g')}${metric('Zsír naplózott naponként', selected.averagePerLoggedDay.fat, 'g')}</div>
+    <div class="profile-period-facts"><span>${escape(quantity(selected.activeDays, '1 aktív nap', '{0} aktív nap'))} / ${escape(number(period))} ${escape(t(locale().startsWith('en') ? 'napok' : 'nap'))}</span><span>${escape(quantity(selected.mealCount, '1 étkezés az időszakban', '{0} étkezés az időszakban'))}</span><span>${escape(t('Étkezés / aktív nap:'))} ${escape(number(selected.averageMealsPerDay))}</span></div>
+    ${selected.mealCount ? '' : html`<p class="profile-empty">Ebben az időszakban még nincs mentett étkezés. Válassz hosszabb időszakot, vagy adj hozzá ételt a naplódhoz.</p>`}
+    <details class="profile-disclosure" id="profile-nutrition-details"><summary>Étkezésenkénti átlag és bontás</summary><div class="profile-stats">${metric('Energia étkezésenként', selected.averagePerMeal.calories, 'kcal')}${metric('Fehérje étkezésenként', selected.averagePerMeal.protein, 'g')}${metric('Szénhidrát étkezésenként', selected.averagePerMeal.carbs, 'g')}${metric('Zsír étkezésenként', selected.averagePerMeal.fat, 'g')}</div><div class="profile-table-scroll"><table class="profile-table"><caption>Étkezéstípusok a kiválasztott időszakban</caption><thead><tr><th scope="col">Étkezéstípus</th><th scope="col">Étkezések</th><th scope="col">Átlagos energia / étkezés</th></tr></thead><tbody>${selected.mealTypes.map(group => `<tr><th scope="row">${escape(t(group.type))}</th><td>${escape(number(group.count))}</td><td>${escape(number(group.averageCalories))} kcal</td></tr>`).join('')}</tbody></table></div></details>`;
+}
 export function renderAvatar(element, profile) {
   element.textContent = profile.name.trim().split(/\s+/).slice(0, 2).map(part => [...part][0] || '').join('').toUpperCase();
   element.setAttribute('aria-hidden', 'true');
@@ -25,8 +38,9 @@ export async function loadProfile(request) {
 }
 export function renderProfile() {
   if (!data) return;
-  const { profile, statistics: s } = data, life = s.lifetime, recent = s.recent;
-  const metric = (label, value, unit = '') => `<div class="profile-stat"><strong>${escape(number(value))}<small>${escape(unit)}</small></strong><span>${escape(t(label))}</span></div>`;
+  const openSections = [...document.querySelectorAll('#profile-summary details[open]')].map(element => element.id);
+  const { profile, statistics: s } = data, life = s.lifetime;
+  const today = s.calendar.at(-1), remaining = today.calories == null ? null : profile.calorieGoal - today.calories;
   const dayUnit = count => locale().startsWith('en') && count !== 1 ? t('napok') : t('nap');
   const offset = (new Date(s.period.start + 'T12:00:00Z').getUTCDay() + 6) % 7;
   const cells = s.calendar.map((day, index) => {
@@ -40,25 +54,33 @@ export function renderProfile() {
     return `<span>${first ? escape(new Intl.DateTimeFormat(locale(), { month: 'short', timeZone: 'UTC' }).format(new Date(first.day + 'T12:00:00Z'))) : ''}</span>`;
   }).join('');
   document.querySelector('#profile-summary').innerHTML = html`
-    <div class="profile-identity"><span class="profile-initials" aria-hidden="true"></span><div><h3>${escape(profile.name)}</h3><p>${escape(profile.email)}</p><small>Csatlakozás: ${escape(new Intl.DateTimeFormat(locale(), { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(profile.joinedAt)))}</small></div></div>
+    <div class="profile-identity"><span class="profile-initials" aria-hidden="true"></span><div><h3>${escape(profile.name)}</h3><p>${escape(profile.email)}</p><small>Google-fiókkal bejelentkezve</small></div></div>
+    <section class="profile-today" aria-labelledby="profile-today-title"><div class="profile-section-heading"><h3 id="profile-today-title">Mai összesítés</h3><span>${escape(date(s.period.end))}</span></div><p class="profile-energy"><strong>${escape(number(today.calories))}</strong> / ${escape(number(profile.calorieGoal))} kcal</p><label class="sr-only" for="profile-energy-progress">A mai naplózott energia a napi kerethez képest</label><progress id="profile-energy-progress" max="${profile.calorieGoal}" value="${today.calories ?? 0}"></progress><p class="profile-caption">${today.count ? escape(quantity(today.count, '1 naplózott étkezés', '{0} naplózott étkezés')) + ' · ' + escape(remaining >= 0 ? t`${number(remaining)} kcal a beállított keretig` : t`${number(-remaining)} kcal a beállított keret felett`) : t('Ma még nincs mentett étkezésed. A hiányzó adat nem jelent nulla fogyasztást.')}</p><button type="button" class="text-button" data-profile-day="${s.period.end}">Mai nap megnyitása</button><a class="text-button" href="#calorie-goal">Energiakeret módosítása</a></section>
     <h3 class="profile-section-title">A naplód eddig</h3>
     <div class="profile-stats">${metric('Mentett étkezés', life.mealCount)}${metric('Aktív nap', life.activeDays)}${metric('Jelenlegi sorozat', life.currentStreak, dayUnit(life.currentStreak))}${metric('Leghosszabb sorozat', life.longestStreak, dayUnit(life.longestStreak))}</div>
     <p class="profile-caption">A sorozat egymást követő, naplózott napokat jelent. Ha ma még nem naplóztál, a tegnapig tartó sorozatod látszik.</p>
+    <div class="profile-section-heading"><h3 id="profile-period-title">Táplálkozási áttekintés</h3><label class="profile-period-label" for="profile-period">Időszak<select id="profile-period"><option value="7">7 nap</option><option value="30">30 nap</option><option value="365">365 nap</option></select></label></div>
+    <section id="profile-period-content" aria-labelledby="profile-period-title" aria-live="polite"></section>
+    <p class="profile-method">Az átlagok csak a naplózott napokra vonatkoznak. Egy hiányzó nap nem jelent nulla fogyasztást. A tápértékek a mentett bejegyzések becsült értékei.</p>
+    <details class="profile-disclosure" id="profile-daily-details"><summary>Az elmúlt 7 nap részletesen</summary><p class="profile-caption">Válassz napot a bejegyzései megnyitásához. Csak a mentett étkezések szerepelnek az összesítésben.</p><ul class="profile-day-list">${s.calendar.slice(-7).reverse().map(day => `<li><button type="button" data-profile-day="${day.day}"><span>${escape(date(day.day))}<small>${escape(quantity(day.count, '1 naplózott étkezés', '{0} naplózott étkezés'))}</small></span><strong>${escape(number(day.calories))} kcal <span aria-hidden="true">→</span></strong></button></li>`).join('')}</ul></details>
     <div class="profile-section-heading"><h3>Naplózási aktivitás</h3><span>${escape(date(s.period.start))} – ${escape(date(s.period.end))}</span></div>
     <p class="profile-caption">A zöld árnyalat az adott napra mentett étkezések számát jelzi. Válassz napot a bejegyzései megnyitásához.</p>
     <p class="sr-only" id="activity-instructions">A naptárban a nyílbillentyűkkel is lépkedhetsz. A Home az első, az End az utolsó napra visz.</p>
     <div class="activity-scroll" tabindex="0" role="region" aria-label="Egyéves naplózási aktivitás"><div class="activity-months" style="--weeks:${weeks}">${months}</div><div class="activity-grid" role="group" aria-label="Aktív napok" aria-describedby="activity-instructions">${'<span aria-hidden="true"></span>'.repeat(offset)}${cells.join('')}</div></div>
     <div class="activity-legend"><span>Kevesebb</span>${[0, 1, 2, 3, 4].map(level => `<i data-level="${level}" aria-hidden="true"></i>`).join('')}<span>Több</span></div>
     <p class="activity-day-detail" id="activity-day-detail" aria-live="polite">${escape(cells.length ? t('A teljes év megtekintéséhez görgess oldalra.') : '')}</p>
-    <h3 class="profile-section-title">Az elmúlt 365 nap átlaga</h3>
-    <div class="profile-stats">${metric('Energia naplózott naponként', recent.averagePerLoggedDay.calories, 'kcal')}${metric('Fehérje naplózott naponként', recent.averagePerLoggedDay.protein, 'g')}${metric('Szénhidrát naplózott naponként', recent.averagePerLoggedDay.carbs, 'g')}${metric('Zsír naplózott naponként', recent.averagePerLoggedDay.fat, 'g')}</div>
-    <p class="profile-caption">${escape(quantity(recent.activeDays, '1 aktív nap', '{0} aktív nap'))} · ${escape(quantity(recent.mealCount, '1 étkezés az időszakban', '{0} étkezés az időszakban'))}${recent.averageMealsPerDay == null ? '' : escape(' · ' + quantity(recent.averageMealsPerDay, '1 étkezés naplózott naponként', '{0} étkezés naplózott naponként'))}</p>
     ${life.lastLoggedDay ? `<p class="profile-caption">${escape(t('Legutóbbi naplózott nap:'))} ${escape(date(life.lastLoggedDay))}</p>` : html`<p class="profile-empty">Még nincs mentett étkezésed. Az első mentés után itt jelennek meg a saját statisztikáid.</p>`}
-    <p class="profile-method">Az átlagok csak a naplózott napokra vonatkoznak. Egy hiányzó nap nem jelent nulla fogyasztást. A tápértékek a mentett bejegyzések becsült értékei.</p>
-    <p class="profile-caption">${escape(t('A mai napot meghatározó időzóna:'))} ${escape(s.timeZone)}</p>`;
+    <details class="profile-disclosure" id="profile-account-details"><summary>Fiókadatok és időzóna</summary><dl class="profile-account"><div><dt>Bejelentkezés</dt><dd>Google</dd></div><div><dt>Csatlakozás</dt><dd>${escape(date(profile.joinedAt))}</dd></div><div><dt>Időzóna</dt><dd>${escape(s.timeZone)}</dd></div></dl></details>`;
+  renderPeriod();
+  for (const id of openSections) { const section = document.getElementById(id); if (section) section.open = true; }
   renderAvatar(document.querySelector('.profile-initials'), profile);
   const scroll = document.querySelector('.activity-scroll'); scroll.scrollLeft = scroll.scrollWidth;
 }
+
+document.addEventListener('change', event => {
+  if (event.target.id !== 'profile-period') return;
+  period = Number(event.target.value); renderPeriod();
+});
 document.addEventListener('keydown', event => {
   const button = event.target.closest('.activity-day'); if (!button) return;
   const buttons = [...document.querySelectorAll('.activity-day')], index = buttons.indexOf(button);

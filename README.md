@@ -46,7 +46,7 @@ Részletes módszertan: [PHOTO-ASSESSMENT.md](docs/PHOTO-ASSESSMENT.md). Forrás
 
 Google-belépés után tölts fel két fotót ugyanarról az egész adagról (felülről és ferdén oldalról), majd nézd át és mentsd a piszkozatot. A kiegészítő adatokat csak akkor add meg, ha ismered őket. A feldolgozás a fotó tartós feltöltése után a háttérben folytatódik. Az eredmény később is javítható.
 
-A **Fiókom** nézet a Google-nevet, e-mail-címet, csatlakozást, mentett étkezéseket, aktív napokat és naplózási sorozatokat mutatja. A 365 napos, zöld aktivitási naptárból megnyithatók az adott nap bejegyzései. Az energia- és makróátlagok csak a ténylegesen naplózott napokra vonatkoznak. Piszkozat, hibás vagy törlés alatt álló elemzés és jövőbeli nap nem növeli a statisztikát; üres naplóhoz nem készülnek mintaadatok.
+A **Fiókom** nézetben mai energiaösszesítés, választható 7/30/365 napos átlagok, étkezésenkénti és étkezéstípus szerinti bontás, valamint megnyitható hétnapos lista segíti az áttekintést. A részletek összecsukhatók, az időszakváltás nem jár AI-kéréssel. A nézet a Google-nevet, e-mail-címet, csatlakozást, mentett étkezéseket, aktív napokat és naplózási sorozatokat mutatja. A 365 napos, zöld aktivitási naptárból megnyithatók az adott nap bejegyzései. Az energia- és makróátlagok csak a ténylegesen naplózott napokra vonatkoznak. Piszkozat, hibás vagy törlés alatt álló elemzés és jövőbeli nap nem növeli a statisztikát; üres naplóhoz nem készülnek mintaadatok.
 
 A felület és az új AI-elemzés magyarul és angolul is használható. A nyelvváltás megőrzi a kiválasztott fotókat és a szerkesztés alatt álló adatokat; a saját szövegek és a korábbi elemzések az eredeti nyelvükön maradnak. A mobilos, asztali és billentyűzettel történő használat is támogatott.
 
