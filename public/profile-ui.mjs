@@ -1,4 +1,5 @@
 import { t, html, locale } from '/localization.mjs';
+import { helpMarkup } from '/context-help.mjs';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const number = value => value == null ? '—' : new Intl.NumberFormat(locale(), { maximumFractionDigits: 1 }).format(value);
@@ -8,9 +9,22 @@ const dayUnit = count => locale().startsWith('en') && count !== 1 ? t('napok') :
 let data;
 let loadVersion = 0;
 let period = 30;
+let profileRequest;
 const plant = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 22V11M12 15C4 16 2 11 3 6c6-1 10 3 9 9ZM12 11c-1-7 3-9 9-9 1 6-3 10-9 9Z"/></svg>';
 function weeklyMarkup(weekly) {
   return html`<div class="growth-week"><strong>Heti naplózás</strong><span>${escape(number(Math.min(weekly.activeDays, weekly.target)))} / ${weekly.target} ${escape(dayUnit(weekly.target))}</span><div class="growth-steps" aria-hidden="true">${Array.from({ length: weekly.target }, (_, i) => `<i class="${weekly.activeDays > i ? 'complete' : ''}">✓</i>`).join('')}</div><p>${escape(t(weekly.activeDays >= weekly.target ? 'Az elmúlt hét napból legalább három napon naplóztál.' : 'Az elmúlt 7 napból legalább 3 napon legyen mentett étkezésed.'))}</p></div>`;
+}
+const challengeMark = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z"/></svg>';
+function challengeQuickMarkup(challenge) {
+  const current=challenge.current, definition=challenge.options.find(item=>item.id===current.kind);
+  return html`<div class="growth-week"><strong>${escape(t(definition.title))}</strong><span>${current.progress} / ${definition.target}</span><progress class="challenge-progress" aria-label="A heti kihívás haladása" value="${current.progress}" max="${definition.target}"></progress><p>${escape(t(current.completedAt?'A heti pecsétedet megszerezted!':'A választott kihívásod ezen a héten.'))}</p></div>`;
+}
+function challengesMarkup(challenge) {
+  const {week,current,options,rewards,totalRewards}=challenge, selected=options.find(item=>item.id===current?.kind);
+  return html`<section class="weekly-challenges" aria-labelledby="weekly-challenge-title"><div class="profile-section-heading"><h3 id="weekly-challenge-title" tabindex="-1">Heti kihívások</h3>${html(helpMarkup('weekly-challenge-help',t('A heti kihívások szabályai'),t('Hetente egy feladatot választhatsz. A hét hétfőtől vasárnapig, magyarországi idő szerint tart. Csak a választás után mentett, az adott hétre dátumozott bejegyzések számítanak. A külön lemért összetevőt a szerkesztőben jelöld meg; az étel össztömegének megadása önmagában nem elég. A háromnapos feladatnál a mentés napja számít. A heti haladásod és a megszerzett pecséted későbbi javítás vagy törlés után is megmarad.')))}</div><p class="profile-caption">${escape(date(week.start))} – ${escape(date(week.end))} · ${escape(t('Magyarországi idő szerint'))}</p>
+    ${current?html`<div class="challenge-active ${current.completedAt?'challenge-complete':''}"><span class="challenge-mark" aria-hidden="true">${challengeMark}</span><h4>${escape(t(selected.title))}</h4><p>${escape(t(selected.description))}</p><label for="weekly-challenge-progress">${escape(t('Haladás:'))} ${current.progress} / ${selected.target}</label><progress id="weekly-challenge-progress" value="${current.progress}" max="${selected.target}"></progress><p class="challenge-status">${current.completedAt?t('Teljesítve · a heti pecséted megmarad.'):t('A választás után mentett bejegyzésekkel haladsz előre.')}</p>${current.completedAt?'':html`<p class="profile-caption">${escape(t(current.kind==='recipe'?'A saját receptet az étkezés részleteinél, a „Számítás saját receptből” résznél adhatod meg.':current.kind==='measured'?'Az étkezés részleteinél jelöld meg a külön lemért összetevőt, majd mentsd a bejegyzést.':'Egy napon legfeljebb egy lépést tehetsz meg. A mentés tényleges napját számoljuk, nem az étkezés átírt dátumát.'))}</p><button type="button" class="button outline" data-profile-day="${escape(data.statistics.period.end)}">Mai nap megnyitása</button>`}<p class="challenge-reward-line">${escape(t('Jutalom:'))} ${escape(t(selected.reward))} · ${escape(t('heti pecsét'))}</p></div>`:html`<form id="weekly-challenge-form"><fieldset><legend>Válassz egy feladatot erre a hétre</legend><div class="challenge-options">${options.map(option=>html`<label class="challenge-option"><input type="radio" name="kind" value="${escape(option.id)}" ${option.available===false?'disabled':''} required><span><strong>${escape(t(option.title))}</strong><span>${escape(t(option.description))}</span><small>${escape(t('Jutalom:'))} ${escape(t(option.reward))}</small>${option.available===false?html('<small>Ehhez ezen a héten már nincs három nap hátra.</small>'):''}</span></label>`).join('')}</div></fieldset><p class="profile-caption">A választásod erre a hétre szól; utána a következő héten választhatsz másikat.</p><button class="button primary" type="submit">Ezt a kihívást választom</button></form>`}
+    <p id="weekly-challenge-feedback" class="profile-caption" role="status"></p>
+    <details id="weekly-challenge-rewards" class="profile-disclosure"><summary>${escape(t('Heti pecsétjeim'))} · ${totalRewards}</summary>${rewards.length?html`<ul class="challenge-rewards">${rewards.map(reward=>{const definition=options.find(option=>option.id===reward.kind);return html`<li><span class="challenge-mark" aria-hidden="true">${challengeMark}</span><div><strong>${escape(t(definition.reward))}</strong><small>${escape(t('A hét kezdete:'))} ${escape(date(reward.weekStart))}</small></div></li>`;}).join('')}</ul><p class="profile-caption">A legutóbbi 12 pecsétet mutatjuk; az összes megszerzett jutalmad megmarad.</p>`:html('<p class="profile-caption">Az első teljesített heti kihívásod után itt találod a pecsétedet.</p>')}</details></section>`;
 }
 function growthMarkup(m) {
   return html`<section class="profile-growth" aria-labelledby="growth-title"><div class="growth-heading"><span class="growth-plant" aria-hidden="true">${plant}</span><div><span class="eyebrow">NAPLÓZÁS ÉS JELVÉNYEK</span><h3 id="growth-title">${escape(t(m.stage.name))}</h3><p>${escape(t`${m.level}. szint / ${m.levelCount}`)} · ${escape(quantity(m.activeDays, '1 aktív nap', '{0} aktív nap'))}</p></div></div>
@@ -23,7 +37,7 @@ export function renderMotivation() {
   const root = document.querySelector('#motivation-card');
   if (!data || !root) return;
   const m = data.statistics.motivation;
-  root.innerHTML = html`<div class="growth-heading"><span class="growth-plant" aria-hidden="true">${plant}</span><div><span class="eyebrow">NAPLÓZÁS ÉS JELVÉNYEK</span><h2>${escape(t(m.stage.name))} <small>${escape(t`${m.level}. szint`)}</small></h2><p>${escape(t(m.weekly.todayLogged ? 'Ma már naplóztál étkezést.' : 'Ments el egy mai étkezést, hogy ez a nap is bekerüljön az összesítésbe.'))}</p></div></div>${weeklyMarkup(m.weekly)}<div class="growth-actions"><button type="button" class="button primary" data-action="log-today">Mai étkezés naplózása</button><button type="button" class="text-button" data-action="settings">Jelvényeim <span aria-hidden="true">↗</span></button></div>`;
+  root.innerHTML = html`<div class="growth-heading"><span class="growth-plant" aria-hidden="true">${plant}</span><div><span class="eyebrow">NAPLÓZÁS ÉS JELVÉNYEK</span><h2>${escape(t(m.stage.name))} <small>${escape(t`${m.level}. szint`)}</small></h2><p>${escape(t(m.weekly.todayLogged ? 'Ma már naplóztál étkezést.' : 'Ments el egy mai étkezést, hogy ez a nap is bekerüljön az összesítésbe.'))}</p></div></div>${data.weeklyChallenge?.current?challengeQuickMarkup(data.weeklyChallenge):weeklyMarkup(m.weekly)}<div class="growth-actions"><button type="button" class="button primary" data-action="log-today">Mai étkezés naplózása</button><button type="button" class="text-button" data-action="settings">Heti kihívások <span aria-hidden="true">↗</span></button></div>`;
   root.hidden = false;
 }
 const metric = (label, value, unit = '') => `<div class="profile-stat"><strong>${escape(number(value))}<small>${escape(unit)}</small></strong><span>${escape(t(label))}</span></div>`;
@@ -50,8 +64,9 @@ export function renderAvatar(element, profile) {
   image.src = url.href; element.append(image);
 }
 export async function loadProfile(request, { quiet = false, celebrate = false } = {}) {
+  profileRequest=request;
   const root = document.querySelector('#profile-summary');
-  const version = ++loadVersion, previous = data?.statistics.motivation;
+  const version = ++loadVersion, previous = data?.statistics.motivation, previousChallenge=data?.weeklyChallenge;
   if (!quiet) { root.setAttribute('aria-busy', 'true'); root.textContent = t('Statisztikák betöltése…'); }
   try {
     const result = await request('/api/profile?timezone=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone));
@@ -59,6 +74,7 @@ export async function loadProfile(request, { quiet = false, celebrate = false } 
     data = result; renderMotivation();
     if (!quiet || document.querySelector('#settings-dialog').open) renderProfile();
     if (celebrate && previous) {
+      if(data.weeklyChallenge?.current?.completedAt&&!previousChallenge?.current?.completedAt)return t('Teljesítetted a heti kihívásodat! Új pecsétet szereztél.');
       const m = data.statistics.motivation;
       const badge = m.badges.findLast(badge => badge.earned && !previous.badges.some(old => old.id === badge.id && old.earned));
       if (badge) return t('Új jelvényt szereztél! Elmentettük az étkezésedet.');
@@ -76,6 +92,7 @@ export async function loadProfile(request, { quiet = false, celebrate = false } 
 export function renderProfile() {
   if (!data) return;
   const openSections = [...document.querySelectorAll('#profile-summary details[open]')].map(element => element.id);
+  const pendingChoice=document.querySelector('#weekly-challenge-form [name=kind]:checked')?.value;
   const { profile, statistics: s } = data, life = s.lifetime;
   const today = s.calendar.at(-1), remaining = today.calories == null ? null : profile.calorieGoal - today.calories;
   const offset = (new Date(s.period.start + 'T12:00:00Z').getUTCDay() + 6) % 7;
@@ -92,6 +109,7 @@ export function renderProfile() {
   document.querySelector('#profile-summary').innerHTML = html`
     <div class="profile-identity"><span class="profile-initials" aria-hidden="true"></span><div><h3>${escape(profile.name)}</h3><p>${escape(profile.email)}</p><small>Google-fiókkal bejelentkezve</small></div></div>
     <section class="profile-today" aria-labelledby="profile-today-title"><div class="profile-section-heading"><h3 id="profile-today-title">Mai összesítés</h3><span>${escape(date(s.period.end))}</span></div><p class="profile-energy"><strong>${escape(number(today.calories))}</strong> / ${escape(number(profile.calorieGoal))} kcal</p><label class="sr-only" for="profile-energy-progress">A mai naplózott energia a napi kerethez képest</label><progress id="profile-energy-progress" max="${profile.calorieGoal}" value="${today.calories ?? 0}"></progress><p class="profile-caption">${today.count ? escape(quantity(today.count, '1 naplózott étkezés', '{0} naplózott étkezés')) + ' · ' + escape(remaining >= 0 ? t`${number(remaining)} kcal a beállított keretig` : t`${number(-remaining)} kcal a beállított keret felett`) : t('Ma még nem mentettél étkezést. Ebből nem következik, hogy nem ettél.')}</p><button type="button" class="text-button" data-profile-day="${s.period.end}">Mai nap megnyitása</button><a class="text-button" href="#calorie-goal">Energiakeret módosítása</a></section>
+    ${data.weeklyChallenge?challengesMarkup(data.weeklyChallenge):''}
     ${growthMarkup(s.motivation)}
     <h3 class="profile-section-title">A naplód eddig</h3>
     <div class="profile-stats">${metric('Mentett étkezés', life.mealCount)}${metric('Aktív nap', life.activeDays)}${metric('Jelenlegi sorozat', life.currentStreak, dayUnit(life.currentStreak))}${metric('Leghosszabb sorozat', life.longestStreak, dayUnit(life.longestStreak))}</div>
@@ -109,6 +127,7 @@ export function renderProfile() {
     ${life.lastLoggedDay ? `<p class="profile-caption">${escape(t('Legutóbbi naplózott nap:'))} ${escape(date(life.lastLoggedDay))}</p>` : html`<p class="profile-empty">Az első étkezés mentése után itt láthatod a naplód összesítéseit.</p>`}
     <details class="profile-disclosure" id="profile-account-details"><summary>Fiókadatok és időzóna</summary><dl class="profile-account"><div><dt>Bejelentkezés</dt><dd>Google</dd></div><div><dt>Csatlakozás</dt><dd>${escape(date(profile.joinedAt))}</dd></div><div><dt>Időzóna</dt><dd>${escape(s.timeZone)}</dd></div></dl></details>`;
   renderPeriod();
+  for(const radio of document.querySelectorAll('#weekly-challenge-form [name=kind]'))radio.checked=!radio.disabled&&radio.value===pendingChoice;
   for (const id of openSections) { const section = document.getElementById(id); if (section) section.open = true; }
   renderAvatar(document.querySelector('.profile-initials'), profile);
   const scroll = document.querySelector('.activity-scroll'); scroll.scrollLeft = scroll.scrollWidth;
@@ -117,6 +136,19 @@ export function renderProfile() {
 document.addEventListener('change', event => {
   if (event.target.id !== 'profile-period') return;
   period = Number(event.target.value); renderPeriod();
+});
+document.addEventListener('submit',async event=>{
+  if(event.target.id!=='weekly-challenge-form')return;
+  event.preventDefault();const form=event.target,button=form.querySelector('button[type=submit]'),version=++loadVersion;
+  button.disabled=true;
+  try{
+    const result=await profileRequest('/api/weekly-challenge',{method:'POST',body:JSON.stringify({kind:new FormData(form).get('kind'),weekStart:data.weeklyChallenge.week.start})});
+    if(version!==loadVersion)return;
+    data.weeklyChallenge=result;renderMotivation();renderProfile();
+    document.querySelector('#weekly-challenge-feedback').textContent=t('A heti kihívásod elindult. A haladásodat itt követheted.');
+    document.querySelector('#weekly-challenge-title').focus({preventScroll:true});
+  }catch(error){if(version===loadVersion)document.querySelector('#weekly-challenge-feedback').textContent=error.message;}
+  finally{button.disabled=false;if(version===loadVersion)document.querySelector('#profile-summary').setAttribute('aria-busy','false');}
 });
 document.addEventListener('keydown', event => {
   const button = event.target.closest('.activity-day'); if (!button) return;

@@ -180,6 +180,20 @@ try {
   assert.equal(await evaluate("document.querySelector('#meal-count').textContent"),'0');
   await waitFor("!document.querySelector('#motivation-card').hidden");
   assert.equal(await evaluate("document.querySelectorAll('#motivation-card .growth-steps .complete').length"),0);
+  await evaluate("document.querySelector('#motivation-card [data-action=settings]').click()");
+  await waitFor("document.querySelectorAll('.challenge-option').length===3");
+  await auditEnglish();await checkHelp('weekly-challenge-help');
+  for(const width of [320,390,768,1024,1440]){await viewport(width,1000,width<768);assert.ok(await evaluate("document.querySelector('#settings-dialog').scrollWidth<=document.querySelector('#settings-dialog').clientWidth"),'Weekly choices fit '+width);}
+  await viewport(390,844,true);await evaluate("document.querySelector('.weekly-challenges').scrollIntoView({block:'start'})");await screenshot('weekly-challenge-choices-mobile.png',false);
+  const beforeChallengeCalls=providerCalls;
+  await evaluate("document.querySelector('#weekly-challenge-form [value=recipe]').click()");
+  await switchLanguage(language==='en'?'hu':'en','#settings-dialog');await switchLanguage(language,'#settings-dialog');
+  assert.equal(await evaluate("document.querySelector('#weekly-challenge-form [name=kind]:checked').value"),'recipe');
+  await evaluate("document.querySelector('#weekly-challenge-form').requestSubmit()");
+  await waitFor("document.querySelector('#weekly-challenge-progress')?.value===0 && !document.querySelector('#weekly-challenge-form')");
+  assert.equal(providerCalls,beforeChallengeCalls,'Choosing a challenge makes no provider request');
+  assert.equal((await db.prepare('SELECT kind FROM weekly_challenges').bind().first()).kind,'recipe');
+  await auditEnglish();await evaluate("document.querySelector('#settings-dialog [data-close]').click()");
   await evaluate("document.querySelector('[data-action=prev-day]').click(); document.querySelector('#motivation-card [data-action=log-today]').click()");
   await waitFor("document.querySelector('#upload-dialog').open");
   assert.ok(await evaluate("new Date(document.querySelector('#upload-day').value+'T12:00:00').toDateString() === new Date().toDateString()"));
@@ -324,7 +338,7 @@ try {
   await switchLanguage(language === 'en' ? 'hu' : 'en');
   await switchLanguage(language);
   assert.ok(await evaluate(`document.querySelector('#toast').textContent.includes(${JSON.stringify(expected('Új jelvényt szereztél!', 'You earned a badge!'))})`));
-  assert.equal(await evaluate("document.querySelectorAll('#motivation-card .growth-steps .complete').length"),1);
+  assert.equal(await evaluate("document.querySelector('#motivation-card .challenge-progress').value"),0);
   assert.equal(await evaluate("document.querySelector('#calorie-total').textContent"), '320');
   for (const width of [320,390,768,1024,1440]) { await viewport(width,844,width<768); assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth'), 'Saved meal fits '+width); assert.ok(await evaluate("document.querySelector('.meal-card').getBoundingClientRect().right <= document.querySelector('main').getBoundingClientRect().right")); }
   await viewport(device === 'desktop' ? 1440 : 390, device === 'desktop' ? 1100 : 844, device !== 'desktop');
@@ -351,8 +365,10 @@ try {
   await screenshot('mobile-recipe.png',false);
   await evaluate("document.querySelector('#detail-form').requestSubmit()");
   await waitFor("!document.querySelector('#meal-dialog').open && document.querySelector('#calorie-total').textContent==='40'");
+  await waitFor(`document.querySelector('#toast').textContent.includes(${JSON.stringify(expected('Teljesítetted a heti kihívásodat!', 'Weekly challenge completed!'))})`);
   await send('Page.reload'); await waitFor("document.querySelector('#calorie-total')?.textContent==='40'");
   const savedRecipe=await db.prepare('SELECT day,analysis,original_analysis,analysis_context FROM meals').bind().first();
+  assert.ok((await db.prepare('SELECT completed_at FROM weekly_challenges').bind().first()).completed_at);
   assert.equal(JSON.parse(savedRecipe.analysis).recipe.cookedWeightG,800);
   assert.equal(JSON.parse(savedRecipe.original_analysis).ingredients[0].grams,100);
   assert.equal(JSON.parse(savedRecipe.analysis_context).portionScope,'full_image');
@@ -361,6 +377,12 @@ try {
   assert.equal(JSON.parse(savedRecipe.analysis_context).language,language);
   await evaluate("document.querySelector('.mobile-nav [data-action=settings]').click()");
   await waitFor("document.querySelectorAll('.activity-day').length === 365");
+  assert.equal(await evaluate("document.querySelector('#weekly-challenge-progress').value"),1);
+  assert.equal(await evaluate("document.querySelectorAll('.challenge-rewards li').length"),1);
+  await evaluate("document.querySelector('#weekly-challenge-rewards').open=true;document.querySelector('.weekly-challenges').scrollIntoView({block:'start'})");
+  await viewport(390,844,true);await screenshot('weekly-challenge-completed-mobile.png',false);
+  await viewport(1440,1100,false);await screenshot('weekly-challenge-completed-desktop.png',false);
+  await evaluate("document.querySelector('#weekly-challenge-rewards').open=false");
   await waitFor("document.querySelector('.profile-initials img')?.naturalWidth === 64");
   assert.equal(await evaluate("document.querySelectorAll('.growth-badge').length"),6);
   assert.equal(await evaluate("document.querySelectorAll('.growth-badge.earned').length"),1);
@@ -426,6 +448,7 @@ try {
   await waitFor("document.querySelectorAll('.activity-day').length === 365");
   assert.equal(await evaluate("document.querySelector('.profile-stat strong').textContent.trim()"), '0');
   assert.equal(await evaluate("document.querySelectorAll('.growth-badge.earned').length"),0);
+  assert.equal(await evaluate("document.querySelectorAll('.challenge-rewards li').length"),1,'Earned weekly stamps survive later meal deletion');
   assert.ok(await evaluate("document.querySelectorAll('.profile-stat strong')[4].textContent.startsWith('—')"));
   await evaluate("document.querySelector('#calorie-goal').value='2300'; document.querySelector('#settings-form').requestSubmit()");
   await waitFor("!document.querySelector('#settings-dialog').open");
@@ -620,6 +643,8 @@ try {
   result.screenshots.push('context-weight-help-mobile.png','context-energy-range-help-mobile.png','context-ai-cost-help-mobile.png');
   result.checks.push('private visitor report: empty and populated states, filtered dates, nine charts, privacy explanation and responsive tables; headless navigation does not inflate totals');
   result.screenshots.push('admin-visitors-desktop.png','admin-visitors-mobile.png');
+  result.checks.push('three weekly choices in both languages, persistent selection, no provider calls, live progress, completion toast, reload persistence and permanent reward after meal deletion');
+  result.screenshots.push('weekly-challenge-choices-mobile.png','weekly-challenge-completed-mobile.png','weekly-challenge-completed-desktop.png');
   result.screenshots.push('food-breakdown-desktop.png','food-breakdown-mobile.png');
   result.screenshots.push('admin-costs-desktop.png','admin-costs-mobile.png','admin-logs-desktop.png','admin-logs-mobile.png');
   result.screenshots.push('badges-mobile.png','admin-overview-desktop.png','admin-overview-mobile.png','admin-settings-desktop.png','admin-settings-mobile.png','admin-audit-desktop.png');

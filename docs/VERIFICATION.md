@@ -1,5 +1,13 @@
 # Ellenőrzés
 
+## Választható heti kihívások, 2026-11-09
+
+Három feladatból hetente egy választható a Fiókom nézetben: naplózás három tényleges mentési napon, saját receptből számolt étkezés, illetve külön lemért grammos összetevő rögzítése. A kezdőlapon is megjelenik a választott feladat haladása. A választás, a részleges haladás és a teljesítés a `weekly_challenges` táblába kerül; a jutalom tartós heti pecsét. A szerver magyarországi naptári hetet használ. A háromnapos feladat péntekig indítható. Szabályok és adatszerződés: [WEEKLY-CHALLENGES.md](WEEKLY-CHALLENGES.md).
+
+A teljes Node-tesztsor **125/125 sikeres**, valódi helyi PostgreSQL-lel, kihagyás nélkül. Az új próbák a hétváltást, óraátállítást, évhatárt, hétvégi választást, ismételt és párhuzamos kéréseket, felhasználói elkülönítést, a mentés tényleges napját, a dátumátírás és ugyanazon napi ismétlés hatását, a receptet, a gramm/ml megkülönböztetést és a hibás vagy elavult mentést ellenőrzik. A részleges haladás és a jutalom adatbázis-újranyitás után is megmarad SQLite-on és PostgreSQL-en. A mentés és a haladás frissítése közös tranzakció.
+
+A build, a magyar/mobil és angol/asztali teljes Chrome-folyamat is sikeres. Ellenőrzött a három lehetőség, a még el nem küldött választás megőrzése nyelvváltáskor, a választás tartós rögzítése, a külön AI-hívás hiánya, a haladás, a teljesítési visszajelzés, az újratöltés és a törlés után is megmaradó pecsét. Öt szélességen nincs oldalirányú túlfutás; a magyar választófelületet, valamint a magyar és angol teljesítési nézetet képernyőképen is átnéztük. Új fizetős AI-hívás, többnapos éles használati próba, Firefox-, Safari- és képernyőolvasós ellenőrzés nem történt.
+
 ## Beépített látogatottságmérés, 2026-11-09
 
 Az admin új **Látogatottság** nézete a saját szerveren összesített oldalmegnyitásokat mutatja: 7/30/365 nap, napi és óránkénti grafikon, ország, érkezési forrás, megnyitott oldal, eszköz, böngésző, operációs rendszer és alapnyelv. Nincs új analitikai szolgáltatás, külső mérőkód, látogatói azonosító vagy mérési süti. A mérés a Beállításokból kikapcsolható. A nyilvános magyar és angol útmutató, mindkét README, az admin- és telepítési dokumentáció is követi az új adatáramlást. Módszer és korlátok: [ADMIN.md](ADMIN.md#a-beépített-látogatottságmérés).

@@ -64,6 +64,10 @@ Ez **oldalmegnyitás-számlálás, nem egyedilátogató-mérés**. Nem használu
 
 ### Naplózás, jelvények és fiók
 
+A **Fiókom → Heti kihívások** résznél hetente egy feladat választható: naplózás három különböző napon, saját receptből számolt étkezés mentése vagy külön lemért, grammban megadott összetevő rögzítése. A választott feladat haladása a kezdőlapon is látszik. Teljesítéskor gyűjthető heti pecsét jár: Ritmustaláló, Receptalkotó vagy Mértékmester. A választás, a részleges haladás és a jutalom a tartós PostgreSQL-adatbázis `weekly_challenges` táblájában marad meg, új AI-hívás nélkül.
+
+A hét hétfőtől vasárnapig, magyarországi idő szerint tart. A háromnapos kihívásnál a mentés tényleges napját számoljuk; a visszadátumozás és az ugyanazon napi ismételt mentés nem ad több napot. Ez a feladat péntekig indítható. A haladás és a megszerzett pecsétek későbbi javítás vagy törlés után is megmaradnak. A következő héten új feladat választható. Részletes szabályok és tárolás: [WEEKLY-CHALLENGES.md](docs/WEEKLY-CHALLENGES.md).
+
 A naplózást ötszintű növényes fejlődés, hat jelvény és egy gördülő hétnapos cél ösztönzi. A fejlődés különböző mentett napokra épül, a régebbi napok is számítanak; az étkezések energiatartalma nem befolyásolja a jutalmat. A kihagyás nem von le fejlődési napot, a törlés vagy dátummódosítás viszont újraszámítja a jelvényeket. A főoldali kártya és a mentés utáni visszajelzés a meglévő profiladatokból működik, új AI-kérés nélkül.
 
 Google-belépés után tölts fel két fotót ugyanarról az egész adagról (felülről és ferdén oldalról), csomagolt terméknél a teljes csomagról és az olvasható címkéről, majd nézd át és mentsd a piszkozatot. A kiegészítő adatokat csak akkor add meg, ha ismered őket. A feldolgozás a fotó tartós feltöltése után a háttérben folytatódik. Az eredmény később is javítható.
