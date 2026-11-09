@@ -1,5 +1,9 @@
 # Ellenőrzés
 
+## Biztonsági javítások, 2026-11-09
+
+A teljes Node-tesztsor **109/109 sikeres**, valódi helyi PostgreSQL-lel, kihagyás nélkül. A magyar/mobil és angol/asztali Chrome-folyamat öt szélességen ellenőrzi a naplót és az admint; a védett képek az alkalmazáson keresztül betöltődnek, a böngésző közvetlen képtári kérést nem küld. A build sikeres. Valódi Cloudinary-próba igazolja az aláírás nélküli elutasítást, a szerveroldali képolvasást és a régi tárolási mód biztonságos áttérését; a tesztképet eltávolítottuk. Az ismert függőségi sérülékenységek száma az npm ellenőrzése szerint nulla. A javított hozzáférési és erőforrás-kezelési hibák, a tesztek és az audit korlátai: [biztonsági audit](SECURITY-AUDIT-2026-11-09.md).
+
 ## Magyar szövegek és IP-alapú alapnyelv, 2026-11-09
 
 A saját magyar szövegeket a felületen, az adminban, a hibaüzenetekben, az útmutatóban és a kapcsolódó dokumentációban átszerkesztettük. Az AI-kérés változatlanul egyetlen hívásból áll; a `food-v11-editorial-hu` változat a kért szerkesztési elveket szó szerint tartalmazza. A prompt továbbra is 15 000 karakter alatt marad, a számítások és a forráskezelés szabályai nem változtak. A korábbi AI-eredményeket és a felhasználók saját szövegeit nem módosítottuk.

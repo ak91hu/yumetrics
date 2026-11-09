@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import assert from 'node:assert/strict';
@@ -29,7 +29,7 @@ const env = { NODE_ENV: 'production', USDA_API_KEY:'test-usda', GOOGLE_CLIENT_ID
 let runner;
 const db = openDatabase(':memory:');
 const fetcher = async (url, options) => {
-  providerCalls++;
+  if (!url.startsWith('https://res.cloudinary.com/')) providerCalls++;
   if(url.startsWith('https://api.nal.usda.gov/')) return Response.json(url.includes('/foods/search') ? {foods:[{fdcId:99991,description:'Avocado, raw (browser fixture)',dataType:'Foundation'}]} : {fdcId:99991,description:'Avocado, raw (browser fixture)',dataType:'Foundation',foodNutrients:[[2048,160,'kcal'],[1003,2,'g'],[1004,14.7,'g'],[1005,8.5,'g'],[1079,6.7,'g'],[2000,.7,'g'],[1093,7,'mg']].map(([id,amount,unitName])=>({nutrient:{id,unitName},amount}))});
   if (url.startsWith('https://opencode.ai/')) {
     aiRequests++;
@@ -46,8 +46,8 @@ const fetcher = async (url, options) => {
     }
     return Response.json(aiPayloadFor(analysis, options, inventory));
   }
-  if (url.startsWith('https://res.cloudinary.com/')) { const data = [...storedPhotos.entries()].find(([key]) => new URL(url).pathname.endsWith('/' + key + '.jpg'))[1]; return new Response(Buffer.from(data.split(',')[1], 'base64'),{headers:{'Content-Type':'image/jpeg'}}); }
-  if (url.endsWith('/upload')) { storedPhotos.set(options.body.get('public_id'), options.body.get('file')); return Response.json({ public_id: options.body.get('public_id'), secure_url: `https://res.cloudinary.com/test-cloud/image/upload/v1/${options.body.get('public_id')}.jpg`, width: 1, height: 1, bytes: 68, version: 1, format: 'jpg' }); }
+  if (url.startsWith('https://res.cloudinary.com/')) { const data = [...storedPhotos.entries()].find(([key]) => new URL(url).pathname.endsWith('/' + key + '.jpg'))[1]; return new Response(Buffer.from(data.split(',')[1], 'base64'),{headers:{'Content-Type':data.slice(5,data.indexOf(';'))}}); }
+  if (url.endsWith('/upload')) { storedPhotos.set(options.body.get('public_id'), options.body.get('file')); return Response.json({ public_id: options.body.get('public_id'), secure_url: `https://res.cloudinary.com/test-cloud/image/authenticated/v1/${options.body.get('public_id')}.jpg`, width: 1, height: 1, bytes: 68, version: 1, format: 'jpg' }); }
   if (url.endsWith('/destroy')) return Response.json({ result: 'ok' });
   throw new Error('Unexpected provider URL');
 };
@@ -71,14 +71,13 @@ try {
     if (message.id && pending.has(message.id)) { const task = pending.get(message.id); pending.delete(message.id); message.error ? task.reject(new Error(message.error.message)) : task.resolve(message.result); }
     if (message.method === 'Runtime.exceptionThrown') errors.push(message.params.exceptionDetails.exception?.description || message.params.exceptionDetails.text);
     if (message.method === 'Page.fileChooserOpened') fileChooser = message.params;
+    if (message.method === 'Network.requestWillBeSent' && message.params.request.url.startsWith('https://res.cloudinary.com/')) errors.push('Browser requested a direct provider photo');
     if (message.method === 'Fetch.requestPaused') {
       if (message.params.request.url.startsWith('https://lh3.googleusercontent.com/')) {
         const success = message.params.request.url === avatarUrl;
         send('Fetch.fulfillRequest', { requestId: message.params.requestId, responseCode: success ? 200 : 404, responseHeaders: [{name:'Content-Type',value:'image/svg+xml'}], body: success ? Buffer.from(avatarSvg).toString('base64') : '' }, message.sessionId).catch(error => errors.push(error.message));
         return;
       }
-      const photo = [...storedPhotos.entries()].find(([key]) => new URL(message.params.request.url).pathname.endsWith('/' + key + '.jpg'));
-      send('Fetch.fulfillRequest', { requestId: message.params.requestId, responseCode: photo ? 200 : 404, responseHeaders: [{name:'Content-Type',value:'image/jpeg'}], body: photo ? photo[1].split(',')[1] : '' }, message.sessionId).catch(error => errors.push(error.message));
     }
   });
   function send(method, params = {}, session = sessionId) {
@@ -91,7 +90,7 @@ try {
   const target = await send('Target.createTarget', { url: 'about:blank' }, null);
   sessionId = (await send('Target.attachToTarget', { targetId: target.targetId, flatten: true }, null)).sessionId;
   await send('Runtime.enable'); await send('Page.enable'); await send('Network.enable');
-  await send('Fetch.enable', { patterns: [{urlPattern:'https://res.cloudinary.com/*',requestStage:'Request'}, {urlPattern:'https://lh3.googleusercontent.com/*',requestStage:'Request'}] });
+  await send('Fetch.enable', { patterns: [{urlPattern:'https://lh3.googleusercontent.com/*',requestStage:'Request'}] });
   async function evaluate(expression) {
     if (device === 'desktop') expression = expression.replaceAll('.mobile-nav [data-action=upload]', '.page-heading [data-action=upload]');
     expression = expression.replaceAll('.mobile-nav [data-action=', navigation + ' [data-action=');
@@ -384,7 +383,7 @@ try {
   await evaluate("document.querySelector('#delete-meal').click(); document.querySelector('#confirm-delete').click()");
   await waitFor("document.querySelector('#meal-count').textContent === '0' && !document.querySelector('#meal-dialog').open");
   await waitFor("document.querySelector('#draft-list').children.length === 0");
-  assert.equal(providerCalls, 12); assert.deepEqual(errors, []);
+  assert.equal(providerCalls, 8, 'Provider calls excluding protected photo reads'); assert.deepEqual(errors, []);
   await evaluate("document.querySelector('.mobile-nav [data-action=settings]').click()");
   await waitFor("document.querySelectorAll('.activity-day').length === 365");
   assert.equal(await evaluate("document.querySelector('.profile-stat strong').textContent.trim()"), '0');
@@ -397,7 +396,8 @@ try {
   await waitFor("document.querySelector('#profile-summary').getAttribute('aria-busy') === 'false'");
   const label = normalizeLabel(productLabelFixture()), packagedId = randomUUID(), owner = (await db.prepare('SELECT id FROM users').bind().first()).id;
   const packaged = validateAnalysis({ name: 'Test drink', confidence: 'high', ingredients: [{ name: label.productName, grams: 330, gramsMin: 330, gramsMax: 330, quantityUnit: 'ml', productLabel: label, sourceType: 'label', weightBasis: 'label', foodState: 'as_sold', ...labelNutrients(label) }] });
-  await db.prepare('INSERT INTO meals(id,user_id,day,time,type,status,analysis,original_analysis,photo,public_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').bind(packagedId, owner, savedRecipe.day, '15:00', 'Kisétkezés', 'draft', JSON.stringify(packaged), JSON.stringify(packaged), JSON.stringify({url:'data:image/png;base64,'+png}), packagedId, new Date().toISOString(), new Date().toISOString()).run();
+  storedPhotos.set('yumetrics/'+packagedId,'data:image/png;base64,'+readFileSync('public/badges/first.png').toString('base64'));
+  await db.prepare('INSERT INTO meals(id,user_id,day,time,type,status,analysis,original_analysis,photo,public_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').bind(packagedId, owner, savedRecipe.day, '15:00', 'Kisétkezés', 'draft', JSON.stringify(packaged), JSON.stringify(packaged), JSON.stringify({publicId:'yumetrics/'+packagedId,type:'authenticated',url:'https://res.cloudinary.com/test-cloud/image/authenticated/v1/yumetrics/'+packagedId+'.jpg'}), packagedId, new Date().toISOString(), new Date().toISOString()).run();
   await send('Page.reload'); await waitFor("!!document.querySelector('#draft-list button') && document.querySelector('#loading').hidden");
   await evaluate("document.querySelector('#draft-list button').click()");
   assert.equal(await evaluate("document.querySelector('#report-weight').textContent.trim()"),'330 ml');
@@ -464,7 +464,8 @@ try {
   await viewport(390,844,true); await screenshot('admin-overview-mobile.png',false);
   const adminId=(await db.prepare('SELECT id FROM users WHERE google_sub=?').bind('admin-browser-fixture').first()).id;
   const adminMeal=randomUUID(),adminAnalysis={name:'Admin tesztétkezés',confidence:'medium',assumptions:'Tesztadat',ingredients:[ingredient]},adminTime=new Date().toISOString();
-  await db.prepare('INSERT INTO meals(id,user_id,day,time,type,status,analysis,original_analysis,photo,public_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').bind(adminMeal,adminId,adminTime.slice(0,10),'12:00','Ebéd','draft',JSON.stringify(adminAnalysis),JSON.stringify(adminAnalysis),'{}',adminMeal,adminTime,adminTime).run();
+  storedPhotos.set('yumetrics/'+adminMeal,'data:image/png;base64,'+readFileSync('public/badges/first.png').toString('base64'));
+  await db.prepare('INSERT INTO meals(id,user_id,day,time,type,status,analysis,original_analysis,photo,public_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').bind(adminMeal,adminId,adminTime.slice(0,10),'12:00','Ebéd','draft',JSON.stringify(adminAnalysis),JSON.stringify(adminAnalysis),JSON.stringify({publicId:'yumetrics/'+adminMeal,type:'authenticated',url:'https://res.cloudinary.com/test-cloud/image/authenticated/v1/yumetrics/'+adminMeal+'.jpg'}),adminMeal,adminTime,adminTime).run();
   await db.prepare("INSERT INTO analysis_jobs(meal_id,kind,state,input_hash,error,created_at,updated_at) VALUES(?,'analyze','failed','','Provider diagnostic visible only to the owner',?,?)").bind(adminMeal,adminTime,adminTime).run();
   for(const tab of ['users','meals','jobs','costs','logs','settings','audit']){
     await evaluate(`location.hash=${JSON.stringify(tab)}`);
@@ -479,6 +480,8 @@ try {
     }
     if(tab==='meals'){
       await evaluate("document.querySelector('[data-meal]').click()");await waitFor("document.querySelector('#admin-detail').open");
+      await waitFor("document.querySelector('#admin-meal-detail img')?.naturalWidth > 0");
+      assert.ok(await evaluate("document.querySelector('#admin-meal-detail img').getAttribute('src').startsWith('/api/meals/')"));
       assert.ok(await evaluate("document.querySelector('#admin-meal-detail').textContent.includes('160')"));
       await evaluate("document.querySelector('#close-detail').click()");
     }
@@ -532,6 +535,7 @@ try {
   result.checks.push('six generated botanical badge images load; ordinary users see no provider panel or admin link', 'owner Google identity opens admin; every tab fits five widths; user goal and application settings persist; meal details and audit log work');
   result.checks.push('redesigned culinary badge names in both languages; line and distribution charts with accessible daily data; automatic period filters; AI cost breakdown with incomplete coverage; error-only operational log filtering');
   result.checks.push('first-visit IP language defaults for Hungarian IPv4/IPv6 and foreign IPv4 override browser language; explicit language survives navigation and sign-out');
+  result.checks.push('protected photos load through the application in the diary and admin; browser never requests provider photo URLs');
   result.screenshots.push('admin-costs-desktop.png','admin-costs-mobile.png','admin-logs-desktop.png','admin-logs-mobile.png');
   result.screenshots.push('badges-mobile.png','admin-overview-desktop.png','admin-overview-mobile.png','admin-settings-desktop.png','admin-settings-mobile.png','admin-audit-desktop.png');
   writeFileSync(resolve(out, 'browser-check.json'), JSON.stringify(result, null, 2)); console.log(JSON.stringify(result, null, 2));

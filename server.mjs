@@ -10,18 +10,24 @@ import { openPostgresDatabase } from './lib/database.mjs';
 import { startJobRunner } from './lib/jobs.mjs';
 import { SECURITY_HEADERS, STATIC_FILES } from './lib/http.mjs';
 import { guideMarkup, requestLanguage, translateSystemMessage } from './lib/i18n.mjs';
-import { requestCountry } from './lib/geoip.mjs';
+import { requestCountry, requestAddress } from './lib/geoip.mjs';
+import { secureStoredPhotos } from './lib/photos.mjs';
+import { requestLimit } from './lib/request-limits.mjs';
+import { AppError } from './lib/domain.mjs';
 import { isAdmin } from './lib/settings.mjs';
 import { logEvent, importHistoricalUsage } from './lib/telemetry.mjs';
 export { openDatabase } from './lib/database.mjs';
 
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
 export function createApp({ db, env = process.env, fetcher = fetch, publicOrigin = null, googleClient, wake = () => {} } = {}) {
-  return createServer(async (incoming, outgoing) => {
-    let response, language = 'en';
+  const uploads = new Set(); let photoReads = 0;
+  return createServer({ requestTimeout: 60_000, headersTimeout: 15_000, maxHeaderSize: 16384 }, async (incoming, outgoing) => {
+    let response, release, language = 'en';
     try {
       const origin = publicOrigin || env.APP_ORIGIN || `http://${incoming.headers.host}`;
-      const url = new URL(incoming.url, origin);
+      if (!['GET', 'HEAD', 'POST', 'PATCH', 'DELETE', 'OPTIONS'].includes(incoming.method)) throw new AppError('Nem támogatott HTTP-metódus.', 405);
+      let url;
+      try { url = new URL(incoming.url, origin); } catch { throw new AppError('Érvénytelen kéréscím.', 400); }
       if (!['http:', 'https:'].includes(url.protocol) || url.origin !== new URL(origin).origin || (!env.APP_ORIGIN && !publicOrigin && !['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname))) response = json({ error: 'Érvénytelen kiszolgálócím.' }, 403);
       else if (origin.startsWith('https:') && incoming.headers.host?.toLowerCase() !== new URL(origin).host.toLowerCase() && !['/healthz', '/readyz'].includes(url.pathname)) {
         response = ['GET', 'HEAD'].includes(incoming.method)
@@ -31,6 +37,9 @@ export function createApp({ db, env = process.env, fetcher = fetch, publicOrigin
       else {
         const request = new Request(url, { method: incoming.method, headers: incoming.headers, ...(incoming.method !== 'GET' && incoming.method !== 'HEAD' ? { body: Readable.toWeb(incoming), duplex: 'half' } : {}) });
         language = requestLanguage(request, requestCountry(request, incoming.socket.remoteAddress, env.NODE_ENV === 'production'));
+        if (db && request.method === 'GET' && ['/auth/google', '/auth/google/callback'].includes(url.pathname)) {
+          await requestLimit(db, url.pathname, requestAddress(request, incoming.socket.remoteAddress, env.NODE_ENV === 'production') || 'unknown', url.pathname === '/auth/google' ? 20 : 60, 600);
+        }
         if (url.pathname === '/healthz') response = json({ ok: true });
         else if (url.pathname === '/readyz') {
           if (db && authConfigured(env, db)) { await db.prepare('SELECT 1 AS ready').bind().first(); response = json({ ready: true }); }
@@ -39,7 +48,19 @@ export function createApp({ db, env = process.env, fetcher = fetch, publicOrigin
         else response = await authRoute(request, { db, env, googleClient });
         if (!response) {
           const user = await currentUser(request, db);
-          if (url.pathname.startsWith('/api/')) response = await api(request, { db, env, userId: user?.id, user, fetcher, wake });
+          if (url.pathname.startsWith('/api/')) {
+            const upload = request.method === 'POST' && url.pathname === '/api/analyze';
+            const photo = request.method === 'GET' && /^\/api\/meals\/[^/]+\/photo\/(primary|additional)$/.test(url.pathname);
+            if (user && (upload || photo)) {
+              if (upload && (uploads.size >= 2 || uploads.has(user.id)) || photo && photoReads >= 12) {
+                const error = new AppError('Az alkalmazás most több képet dolgoz fel. Várj egy kicsit, majd próbáld újra.', 429); error.retryAfter = 3; throw error;
+              }
+              if (upload) uploads.add(user.id); else photoReads++;
+              let released = false;
+              release = () => { if (released) return; released = true; if (upload) uploads.delete(user.id); else photoReads--; };
+            }
+            response = await api(request, { db, env, userId: user?.id, user, fetcher, wake });
+          }
           else if (['/admin', '/admin.html'].includes(url.pathname) && !isAdmin(user)) response = json({ error: 'Ehhez a felülethez nincs hozzáférésed.' }, user ? 403 : 401);
           else if (STATIC_FILES[url.pathname] && ['GET', 'HEAD'].includes(incoming.method)) {
             const [name, type] = STATIC_FILES[url.pathname];
@@ -52,9 +73,11 @@ export function createApp({ db, env = process.env, fetcher = fetch, publicOrigin
         }
       }
     } catch (error) {
-      console.error('HTTP request failed:', error.code || error.name);
+      if (!error.status || error.status >= 500) console.error('HTTP request failed:', error.code || error.name);
       if (db && !error.status) await logEvent(db,{level:'error',category:'server',event:'server.failed',message:'Hiba történt a kérés kiszolgálása közben.',code:error.code || error.name}).catch(()=>console.error('Operational log could not be saved'));
       response = json({ error: error.status ? error.message : 'Az alkalmazás átmenetileg nem érhető el. A korábban mentett adatok megmaradtak.' }, error.status || 503);
+      if (error.retryAfter) response.headers.set('Retry-After', String(error.retryAfter));
+      if (error.status === 405) response.headers.set('Allow', 'GET, HEAD, POST, PATCH, DELETE, OPTIONS');
     }
     if (response.status >= 400 && response.headers.get('content-type')?.includes('application/json')) {
       const data = await response.json();
@@ -66,6 +89,7 @@ export function createApp({ db, env = process.env, fetcher = fetch, publicOrigin
     if ((publicOrigin || env.APP_ORIGIN)?.startsWith('https:')) response.headers.set('Strict-Transport-Security', 'max-age=31536000');
     const headers = Object.fromEntries(response.headers); const cookies = response.headers.getSetCookie();
     if (cookies.length) headers['set-cookie'] = cookies;
+    if (release) { outgoing.once('finish', release); outgoing.once('close', release); if (outgoing.destroyed) release(); }
     outgoing.writeHead(response.status, headers); outgoing.end(Buffer.from(await response.arrayBuffer()));
   });
 }
@@ -77,7 +101,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   let db;
   try { if (env.DATABASE_URL) { db = await openPostgresDatabase(env.DATABASE_URL); await importHistoricalUsage(db); } }
   catch (error) { console.error('PostgreSQL startup failed:', error.code || error.name); process.exit(1); }
-  if (db) await logEvent(db,{category:'server',event:'server.starting',message:'Az alkalmazás indul; az adatbázis-kapcsolat létrejött.'});
+  if (db) {
+    await secureStoredPhotos(db, env);
+    await logEvent(db,{category:'server',event:'server.starting',message:'Az alkalmazás indul; az adatbázis-kapcsolat létrejött.'});
+  }
   const runner = db ? startJobRunner({ db, env }) : null;
   const server = createApp({ db, env, wake: () => runner?.wake() });
   server.listen(port, host, () => console.log(`Yumetrics: http://${host}:${server.address().port} · Google-belépés ${authConfigured(env, db) ? 'beállítva' : 'beállításra vár'}`));

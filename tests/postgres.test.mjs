@@ -14,7 +14,7 @@ const connection = process.env.TEST_DATABASE_URL;
 const image = 'data:image/jpeg;base64,'+Buffer.concat([Buffer.from([255,216,255,224]),Buffer.alloc(200)]).toString('base64');
 const env={OPENCODE_API_KEY:'test',CLOUDINARY_CLOUD_NAME:'test-cloud',CLOUDINARY_API_KEY:'test',CLOUDINARY_API_SECRET:'test'};
 const analysis={name:'Teszt',confidence:'medium',assumptions:'Teszt',ingredients:[{name:'Hús',grams:100,calories:200,protein:25,carbs:0,fat:11,fiber:0,sugar:0,sodium:70}]};
-const fetcher=async(url,options)=>url.startsWith('https://res.cloudinary.com/')?new Response(Buffer.from((url.includes('-angle')?secondImage:image).split(',')[1],'base64'),{headers:{'Content-Type':'image/jpeg'}}):url.endsWith('/upload')?Response.json({public_id:options.body.get('public_id'),secure_url:`https://res.cloudinary.com/test-cloud/image/upload/v1/${options.body.get('public_id')}.jpg`,width:100,height:80}):url.endsWith('/destroy')?Response.json({result:'ok'}):Response.json(aiPayloadFor(analysis,options));
+const fetcher=async(url,options)=>url.startsWith('https://res.cloudinary.com/')?new Response(Buffer.from((url.includes('-angle')?secondImage:image).split(',')[1],'base64'),{headers:{'Content-Type':'image/jpeg'}}):url.endsWith('/upload')?Response.json({public_id:options.body.get('public_id'),secure_url:`https://res.cloudinary.com/test-cloud/image/authenticated/v1/${options.body.get('public_id')}.jpg`,width:100,height:80}):url.endsWith('/destroy')?Response.json({result:'ok'}):Response.json(aiPayloadFor(analysis,options));
 async function seed(db,id) {const now=new Date().toISOString();await db.prepare('INSERT INTO users(id,google_sub,email,name,created_at,updated_at) VALUES(?,?,?,?,?,?)').bind(id,id,'test@example.test','Test',now,now).run();}
 async function cleanup(db,id){await db.prepare('DELETE FROM meals WHERE user_id=?').bind(id).run();await db.prepare('DELETE FROM analysis_attempts WHERE user_id=?').bind(id).run();await db.prepare('DELETE FROM users WHERE id=?').bind(id).run();}
 function invoke(db,userId,path,method='GET',payload,provider=fetcher){return api(new Request('http://localhost'+path,{method,headers:payload?{'Content-Type':'application/json'}:{},...(payload?{body:JSON.stringify(payload)}:{})}),{db,env,userId,fetcher:provider});}
@@ -37,7 +37,7 @@ test('PostgreSQL: real process replacement retains Google session, profile, queu
   await kill(app.child);app=await start(true);
   assert.equal((await(await fetch(app.origin+'/api/status',{headers})).json()).user.calorieGoal,2400);
   const draft=await eventually(async()=>{const row=await(await fetch(app.origin+'/api/meals/'+meal.id,{headers})).json();return row.meal?.status==='draft'&&row.meal;});
-  assert.equal(draft.totals.calories,300);assert.ok(draft.photo.url.startsWith('https://res.cloudinary.com/'));
+  assert.equal(draft.totals.calories,300);assert.ok(draft.photo.url.startsWith('/api/meals/'));
   assert.equal(draft.context.language,'en');
   draft.analysis.recipe={cookedWeightG:600,eatenWeightG:150,lossesAccountedFor:true,ingredients:draft.analysis.ingredients.map(item=>({...item,grams:400,gramsMin:400,gramsMax:400}))};
   assert.equal((await fetch(app.origin+'/api/meals/'+meal.id,{method:'PATCH',headers,body:JSON.stringify(draft)})).status,200);

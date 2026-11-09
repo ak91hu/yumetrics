@@ -40,3 +40,7 @@ Az alkalmazásbeállítások az `app_settings`, a módosítási előzmények az 
 A tesztsor a `npm test` paranccsal fut. A PostgreSQL-próbákhoz a `TEST_DATABASE_URL`, az adminpróbákhoz külön, `_admin_test` végű adatbázis címe szükséges a `TEST_ADMIN_DATABASE_URL` változóban. Az adminpróbák a saját tesztadatbázisuk alkalmazásbeállításait visszaállítják; éles adatbázison nem futtathatók.
 
 A `scripts/browser-check.mjs` teszt-Google-belépéssel ellenőrzi a napló és az admin működését, a mentéseket, jelvényeket és grafikonokat, öt képernyőszélességen. A magyar szövegek szerkesztési elvei: [LANGUAGE.md](LANGUAGE.md).
+
+## Képek és visszaélések elleni védelem
+
+Az ételfotókhoz az alkalmazáson keresztül csak a bejegyzés tulajdonosa és az admin fér hozzá. A képtárban is védett tárolási típust használunk. A munkamenet visszavonása a képek újabb lekérését is megakadályozza. A belépés, a feltöltés és az élelmiszer-adatlekérés külön kéréskorlátot kapott; ezek a szerveroldali biztonsági korlátok nem kapcsolhatók ki az adminból. A működés és az ellenőrzés részletei: [biztonsági audit](SECURITY-AUDIT-2026-11-09.md).

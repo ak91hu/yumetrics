@@ -23,7 +23,7 @@ for (const dialect of ['sqlite','postgres']) {
     const fetcher=async(url,options)=>{
       calls.push({url,options});
       if(url.startsWith('https://res.cloudinary.com/'))return new Response(Buffer.from((url.includes('-angle')?secondImage:image).split(',')[1],'base64'),{headers:{'Content-Type':'image/jpeg'}});
-      if(url.endsWith('/upload'))return Response.json({public_id:options.body.get('public_id'),secure_url:`https://res.cloudinary.com/test-cloud/image/upload/v1/${options.body.get('public_id')}.jpg`,width:100,height:80});
+      if(url.endsWith('/upload'))return Response.json({public_id:options.body.get('public_id'),secure_url:`https://res.cloudinary.com/test-cloud/image/authenticated/v1/${options.body.get('public_id')}.jpg`,width:100,height:80});
       return Response.json(aiPayloadFor(analysis,options));
     };
     const server=createApp({db,env,fetcher,googleClient});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));

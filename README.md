@@ -107,3 +107,5 @@ A publikálható útmutató forrása a [public/help.html](public/help.html). A b
 ## Az első megnyitás nyelve
 
 Magyarországi IP-címről magyarul, más országból vagy ismeretlen helyről angolul indul az oldal. A nyelvválasztóval megadott beállítás megmarad. Az országot a szerver a mellékelt, 2026. novemberi DB-IP-adatbázisból olvassa ki, külső kérés és IP-címek tárolása nélkül. VPN vagy proxy esetén az ország eltérhet a látogató tényleges helyétől. A külön nyelvű útmutatók és a magyar adminfelület nyelve rögzített. Részletek: [nyelvi elvek](docs/LANGUAGE.md), [adatforrás és frissítés](lib/geoip/README.md).
+
+A fotók védett képtári tárolást és munkamenethez kötött kiszolgálást használnak. A belépési próbálkozásokat, feltöltéseket, adatkereséseket és párhuzamos nagy kéréseket korlátozzuk. A 2026. november 9-i vizsgálat eredményei és javításai: [biztonsági audit](docs/SECURITY-AUDIT-2026-11-09.md).

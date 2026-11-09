@@ -26,7 +26,7 @@ function mockProviders({ cloudFailure = false, destroyFailure = false, aiPayload
     if (url.startsWith('https://opencode.ai/')) return Response.json(aiPayload || aiPayloadFor(analysis, options, inventory));
     if (url.startsWith('https://res.cloudinary.com/')) return new Response(Buffer.from((url.includes('-angle') ? secondImage : image).split(',')[1], 'base64'), { headers: { 'Content-Type': 'image/jpeg' } });
     const form = options.body;
-    if (url.endsWith('/upload')) return cloudFailure === true || cloudFailure === 'angle' && form.get('public_id').endsWith('-angle') ? Response.json({ error: 'sensitive provider error' }, { status: 500 }) : Response.json({ public_id: form.get('public_id'), secure_url: `https://res.cloudinary.com/test-cloud/image/upload/v1/${form.get('public_id')}.jpg`, width: 1000, height: 800, bytes: 1234, version: 1, format: 'jpg' });
+    if (url.endsWith('/upload')) return cloudFailure === true || cloudFailure === 'angle' && form.get('public_id').endsWith('-angle') ? Response.json({ error: 'sensitive provider error' }, { status: 500 }) : Response.json({ public_id: form.get('public_id'), secure_url: `https://res.cloudinary.com/test-cloud/image/authenticated/v1/${form.get('public_id')}.jpg`, width: 1000, height: 800, bytes: 1234, version: 1, format: 'jpg' });
     if (url.endsWith('/destroy')) return destroyFailure ? Response.json({}, { status: 503 }) : Response.json({ result: 'ok' });
     assert.fail(`Unexpected external URL ${url}`);
   };
@@ -228,7 +228,7 @@ test('both Cloudinary views are tracked, saved and deleted; old analysis records
   const f = fixture(); t.after(() => f.db.close()); const input = { ...f.input(), secondImage, context: { portionScope: 'full_image' } };
   const created = await f.create(input); assert.equal(created.status, 202);
   assert.equal(created.body.meal.context.additionalView, true);
-  assert.ok(created.body.meal.photo.additional.publicId.endsWith('-angle'));
+  assert.ok(created.body.meal.photo.additional.url.endsWith('/photo/additional'));
   assert.equal((await f.invoke(`/api/meals/${input.id}`, 'PATCH', created.body.meal)).status, 200);
   assert.equal((await f.invoke(`/api/meals/${input.id}`, 'DELETE')).status, 202); await f.process();
   const destroyed = f.calls.filter(call => call.url.endsWith('/destroy')).map(call => call.options.body.get('public_id'));
