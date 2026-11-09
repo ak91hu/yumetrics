@@ -28,7 +28,7 @@ for (const dialect of ['sqlite','postgres']) {
     };
     const server=createApp({db,env,fetcher,googleClient});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
     const origin=`http://127.0.0.1:${server.address().port}`;env.APP_ORIGIN=origin;googleClient.callbackOrigin=origin;
-    t.after(async()=>{await new Promise(resolve=>server.close(resolve));await db.prepare('DELETE FROM admin_audit WHERE actor_id=?').bind(owner).run();for(const id of [owner,other]){await db.prepare('DELETE FROM meals WHERE user_id=?').bind(id).run();await db.prepare('DELETE FROM analysis_attempts WHERE user_id=?').bind(id).run();await db.prepare('DELETE FROM users WHERE id=?').bind(id).run();}await db.prepare("UPDATE app_settings SET value='{}',revision=0 WHERE id=1").bind().run();await db.close();});
+    t.after(async()=>{await new Promise(resolve=>server.close(resolve));await db.prepare('DELETE FROM admin_audit WHERE actor_id=?').bind(owner).run();for(const id of [owner,other]){await db.prepare('DELETE FROM app_logs WHERE user_id=?').bind(id).run();await db.prepare('DELETE FROM ai_requests WHERE user_id=?').bind(id).run();await db.prepare('DELETE FROM meals WHERE user_id=?').bind(id).run();await db.prepare('DELETE FROM analysis_attempts WHERE user_id=?').bind(id).run();await db.prepare('DELETE FROM users WHERE id=?').bind(id).run();}await db.prepare("UPDATE app_settings SET value='{}',revision=0 WHERE id=1").bind().run();await db.close();});
     const call=(path,{id=owner,method='GET',body,headers={}}={})=>fetch(origin+path,{method,headers:{...(id?{Cookie:cookies[id]}:{}),...(body?{'Content-Type':'application/json'}:{}),...headers},...(body?{body:JSON.stringify(body)}:{})});
     const settings=async()=> (await call('/api/admin/settings')).json();
     const save=async changes=>{const value=await settings();return call('/api/admin/settings',{method:'PATCH',body:{revision:value.revision,settings:{...value.settings,...changes}}});};
@@ -36,7 +36,7 @@ for (const dialect of ['sqlite','postgres']) {
     await fn({db,env,owner,other,cookies,call,settings,save,login,googleClient,calls,fetcher});
   });
   run('protects every private route and hides provider configuration from ordinary users',async f=>{
-    for(const path of ['/admin','/admin.html','/api/admin/settings','/api/admin/overview','/api/admin/users','/api/admin/meals','/api/admin/jobs','/api/admin/audit']){
+    for(const path of ['/admin','/admin.html','/api/admin/settings','/api/admin/overview','/api/admin/users','/api/admin/meals','/api/admin/jobs','/api/admin/audit','/api/admin/logs','/api/admin/costs']){
       assert.equal((await f.call(path,{id:null})).status,401,path);
       assert.equal((await f.call(path,{id:f.other})).status,403,path);
       assert.equal((await f.call(path)).status,200,path);
@@ -53,6 +53,26 @@ for (const dialect of ['sqlite','postgres']) {
     for(const headers of [{Origin:'https://evil.test'},{'Sec-Fetch-Site':'cross-site'}])assert.equal((await f.call('/api/admin/settings',{method:'PATCH',body:{},headers})).status,403);
     const original=f.googleClient.verifyIdToken;f.googleClient.verifyIdToken=async options=>{const ticket=await original(options);return{getPayload:()=>({...ticket.getPayload(),email:'thisisnotka@gmail.com',email_verified:false})};};
     const denied=await f.login();assert.equal(denied.headers.get('location'),'/?login=failed');assert.ok(!denied.headers.getSetCookie().some(cookie=>cookie.startsWith('yumetrics_session=')));
+  });
+  run('keeps costs from rejected AI responses after meal deletion and exposes only safe operational logs',async f=>{
+    const id=randomUUID(),body={id,image,secondImage,day:'2026-11-09',time:'12:00',type:'Ebéd'};
+    assert.equal((await f.call('/api/analyze',{id:f.other,method:'POST',body})).status,202);
+    await processNextJob({db:f.db,env:f.env,fetcher:async(url,options)=>url.startsWith('https://opencode.ai/')?Response.json({candidates:[{finishReason:'MAX_TOKENS',content:{parts:[]}}],usageMetadata:{promptTokenCount:1000,candidatesTokenCount:5,thoughtsTokenCount:100,cachedContentTokenCount:400,privateField:'never-log-this'}}):f.fetcher(url,options)});
+    const row=await f.db.prepare('SELECT * FROM ai_requests WHERE meal_id=?').bind(id).first();
+    assert.equal(row.state,'failed');assert.equal(Number(row.http_status),200);assert.ok(Math.abs(row.cost_usd-.00229)<1e-12);assert.ok(!row.usage.includes('never-log-this'));
+    const ordinary=await(await f.call('/api/meals/'+id,{id:f.other})).json();assert.equal(ordinary.meal.job.error,undefined);assert.ok(!JSON.stringify(ordinary).includes('cost_usd'));
+    await f.db.prepare('DELETE FROM meals WHERE id=?').bind(id).run();
+    const costs=await(await f.call('/api/admin/costs?days=7')).json();assert.equal(Number(costs.summary.requests),1);assert.equal(Number(costs.summary.priced_requests),1);assert.ok(Math.abs(costs.summary.estimated_usd-.00229)<1e-12);
+    const logs=await(await f.call('/api/admin/logs?level=error')).json();assert.equal(logs.total,1);assert.equal(logs.items[0].level,'error');assert.ok(!JSON.stringify(logs).includes('private-ai-key'));
+    assert.equal((await f.call('/api/admin/logs?level=invalid')).status,400);assert.equal((await f.call('/api/admin/costs?days=999')).status,400);
+  });
+  run('imports historical usage once, distinguishes missing usage and missing pricing, and preserves its cost snapshot',async f=>{
+    const time=new Date().toISOString();
+    for(const [model,usage] of [['gemini-4-argon',{promptTokenCount:1000,candidatesTokenCount:100}],['unverified',{promptTokenCount:1000,candidatesTokenCount:100}],['gemini-4-argon',{}]]){
+      await f.db.prepare('INSERT INTO meals(id,user_id,day,time,type,public_id,status,model,usage,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)').bind(randomUUID(),f.other,time.slice(0,10),'12:00','Ebéd','test','draft',model,JSON.stringify(usage),time,time).run();
+    }
+    for(let i=0;i<2;i++){const costs=await(await f.call('/api/admin/costs')).json();assert.equal(Number(costs.summary.requests),3);assert.equal(Number(costs.summary.priced_requests),1);assert.ok(Math.abs(costs.summary.estimated_usd-.003)<1e-12);assert.equal(costs.items.length,3);}
+    const known=await f.db.prepare('SELECT * FROM ai_requests WHERE cost_usd IS NOT NULL AND user_id=?').bind(f.other).first();assert.equal(JSON.parse(known.pricing).input,2);
   });
   run('validates persisted settings, rejects stale edits, and applies real analysis limits and AI parameters',async f=>{
     const initial=await f.settings();

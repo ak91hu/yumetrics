@@ -442,18 +442,24 @@ try {
   Object.assign(googleClient,adminClient); googleClient.callbackOrigin=origin;
   await send('Page.navigate',{url:origin+'/auth/google'});
   await waitFor("document.querySelector('#admin-link')?.hidden === false");
+  const chartOwner=(await db.prepare('SELECT id FROM users WHERE google_sub=?').bind('admin-browser-fixture').first()).id;
+  for(const [back,status] of [[1,'saved'],[3,'draft'],[6,'saved']]){
+    const time=new Date(Date.now()-back*86400000).toISOString(),sample={name:'Grafikon próba',confidence:'medium',assumptions:'Böngészőteszt',ingredients:[ingredient]};
+    await db.prepare('INSERT INTO meals(id,user_id,day,time,type,status,analysis,original_analysis,model,usage,photo,public_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)').bind(randomUUID(),chartOwner,time.slice(0,10),'12:00','Ebéd',status,JSON.stringify(sample),JSON.stringify(sample),'gemini-4-argon',JSON.stringify({passes:[{promptTokenCount:5000*back,candidatesTokenCount:1500,thoughtsTokenCount:400,cachedContentTokenCount:500}]}),'{}','chart-fixture',time,time).run();
+  }
   await evaluate("document.querySelector('#admin-link').click()");
   await waitFor("document.querySelector('#admin-view')?.getAttribute('aria-busy') === 'false' && !!document.querySelector('.admin-card')");
   assert.equal(await evaluate("document.querySelector('#admin-identity').textContent"),'thisisnotka@gmail.com');
+  assert.equal(await evaluate("document.querySelectorAll('.admin-chart svg[role=img]').length"),4);
   await viewport(1440,1100,false); await screenshot('admin-overview-desktop.png');
   await viewport(390,844,true); await screenshot('admin-overview-mobile.png',false);
   const adminId=(await db.prepare('SELECT id FROM users WHERE google_sub=?').bind('admin-browser-fixture').first()).id;
   const adminMeal=randomUUID(),adminAnalysis={name:'Admin tesztétkezés',confidence:'medium',assumptions:'Tesztadat',ingredients:[ingredient]},adminTime=new Date().toISOString();
   await db.prepare('INSERT INTO meals(id,user_id,day,time,type,status,analysis,original_analysis,photo,public_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').bind(adminMeal,adminId,adminTime.slice(0,10),'12:00','Ebéd','draft',JSON.stringify(adminAnalysis),JSON.stringify(adminAnalysis),'{}',adminMeal,adminTime,adminTime).run();
   await db.prepare("INSERT INTO analysis_jobs(meal_id,kind,state,input_hash,error,created_at,updated_at) VALUES(?,'analyze','failed','','Provider diagnostic visible only to the owner',?,?)").bind(adminMeal,adminTime,adminTime).run();
-  for(const tab of ['users','meals','jobs','settings','audit']){
+  for(const tab of ['users','meals','jobs','costs','logs','settings','audit']){
     await evaluate(`location.hash=${JSON.stringify(tab)}`);
-    await waitFor(`document.querySelector('#admin-title').textContent === ${JSON.stringify({users:'Felhasználók',meals:'Étkezések',jobs:'Feldolgozási feladatok',settings:'Beállítások és kapcsolatok',audit:'Változásnapló'}[tab])} && document.querySelector('#admin-view').getAttribute('aria-busy') === 'false'`);
+    await waitFor(`document.querySelector('#admin-title').textContent === ${JSON.stringify({users:'Felhasználók',meals:'Étkezések',jobs:'Feldolgozások',settings:'Beállítások',audit:'Módosítási előzmények',costs:'AI-használat és költségek',logs:'Működési napló'}[tab])} && document.querySelector('#admin-view').getAttribute('aria-busy') === 'false'`);
     assert.ok(await evaluate("document.querySelector('#admin-message').hidden"),'Admin tab loads '+tab);
     for(const width of [320,390,768,1024,1440]){await viewport(width,1000,width<768);assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth'),'Admin '+tab+' fits '+width);}
     if(tab==='users'){
@@ -466,6 +472,24 @@ try {
       await evaluate("document.querySelector('[data-meal]').click()");await waitFor("document.querySelector('#admin-detail').open");
       assert.ok(await evaluate("document.querySelector('#admin-meal-detail').textContent.includes('160')"));
       await evaluate("document.querySelector('#close-detail').click()");
+    }
+    if(tab==='costs'){
+      assert.ok(await evaluate("document.querySelector('#admin-view').textContent.includes('Becsült AI-költség') && document.querySelectorAll('.admin-chart svg').length === 1"));
+      await evaluate("document.querySelector('#cost-period [name=days]').value='7';document.querySelector('#cost-period [name=days]').dispatchEvent(new Event('change',{bubbles:true}))");
+      await waitFor("location.hash.includes('days=7') && document.querySelector('#admin-view').getAttribute('aria-busy') === 'false'");
+      assert.equal(await evaluate("document.querySelectorAll('.chart-data tbody tr').length"),7);
+      await evaluate("document.querySelector('.chart-data').open=true");
+      assert.ok(await evaluate("document.querySelector('.chart-data').textContent.includes('2026-')"));
+      await evaluate("document.querySelector('.chart-data').open=false");
+      await viewport(1440,1100,false);await screenshot('admin-costs-desktop.png');
+      await viewport(390,844,true);await screenshot('admin-costs-mobile.png');
+    }
+    if(tab==='logs'){
+      await evaluate("document.querySelector('#logs-filter [name=level]').value='error';document.querySelector('#logs-filter [name=level]').dispatchEvent(new Event('change',{bubbles:true}))");
+      await waitFor("location.hash.includes('level=error') && document.querySelector('#admin-view').getAttribute('aria-busy') === 'false'");
+      assert.ok(await evaluate("document.querySelectorAll('.admin-table tbody .admin-pill').length > 0 && [...document.querySelectorAll('.admin-table tbody .admin-pill')].every(pill=>pill.textContent === 'Hiba')"));
+      await viewport(1440,1100,false);await screenshot('admin-logs-desktop.png');
+      await viewport(390,844,true);await screenshot('admin-logs-mobile.png');
     }
     if(tab==='settings'){
       await evaluate("document.querySelector('[name=hourlyLimit]').value='2';document.querySelector('#admin-settings').requestSubmit()");
@@ -497,6 +521,8 @@ try {
   result.checks.push('both photos mandatory; missing and duplicate second views blocked before provider work', 'native camera chooser for both views; 2048px image preparation', 'one detailed AI request for pair checking, visual inventory and nutrient estimation');
   result.screenshots.push('methodology-desktop.png', 'methodology-mobile.png');
   result.checks.push('six generated botanical badge images load; ordinary users see no provider panel or admin link', 'owner Google identity opens admin; every tab fits five widths; user goal and application settings persist; meal details and audit log work');
+  result.checks.push('redesigned culinary badge names in both languages; line and distribution charts with accessible daily data; automatic period filters; AI cost breakdown with incomplete coverage; error-only operational log filtering');
+  result.screenshots.push('admin-costs-desktop.png','admin-costs-mobile.png','admin-logs-desktop.png','admin-logs-mobile.png');
   result.screenshots.push('badges-mobile.png','admin-overview-desktop.png','admin-overview-mobile.png','admin-settings-desktop.png','admin-settings-mobile.png','admin-audit-desktop.png');
   writeFileSync(resolve(out, 'browser-check.json'), JSON.stringify(result, null, 2)); console.log(JSON.stringify(result, null, 2));
 } catch (error) {

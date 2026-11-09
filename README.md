@@ -58,11 +58,13 @@ A **Fiókom** nézetben mai energiaösszesítés, választható 7/30/365 napos �
 
 A felület és az új AI-elemzés magyarul és angolul is használható. A jelvényértesítések és a folyadékmennyiségek szövegei nyelvváltáskor is követik a kiválasztott nyelvet. A nyelvváltás megőrzi a kiválasztott fotókat és a szerkesztés alatt álló adatokat; a saját szövegek és a korábbi elemzések az eredeti nyelvükön maradnak. A mobilos, asztali és billentyűzettel történő használat is támogatott.
 
+Az adminban napi aktivitási és költséggrafikonok, szűrhető működési és hibanapló, valamint hívásonkénti, USD-ben számolt AI-költségbecslés is elérhető. A becslés külön jelzi a hiányos adatokat; az új hívások rekordjai az étkezés törlése után is megmaradnak. Módszer és ellenőrzött árazás: [AI-COSTS.md](docs/AI-COSTS.md).
+
 ## Belépés, adattárolás és telepítés
 
 ### Tulajdonosi adminfelület
 
-A [kezelőfelület](https://yumetrics.app/admin) kizárólag a Google által ellenőrzött `thisisnotka@gmail.com` fiókkal érhető el, a Fiókom nézetből is. Felhasználók és munkamenetek kezelése, étkezések és feldolgozási hibák megtekintése, részletes statisztikák, tartós alkalmazásbeállítások és változásnapló található itt. A szolgáltatói beállítások jelzéseit az átlagos felhasználó nem kapja meg. Részletek, beállítási határok és ellenőrzés: [ADMIN.md](docs/ADMIN.md). A hat egyedi, generált növényes jelvény és végleges promptjai: [BADGE-ART.md](docs/BADGE-ART.md).
+A [kezelőfelület](https://yumetrics.app/admin) kizárólag a Google által ellenőrzött `thisisnotka@gmail.com` fiókkal érhető el, a Fiókom nézetből is. Felhasználók és munkamenetek kezelése, étkezések és feldolgozási hibák megtekintése, részletes statisztikák, tartós alkalmazásbeállítások és változásnapló található itt. A szolgáltatói beállítások jelzéseit az átlagos felhasználó nem kapja meg. Részletek, beállítási határok és ellenőrzés: [ADMIN.md](docs/ADMIN.md). A hat ötletes kulináris jelvény és végleges promptjai: [BADGE-ART.md](docs/BADGE-ART.md).
 
 Az alkalmazás **Node.js 24+** szerveren fut. Az éles alkalmazás és a külön, tartós lemezes **PostgreSQL 17** adatbázis az `ak91hus-team/default` Northflank-projektben található. A felhasználói fotók Cloudinaryba kerülnek; a fiókok, munkamenetek, étkezések, forrásmásolatok és feldolgozási feladatok Northflanken tárolódnak. Újraindítás és új image-re történő telepítés után az adatok megőrzését éles próbával is ellenőriztük.
 

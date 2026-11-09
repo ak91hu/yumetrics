@@ -11,6 +11,7 @@ import { startJobRunner } from './lib/jobs.mjs';
 import { SECURITY_HEADERS, STATIC_FILES } from './lib/http.mjs';
 import { guideMarkup, requestLanguage, translateSystemMessage } from './lib/i18n.mjs';
 import { isAdmin } from './lib/settings.mjs';
+import { logEvent, importHistoricalUsage } from './lib/telemetry.mjs';
 export { openDatabase } from './lib/database.mjs';
 
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
@@ -50,6 +51,7 @@ export function createApp({ db, env = process.env, fetcher = fetch, publicOrigin
       }
     } catch (error) {
       console.error('HTTP request failed:', error.code || error.name);
+      if (db && !error.status) await logEvent(db,{level:'error',category:'server',event:'server.failed',message:'Hiba történt a kérés kiszolgálása közben.',code:error.code || error.name}).catch(()=>console.error('Operational log could not be saved'));
       response = json({ error: error.status ? error.message : 'A szolgáltatás átmenetileg nem elérhető. A már tárolt adatokat megőriztük.' }, error.status || 503);
     }
     if (response.status >= 400 && response.headers.get('content-type')?.includes('application/json')) {
@@ -71,8 +73,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   const env = process.env, host = env.HOST || '127.0.0.1', port = Number(env.PORT || 3000);
   if (env.NODE_ENV === 'production' && (!env.DATABASE_URL || !env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET || !env.APP_ORIGIN?.startsWith('https://'))) throw new Error('Production requires DATABASE_URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and an HTTPS APP_ORIGIN.');
   let db;
-  try { if (env.DATABASE_URL) db = await openPostgresDatabase(env.DATABASE_URL); }
+  try { if (env.DATABASE_URL) { db = await openPostgresDatabase(env.DATABASE_URL); await importHistoricalUsage(db); } }
   catch (error) { console.error('PostgreSQL startup failed:', error.code || error.name); process.exit(1); }
+  if (db) await logEvent(db,{category:'server',event:'server.starting',message:'Az alkalmazás indul; az adatbázis-kapcsolat létrejött.'});
   const runner = db ? startJobRunner({ db, env }) : null;
   const server = createApp({ db, env, wake: () => runner?.wake() });
   server.listen(port, host, () => console.log(`Yumetrics: http://${host}:${server.address().port} · Google-belépés ${authConfigured(env, db) ? 'beállítva' : 'beállításra vár'}`));
