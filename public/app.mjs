@@ -41,8 +41,9 @@ const goal = 2000;
 const state = { selected: today(), month: today().slice(0, 7), meals: [], status: null, goal, photo: null, secondPhoto: null, busy: false, edit: null, dirty: false, deleting: null, loadVersion: 0, uploadId: null, pendingOpenId: null, recipeEditing: false, recipeBackup: null };
 const foodRequests = new WeakMap();
 const savingMeals = new Set();
-let toastTimer, photoVersion = 0, secondPhotoVersion = 0, processingPhotos = 0, settingsVersion = 0;
+let toastTimer, photoVersion = 0, secondPhotoVersion = 0, processingPhotos = 0, settingsVersion = 0, renderedDrafts = '';
 function toast(message) { $('#toast').dataset.message = messageSource(message); $('#toast').textContent = t(message); $('#toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('#toast').hidden = true; }, 5000); }
+function hideToast() { $('#toast').hidden = true; clearTimeout(toastTimer); }
 function errorAt(id, error) { $(id).dataset.message = messageSource(error?.message || String(error)); $(id).textContent = t($(id).dataset.message); $(id).hidden = false; }
 async function request(path, options = {}) {
   const response = await fetch(path, { ...options, headers: { 'Accept-Language': getLanguage(), ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...options.headers }, cache: 'no-store' }).catch(() => { throw new Error(t('A szerver most nem érhető el. Próbáld újra később.')); });
@@ -63,11 +64,15 @@ async function loadMonth() {
   try {
     const result = await request(`/api/meals?month=${state.month}`);
     if (version !== state.loadVersion) return;
+    const analyzing = new Set(state.meals.filter(meal => meal.status === 'analyzing').map(meal => meal.id));
+    const newlyReady = result.meals.some(meal => meal.status === 'draft' && analyzing.has(meal.id));
     state.meals = result.meals;
     for (const meal of state.meals) for (const item of meal.analysis?.ingredients || []) if (item.referenceKey && item.referenceRecord) FOOD_REFERENCE[item.referenceKey] = item.referenceRecord;
     render();
     const pending = state.meals.find(meal => meal.id === state.pendingOpenId);
-    if (pending?.analysis && pending.status === 'draft') { state.pendingOpenId = null; openMeal(pending.id); toast(t('Elkészült a becslés. Nézd át, majd mentsd a naplódba.')); }
+    const readyToOpen = pending?.analysis && pending.status === 'draft';
+    if (readyToOpen) { state.pendingOpenId = null; openMeal(pending.id); }
+    if (newlyReady || readyToOpen) hideToast();
     if ($('#meal-dialog').open && !state.dirty && state.edit && !state.edit.analysis) {
       const updated = state.meals.find(meal => meal.id === state.edit.id);
       if (updated) { state.edit = structuredClone(updated); renderDetail(); }
@@ -96,8 +101,13 @@ function render() {
   }
   $('#empty-state').hidden = selected.length > 0;
   $('#meal-list').innerHTML = selected.map(meal => html`<button class="meal-card" data-meal="${escape(meal.id)}" aria-label="${escape(meal.analysis.name)}, ${integer(meal.totals.calories)} kilokalória, részletek"><img src="${escape(meal.photo.url)}" alt="${escape(meal.analysis.name)}" loading="lazy"><div class="meal-card-info"><div class="meal-meta"><span>${escape(t(meal.type))}</span><span>·</span><span>${escape(meal.time)}</span></div><h3>${escape(meal.analysis.name)}</h3><p class="meal-components">${meal.analysis.ingredients.map(item => escape(item.name)).join(' · ')}</p><div class="meal-macros"><span><i class="macro-dot protein"></i>${number(meal.totals.protein)} g fehérje</span><span><i class="macro-dot carbs"></i>${number(meal.totals.carbs)} g szénhidrát</span><span><i class="macro-dot fat"></i>${number(meal.totals.fat)} g zsír</span></div></div><div class="meal-kcal"><strong>${integer(meal.totals.calories)}</strong><small>kcal</small></div></button>`).join('');
-  const drafts = state.meals.filter(meal => meal.status !== 'saved' || meal.job?.kind === 'delete');
-  $('#draft-list').innerHTML = drafts.map(meal => html`<div class="draft-card"><div><strong>${escape(meal.analysis?.name || t('Befejezetlen elemzés'))}</strong><p>${escape(meal.day)} · ${meal.job?.kind === 'delete' ? (meal.job.state === 'failed' ? t('Nem sikerült törölni · Újra megpróbálhatod') : t('Törlés folyamatban')) : meal.status === 'draft' ? t('Ellenőrizheted és mentheted') : meal.status === 'failed' ? t('Nem sikerült az elemzés · Újra megpróbálhatod') : t('Elemzés folyamatban · Az ablakot bezárhatod')}</p></div><button data-meal="${escape(meal.id)}">Megnyitás</button></div>`).join('');
+  const drafts = state.meals.filter(meal => meal.status !== 'saved' || meal.job?.kind === 'delete').sort((a,b) => Number(b.status === 'draft' && b.job?.kind !== 'delete') - Number(a.status === 'draft' && a.job?.kind !== 'delete'));
+  $('#draft-list').hidden = drafts.length === 0;
+  const draftMarkup = drafts.map(meal => {
+    const ready = meal.status === 'draft' && meal.job?.kind !== 'delete';
+    return html`<div class="draft-card ${ready ? 'draft-ready' : ''}"><div>${ready ? html('<p class="draft-ready-title">Elkészült az elemzés. Ellenőrizd és mentsd az étkezést!</p>') : ''}<strong>${escape(meal.analysis?.name || t('Befejezetlen elemzés'))}</strong><p>${escape(meal.day)} · ${meal.job?.kind === 'delete' ? (meal.job.state === 'failed' ? t('Nem sikerült törölni · Újra megpróbálhatod') : t('Törlés folyamatban')) : meal.status === 'draft' ? t('Ellenőrizheted és mentheted') : meal.status === 'failed' ? t('Nem sikerült az elemzés · Újra megpróbálhatod') : t('Elemzés folyamatban · Az ablakot bezárhatod')}</p></div><button class="${ready ? 'button primary' : ''}" data-meal="${escape(meal.id)}">${ready ? t('Átnézés és mentés') : t('Megnyitás')}</button></div>`;
+  }).join('');
+  if (draftMarkup !== renderedDrafts) { $('#draft-list').innerHTML = draftMarkup; renderedDrafts = draftMarkup; }
   renderCalendar();
 }
 function renderCalendar() {
@@ -122,6 +132,7 @@ async function changeMonth(amount) {
 const show = id => { const dialog = $(id); if (!dialog.open) dialog.showModal(); };
 function close(dialog) {
   if (dialog.id === 'meal-dialog' && state.dirty && !confirm(t('Még nem mentetted a módosításaidat. Bezárod az ablakot mentés nélkül?'))) return;
+  if (dialog.id === 'meal-dialog' && state.pendingOpenId === state.edit?.id) state.pendingOpenId = null;
   dialog.close();
 }
 document.addEventListener('click', async event => {
@@ -150,7 +161,7 @@ document.addEventListener('click', async event => {
     if (date.getFullYear() >= 1900 && date.getFullYear() <= 2100) await selectDay(dayKey(date));
   }
 });
-$('#meal-dialog').addEventListener('cancel', event => { if (state.dirty) { event.preventDefault(); close($('#meal-dialog')); } });
+$('#meal-dialog').addEventListener('cancel', event => { event.preventDefault(); close($('#meal-dialog')); });
 $('#settings-form').addEventListener('submit', async event => {
   event.preventDefault(); const button = event.submitter || $('#settings-form button[type="submit"]'); if (button.disabled) return;
   const value = $('#calorie-goal').value, version = settingsVersion; button.disabled = true;
@@ -217,7 +228,7 @@ $('#upload-form').addEventListener('submit', async event => {
   $('#upload-error').hidden = true;
   if (!state.photo) { errorAt('#upload-error', new Error(t('Válassz egy ételfotót az elemzéshez.'))); return; }
   try { validateImages(state.photo, state.secondPhoto); } catch (error) { errorAt('#upload-error', error); return; }
-  state.busy = true; $('#analyze-button').disabled = true; $('#analysis-progress').hidden = false;
+  state.busy = true; $('#analyze-button').disabled = true; $('#analyze-button').hidden = true; $('#upload-ok').hidden = false; $('#analysis-progress').hidden = false;
   const id = state.uploadId;
   try {
     const payload = { id, image: state.photo, secondImage: state.secondPhoto, context: { language: getLanguage(), dishProfile: $('#dish-profile').value, preparationNotes: $('#preparation-notes').value, totalWeightG: $('#context-weight').value ? Number($('#context-weight').value) : null, inedibleWeightG: Number($('#context-inedible').value), plateDiameterCm: $('#context-diameter').value ? Number($('#context-diameter').value) : null }, day: $('#upload-day').value, time: $('#upload-time').value, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, type: $('#upload-type').value, notes: $('#upload-notes').value };
@@ -225,9 +236,11 @@ $('#upload-form').addEventListener('submit', async event => {
 
     state.meals = [...state.meals.filter(item => item.id !== meal.id), meal];
     state.selected = meal.day; state.month = meal.day.slice(0, 7); render(); await loadMonth();
-    $('#upload-dialog').close(); state.pendingOpenId = meal.status === 'analyzing' ? meal.id : null; openMeal(meal.id); toast(meal.analysis ? t('Elkészült a becslés. Nézd át mentés előtt.') : t('A fotót elmentettük, az elemzés a háttérben folytatódik.'));
+    const current = state.meals.find(item => item.id === meal.id) || meal;
+    if ($('#upload-dialog').open) { $('#upload-dialog').close(); state.pendingOpenId = current.status === 'analyzing' ? meal.id : null; openMeal(meal.id); }
+    if (current.analysis) hideToast(); else toast(t('A fotót elmentettük, az elemzés a háttérben folytatódik.'));
   } catch (error) { errorAt('#upload-error', error); if (!$('#upload-dialog').open) toast(error.message); await loadMonth(); }
-  finally { state.busy = false; $('#analyze-button').disabled = false; $('#analysis-progress').hidden = true; }
+  finally { state.busy = false; $('#analyze-button').disabled = false; $('#analyze-button').hidden = false; $('#upload-ok').hidden = true; $('#analysis-progress').hidden = true; }
 });
 const field = (label, name, value, attrs = '') => html(`<label>${escape(t(label))}<input name="${name}" value="${escape(value)}" ${attrs}></label>`);
 const nutrientNames = { calories: 'Energia (kcal)', protein: 'Fehérje (g)', carbs: 'Szénhidrát (g)', fat: 'Zsír (g)', fiber: 'Rost (g)', sugar: 'Cukor (g)', sodium: 'Nátrium (mg)', saturatedFat: 'Telített zsírsavak (g)' };
@@ -240,7 +253,7 @@ function renderDetail() {
   const meal = state.edit, analysis = meal.analysis;
   $('#detail-heading').textContent = analysis ? meal.status === 'draft' ? t('Ellenőrizd a becsült tápértékeket') : t('Az étkezés részletei') : t('Befejezetlen elemzés');
   if (!analysis || !meal.photo || meal.job?.kind === 'delete') {
-    $('#meal-detail').innerHTML = `<p class="dialog-intro">${escape(t(meal.error) || (meal.job?.kind === 'delete' ? t('A bejegyzés és a képek törlése még tart. Megszakadás esetén később folytatjuk.') : t('A fotót elmentettük, az elemzés még tart. Bezárhatod az ablakot; az eredményt később is megnyithatod.')))}</p>${meal.job?.state === 'failed' && meal.job?.kind === 'analyze' ? html('<p class="form-hint">Az újrapróbálás új AI-kérést indít.</p><button type="button" class="button primary" id="retry-meal">Elemzés újrapróbálása</button>') : ''}<button type="button" class="delete-button" id="delete-meal">${icon('trash')}${meal.job?.kind === 'delete' ? t('Törlés újrapróbálása') : t('Bejegyzés és kép törlése')}</button>`;
+    $('#meal-detail').innerHTML = `<p class="dialog-intro">${escape(t(meal.error) || (meal.job?.kind === 'delete' ? t('A bejegyzés és a képek törlése még tart. Megszakadás esetén később folytatjuk.') : t('A fotót elmentettük, az elemzés még tart. Bezárhatod az ablakot; az eredményt később is megnyithatod.')))}</p>${meal.job?.state === 'failed' && meal.job?.kind === 'analyze' ? html('<p class="form-hint">Az újrapróbálás új AI-kérést indít.</p><button type="button" class="button primary" id="retry-meal">Elemzés újrapróbálása</button>') : ''}<button type="button" class="delete-button" id="delete-meal">${icon('trash')}${meal.job?.kind === 'delete' ? t('Törlés újrapróbálása') : t('Bejegyzés és kép törlése')}</button>${html('<div class="modal-actions"><button type="button" class="button outline" data-close>Mégsem</button><button type="button" class="button primary" id="processing-ok" data-close>OK</button></div>')}`;
     $('#retry-meal')?.addEventListener('click', async event => {
       event.currentTarget.disabled = true;
       try { await request(`/api/meals/${meal.id}/retry`, { method: 'POST' }); state.pendingOpenId = meal.id; await loadMonth(); }

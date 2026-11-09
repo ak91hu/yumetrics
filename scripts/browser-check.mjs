@@ -27,7 +27,7 @@ const avatarUrl = 'https://lh3.googleusercontent.com/a/browser-avatar';
 const avatarSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#547a93"/><circle cx="32" cy="24" r="12" fill="#f3d4b4"/><path d="M8 64a24 24 0 0 1 48 0" fill="#f3d4b4"/></svg>';
 let providerCalls = 0, aiRequests = 0, failFirstAnalysis = true; const storedPhotos = new Map(), googleClient = testGoogleClient({ picture: avatarUrl });
 const env = { NODE_ENV: 'production', USDA_API_KEY:'test-usda', GOOGLE_CLIENT_ID: 'test-client', GOOGLE_CLIENT_SECRET: 'test-secret', OPENCODE_API_KEY: 'browser-test', CLOUDINARY_CLOUD_NAME: 'test-cloud', CLOUDINARY_API_KEY: 'browser-test', CLOUDINARY_API_SECRET: 'browser-test' };
-let runner;
+let runner, analysisGate, releaseAnalysis;
 const db = openDatabase(':memory:');
 const fetcher = async (url, options) => {
   if (!url.startsWith('https://res.cloudinary.com/')) providerCalls++;
@@ -38,6 +38,7 @@ const fetcher = async (url, options) => {
     assert.ok([1,2].includes(input.imageCount));
     assert.equal(body.contents[0].parts.filter(part => part.inlineData).length, input.imageCount);
     assert.equal(input.context.language, language);
+    if (analysisGate) await analysisGate;
     if (failFirstAnalysis) { failFirstAnalysis = false; return Response.json({error:'Simulated recoverable failure'},{status:503}); }
     const analysis = { name: expected('Tesztétkezés', 'Test meal'), confidence: 'medium', assumptions: expected('Automatizált teszt: nem valódi AI-elemzés.', 'Automated test, not a real AI analysis.'), ingredients: [{ ...ingredient, name: expected(ingredient.name, 'Test avocado') }] };
     const inventory = visualInventory(analysis);
@@ -181,6 +182,7 @@ try {
   await evaluate("document.querySelector('#google-signin').click()");
   await waitFor("document.querySelector('#loading')?.hidden === true");
   assert.equal(await evaluate("document.querySelector('#meal-count').textContent"),'0');
+  assert.equal(await evaluate("document.querySelector('meta[name=onesvibe-claim]').content"),'ov-53c3fcf1-fe1d-4c92-9279-54d91486c003');
   await waitFor("!document.querySelector('#motivation-card').hidden");
   assert.equal(await evaluate("document.querySelectorAll('#motivation-card .growth-steps .complete').length"),0);
   await evaluate("document.querySelector('#motivation-card [data-action=settings]').click()");
@@ -516,13 +518,46 @@ try {
   assert.equal((await db.prepare('SELECT calorie_goal FROM users').bind().first()).calorie_goal,2300);
   await evaluate("document.querySelector('.mobile-nav [data-action=settings]').click()");
   await waitFor("document.querySelector('#profile-summary').getAttribute('aria-busy') === 'false'");
+  await evaluate("document.querySelector('#settings-dialog [data-close]').click()");
+  analysisGate=new Promise(resolve=>releaseAnalysis=resolve);
   // One image is enough for upload, analysis, save, reload and deletion.
   await evaluate("document.querySelector('.mobile-nav [data-action=upload]').click()");
   const singleDoc=await send('DOM.getDocument'),singleInput=await send('DOM.querySelector',{nodeId:singleDoc.root.nodeId,selector:'#photo-input'});
   await send('DOM.setFileInputFiles',{nodeId:singleInput.nodeId,files:[photoFile]});
   await waitFor("!document.querySelector('#photo-preview').hidden && !document.querySelector('#analyze-button').disabled");
   const singleCalls=aiRequests;
-  await evaluate("document.querySelector('#upload-form').requestSubmit()");
+  await evaluate(`window.reviewFetch=window.fetch;window.reviewHeld=false;window.reviewDone=false;
+    window.fetch=async(...args)=>{if(args[0]==='/api/analyze'&&args[1]?.method==='POST'){window.reviewHeld=true;await new Promise(resolve=>window.reviewRelease=resolve);const response=await window.reviewFetch(...args);window.reviewDone=true;return response;}return window.reviewFetch(...args);};
+    document.querySelector('#upload-form').requestSubmit()`);
+  await waitFor("window.reviewHeld && !document.querySelector('#upload-ok').hidden");
+  assert.ok(await evaluate("document.querySelector('#upload-ok').classList.contains('primary')"));
+  await evaluate("document.querySelector('#upload-ok').click();window.reviewRelease()");
+  await waitFor("window.reviewDone && !!document.querySelector('#draft-list button')");
+  await evaluate('window.fetch=window.reviewFetch');
+  assert.ok(await evaluate("!document.querySelector('#upload-dialog').open && !document.querySelector('#meal-dialog').open"),'Acknowledging upload must not reopen a dialog');
+  await evaluate("document.querySelector('#draft-list button').click()");
+  await waitFor("!!document.querySelector('#processing-ok')");
+  assert.ok(await evaluate("document.querySelector('#processing-ok').classList.contains('primary')"));
+  await screenshot('processing-ok.png',false);
+  await evaluate("document.querySelector('#processing-ok').click()");
+  assert.ok(await evaluate("!document.querySelector('#meal-dialog').open"));
+  releaseAnalysis();analysisGate=null;
+  await waitFor("!!document.querySelector('#draft-list .draft-ready')");
+  assert.ok(await evaluate("document.querySelector('#toast').hidden"),'The persistent review notice is not covered by an obsolete progress toast');
+  assert.ok(await evaluate("!document.querySelector('#meal-dialog').open"),'A finished analysis must not steal focus after OK');
+  assert.ok(await evaluate("document.querySelector('#main').firstElementChild.id==='draft-list'"));
+  assert.ok(await evaluate(`document.querySelector('.draft-ready-title').textContent.includes(${JSON.stringify(expected('Elkészült az elemzés','Your analysis is ready'))})`));
+  for(const width of [320,390,768,1024,1440]){await viewport(width,900,width<768);assert.ok(await evaluate("document.querySelector('#draft-list').scrollWidth<=document.querySelector('#draft-list').clientWidth"),'Review notice fits '+width);}
+  await viewport(device==='desktop'?1440:390,device==='desktop'?1100:844,device!=='desktop');
+  await evaluate("window.scrollTo(0,500);document.querySelector('.draft-ready button').focus()");
+  const notice=await evaluate("document.querySelector('#draft-list').getBoundingClientRect().toJSON()");
+  assert.ok(notice.top>=0&&notice.top<40,'Review notice stays at the top while scrolling');
+  assert.ok(await evaluate("document.activeElement===document.querySelector('.draft-ready button')"),'The notice button receives keyboard focus');
+  await send('Runtime.evaluate',{expression:"document.dispatchEvent(new Event('visibilitychange'))",returnByValue:true});
+  await waitFor("document.querySelector('#loading').hidden");
+  assert.ok(await evaluate("document.activeElement===document.querySelector('.draft-ready button')"),'Refreshing an unchanged notice retains keyboard focus');
+  await screenshot('review-notice-top.png',false);
+  await evaluate("document.querySelector('.draft-ready button').click()");
   await waitFor("document.querySelector('#detail-calories')?.textContent==='160'");
   assert.equal(aiRequests,singleCalls+1);assert.ok(await evaluate("!document.querySelector('.additional-view')"));
   const single=await db.prepare('SELECT id,photo,analysis_context,analysis FROM meals').bind().first();
@@ -722,6 +757,8 @@ try {
   result.screenshots.push('context-weight-help-mobile.png','context-energy-range-help-mobile.png','context-ai-cost-help-mobile.png');
   result.checks.push('private visitor report: empty and populated states, filtered dates, nine charts, privacy explanation and responsive tables; headless navigation does not inflate totals');
   result.screenshots.push('admin-visitors-desktop.png','admin-visitors-mobile.png');
+  result.checks.push('upload OK and processing OK preserve background work; persistent top review notice survives scrolling and refresh; Onesvibe claim in homepage HTML');
+  result.screenshots.push('processing-ok.png','review-notice-top.png');
   result.checks.push('three weekly choices in both languages, persistent selection, no provider calls, live progress, completion toast, reload persistence and permanent reward after meal deletion');
   result.screenshots.push('weekly-challenge-choices-mobile.png','weekly-challenge-completed-mobile.png','weekly-challenge-completed-desktop.png');
   result.screenshots.push('food-breakdown-desktop.png','food-breakdown-mobile.png');
@@ -732,7 +769,7 @@ try {
   writeFileSync(resolve(out, 'browser-check.json'), JSON.stringify({ passed: false, status: 'failed', error: error.message }, null, 2));
   writeFileSync(resolve(out, 'chrome-stderr.log'), chromeLog); console.error(chromeLog.slice(-5000)); throw error;
 } finally {
-  runner.stop(); ws?.close();
+  releaseAnalysis?.();runner.stop(); ws?.close();
   if (processHandle.pid && processHandle.exitCode === null && processHandle.signalCode === null) { const exited = once(processHandle, 'exit'); processHandle.kill(); await exited; }
   await new Promise(resolve => server.close(resolve)); db.close();
   assert.equal(dirname(profileDirectory), out);

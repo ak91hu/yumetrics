@@ -49,7 +49,7 @@ export function installAnalysisUI() {
   document.querySelector('#context-panel .form-grid').insertAdjacentHTML('beforebegin', html`<div class="help-heading"><span>Mért mennyiségek</span>${html(helpMarkup('weight-help', t('Mért mennyiségek'), t('Az egész adagot tányér nélkül, a csonttal vagy más nem ehető résszel együtt mérd le. A külön megadott csont- és héjtömeget levonjuk. Az összetevők aránya ettől még becsült marad. Ha nem mértél, vagy milliliterben megadott italt is naplózol, az össztömeget hagyd üresen. A tányérátmérő csak képi támpont.')))}</div>`);
   document.querySelector('#context-panel .context-fields').append(document.querySelector('#upload-day').closest('.form-grid'), document.querySelector('#upload-notes').closest('label'));
   document.querySelector('.daily-section').insertAdjacentHTML('beforeend', '<div class="daily-details" id="daily-details"></div>');
-  document.querySelector('#analysis-progress').textContent = t('Az összetevők és tápértékek becslése néhány percet is igénybe vehet. Az eredményt mentés előtt ellenőrizheted.');
+  document.querySelector('#analysis-progress').textContent = t('A feltöltés és az elemzés folyamatban van. Az OK gombbal bezárhatod az ablakot; az elkészült eredményt az oldal tetején jelezzük.');
   document.querySelector('#dish-profile').addEventListener('change', event => { document.querySelector('#dish-guidance').innerHTML = dishGuidance(event.target.value); });
 }
 export function recipeMarkup(analysis, editing) {

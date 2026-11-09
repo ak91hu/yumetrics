@@ -1,5 +1,13 @@
 # Ellenőrzés
 
+## OK gomb, felső jóváhagyási jelzés és Onesvibe, 2026-11-09
+
+A beküldés és a feldolgozás ablakának kiemelt OK gombja bezárja az ablakot, miközben a háttérmunka folytatódik. Bezárás után az eredmény nem nyitja újra az ablakot automatikusan. Az ellenőrzésre váró étkezés a főoldal tetején, görgetés közben is látható, kiemelt kártyát és „Átnézés és mentés” gombot kap; csak mentéskor kerül a napi összesítésbe. A rövid értesítések is felül jelennek meg. Az új eredmény jelzése az OK-val bezárt ablak mellett is frissül. Változatlan kártya frissítése megtartja a billentyűzetfókuszt.
+
+**138/138 Node-teszt sikeres**, PostgreSQL-lel, kihagyás nélkül. A magyar/mobil és angol/asztali Chrome-folyamat késleltetett beküldéssel és elemzéssel ellenőrzi az OK gombokat, a háttérmunka folytatását, a felül maradó jelzést, az öt képernyőszélességet, a billentyűzetfókuszt és a külön mentést. Az új gombok nem indítanak új AI-kérést.
+
+A megadott Onesvibe meta tag az `index.html` és `login.html` fejlécében is szerepel. Fájl- és HTTP-próba ellenőrzi, hogy a bejelentkezés nélküli kezdőlap nyers HTML-válaszában is olvasható; a bejelentkezett nézetet a böngészős folyamat is ellenőrzi. Új függőség, migráció vagy fizetős AI-mérés nem szükséges. A vizuális és működési próbák Chrome-mal készültek; Firefox-, Safari- és képernyőolvasós próba nem történt.
+
 ## Egy kötelező és egy opcionális fotó, v15, 2026-11-09
 
 Egy fotóval is elindítható az elemzés. A feltöltő, a kezdőlap és az útmutató magyarul és angolul is jelzi, hogy a második nézet vagy az olvasható címke opcionális, és segíthet a pontosításban. A kliens és az API közös validálása elfogadja a hiányzó második képet; a hibás vagy azonos második kép továbbra sem jut tárolásig vagy AI-hívásig. Egy képhez egy képrész kerül a szolgáltatói kérésbe, és nincs képpár-ellenőrzés; két képnél az eredeti ellenőrzések megmaradnak.

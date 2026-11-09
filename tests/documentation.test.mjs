@@ -4,6 +4,17 @@ import {readFileSync} from 'node:fs';
 import {once} from 'node:events';
 import {createApp} from '../server.mjs';
 
+test('the Onesvibe ownership tag is present in both homepage versions and public HTML',async t=>{
+  const claim='<meta name="onesvibe-claim" content="ov-53c3fcf1-fe1d-4c92-9279-54d91486c003">';
+  for(const name of ['index.html','login.html']){
+    const html=readFileSync(new URL('../public/'+name,import.meta.url),'utf8');
+    assert.equal(html.split(claim).length,2);assert.ok(html.indexOf(claim)<html.indexOf('</head>'));
+  }
+  const server=createApp({env:{}});server.listen(0,'127.0.0.1');await once(server,'listening');t.after(()=>new Promise(resolve=>server.close(resolve)));
+  const response=await fetch(`http://127.0.0.1:${server.address().port}/`);
+  assert.equal(response.status,200);assert.ok((await response.text()).includes(claim));
+});
+
 test('publishable documentation has complete anchors, full-image guidance and no local/private dependencies',()=>{
   const html=readFileSync(new URL('../public/help.html',import.meta.url),'utf8');
   assert.ok(html.includes('lang="hu"'));assert.ok(html.includes('a képen látható teljes ehető étel és ital'));

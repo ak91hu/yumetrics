@@ -153,3 +153,9 @@ A két fényképet továbbra is egyetlen kérés kezeli. A kiválasztott USDA- �
 ## Opcionális második fotó
 
 A v15-ben egy fotóval is elindítható az elemzés. A második képet a magyar és angol feltöltőfelület is opcionálisként jelzi, és elmagyarázza, hogyan segíthet egy másik nézet vagy egy olvasható címke. Egy képnél nem kérünk képpár-ellenőrzést; két feltöltött képnél az azonos adag, eltérő nézőpont és használhatóság ellenőrzése megmarad. Az értékelhetetlen kép, az ismételt vagy hibás második kép továbbra is elutasítható. A korábbi v14-es pontosságmérés kétképes bemenetekkel készült; az egy- és kétképes felismerés pontosságkülönbségét most nem mértük újra.
+
+## Beküldés utáni visszajelzés
+
+A feltöltés és a háttérelemzés ablakában kiemelt OK gomb is van. Ez az ablakot zárja be; az elemzés folytatódik, az étkezés mentéséhez később külön jóváhagyás kell. Az ellenőrzésre váró eredmények az oldal tetején, görgetés közben is látható, kiemelt jelzésben jelennek meg, „Átnézés és mentés” gombbal. Az OK-val bezárt feldolgozási ablak nem nyílik vissza váratlanul.
+
+A Onesvibe domainazonosító meta tag a bejelentkezés nélküli és a bejelentkezett kezdőlap HTML-fejlécében is szerepel, így a külső ellenőrzéshez nem kell belépés vagy JavaScript.
