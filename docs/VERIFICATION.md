@@ -1,5 +1,13 @@
 # Ellenőrzés
 
+## Mért AI-pontosság és költség, 2026-11-09
+
+A v14 alapmodellje Gemini 3.8 Flash. A végső, négy étkezéses páros összehasonlításban a költség 24,4%-kal csökkent; a tömeg nélküli kcal-hiba 96,36-ról 88,48-ra mérséklődött, ismert össztömegnél lényegében azonos maradt: 52,07 és 52,12 kcal. A két új ellenőrző eset részmutatói között romló is van. A 44 új, valódi szolgáltatói kérés teljes költsége 1,1475516 USD; négy korábbi alapválaszt új hívás nélkül használtunk fel. A sikertelen és elvetett változatok is megmaradtak a [mérési naplóban](AI-EFFICIENCY-2026-11-09.json); módszer és korlátok: [AI-EFFICIENCY-2026-11-09.md](AI-EFFICIENCY-2026-11-09.md). A kis minta nem általános pontossági garancia.
+
+A végső modell az eltérő étkezést, az újratömörített azonos nézetet és az üres képpárt elutasította; az ellenőrzött mesterséges címkét helyesen olvasta. A két kép és a válaszkeret megmaradt, egy elemzés egy szolgáltatói kérés. A használható USDA- vagy címkeértékeket a szerver tölti ki; a többi tételnél teljes tápértékobjektum szükséges. A gondolkodási tokeneket és az elutasított kérések ismert díját is számoljuk.
+
+**134/134 Node-teszt sikeres**, helyi PostgreSQL-lel, kihagyás nélkül. A magyar és angol teljes böngészős próba, a build és a változtatások formai ellenőrzése is része a kiadás ellenőrzésének. Új függőség vagy migráció nem szükséges; a korábbi tárolt v2 elemzés olvasható. Az angol fotós pontosságot most nem mértük külön, a nyelvi protokoll és felület helyettesített szolgáltatóval ellenőrzött.
+
 ## Teljes code review és javítások, 2026-11-09
 
 A teljes alkalmazás ellenőrzése tíz javítandó hibát azonosított; mind javítva. A késői mentési és törlési válasz már nem dobja el az újabb szerkesztést, a USDA-forrásválasztás nem írhat másik vagy közben módosított összetevőre, az energiakeret újabb bevitele és a heti kihívás választása is megmarad. Az AI-feldolgozó fizetős kérés előtt tranzakcióban ellenőrzi az érvényes feladatfoglalást. Az USDA szénhidrát–rost ellentmondását elutasítjuk, a nyers/főtt forráseltérés és a tápanyagok közötti számszerű ellentmondás ellenőrzése a közös validálásban működik. A tesztböngésző saját ideiglenes profilja a futás végén törlődik.

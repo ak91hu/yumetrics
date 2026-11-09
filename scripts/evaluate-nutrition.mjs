@@ -7,6 +7,7 @@ import { check, analysisContext, analysisReport, validateImage, validateImagePai
 import { analyze, DEFAULT_MODEL } from '../lib/providers.mjs';
 import { HUNGARIAN_DISHES } from '../lib/hungarian-food.mjs';
 import { FOOD_REFERENCE } from '../lib/food-reference.mjs';
+import { usageTotals } from '../lib/telemetry.mjs';
 
 const metrics = ['calories','protein','carbs','fat','fiber','sugar','sodium','saturatedFat'];
 export function loadCases(filename) {
@@ -47,7 +48,11 @@ export function evaluationSummary(rows) {
       const absolute=pairs.map(row=>Math.abs(row.predicted[key]-row.reference[key]));
       return [key,{n:pairs.length,mae:pairs.length?absolute.reduce((a,b)=>a+b,0)/pairs.length:null,bias:pairs.length?pairs.reduce((s,row)=>s+row.predicted[key]-row.reference[key],0)/pairs.length:null,rmse:pairs.length?Math.sqrt(absolute.reduce((s,e)=>s+e*e,0)/pairs.length):null}];
     }));
-    return {attempted:selected.length,successful:successful.length,rejected:selected.length-successful.length,errors};
+    const usages=selected.map(row=>row.providerResponse?.usage),priced=usages.filter(usage=>Number.isFinite(usage?.cost)&&usage.cost>=0),tokens=usages.map(usageTotals).filter(Boolean);
+    const knownCostUsd=priced.reduce((sum,usage)=>sum+usage.cost,0);
+    return {attempted:selected.length,successful:successful.length,rejected:selected.length-successful.length,errors,
+      billing:{pricedRequests:priced.length,knownCostUsd,totalCostUsd:priced.length===selected.length?knownCostUsd:null},
+      tokens:{recordedRequests:tokens.length,...Object.fromEntries(['input','output','thoughts','cached'].map(key=>[key,tokens.length?tokens.reduce((sum,row)=>sum+row[key],0):null]))}};
   };
   return Object.fromEntries([...new Set(rows.map(row=>row.mode))].map(mode=>[mode,{...summarise(rows.filter(row=>row.mode===mode)),groups:Object.fromEntries([...groups].filter(key=>key.startsWith(mode+'/')).map(key=>[key.slice(mode.length+1),summarise(rows.filter(row=>`${row.mode}/${row.group}`===key))]))}]));
 }
@@ -64,7 +69,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     check(Number.isInteger(limit)&&limit>0&&limit<=200,'Hibás esetszám.');
     if (!args.includes('--run')) console.log(`${cases.length} eset formátuma és képfájlja ellenőrizve. Nem történt AI-hívás; a referenciák fizikai mérését ez nem igazolja.`);
     else {
-      const env={...process.env,...(existsSync('.env')?parseEnv(readFileSync('.env','utf8')):{})}; check(env.OPENCODE_API_KEY,'A futtatáshoz OPENCODE_API_KEY szükséges a .env fájlban.');
+      const env={...(existsSync('.env')?parseEnv(readFileSync('.env','utf8')):{}),...process.env}; check(env.OPENCODE_API_KEY,'A futtatáshoz OPENCODE_API_KEY szükséges a .env fájlban.');
       mkdirSync('outputs',{recursive:true});const output=resolve('outputs',`nutrition-evaluation-${Date.now()}.json`),rows=[];
       const save=()=>{
         const temporary = `${output}.tmp`;

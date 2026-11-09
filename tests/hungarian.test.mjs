@@ -79,8 +79,8 @@ test('two photos without supplementary fields produce a complete editable estima
   assert.equal(calls.length, 1);
   const context = JSON.parse(calls[0].contents[0].parts.find(part => part.text).text).context;
   assert.ok(!context.dishProfile || context.dishProfile === 'generic'); assert.equal(context.totalWeightG, null); assert.ok(!context.preparationNotes);
-  assert.ok(calls[0].systemInstruction.parts[0].text.includes('questions alapból üres lista'));
-  assert.ok(calls[0].systemInstruction.parts[0].text.includes('context.dishProfile=generic automatikus felismerést jelent'));
+  assert.ok(calls[0].systemInstruction.parts[0].text.includes('questions=[]'));
+  assert.ok(calls[0].systemInstruction.parts[0].text.includes('generic means auto-detect'));
   assert.equal(result.analysis.name, base.name); assert.equal(result.analysis.dishProfile, 'rakott');
   assert.equal(result.analysis.ingredients[0].preparation, inventory.ingredients[0].preparation);
   assert.equal(result.analysis.ingredients[0].weightBasis, 'visual');

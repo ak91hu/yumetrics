@@ -93,15 +93,15 @@ test('one detailed AI request includes both photos and returns the whole validat
   assert.deepEqual(call.contents[0].parts.filter(part => part.inlineData).map(part => part.inlineData.data), [image, secondImage].map(value => value.split(',')[1]));
   assert.deepEqual(call.contents[0].parts.slice(1).map(part => part.text || part.inlineData.mimeType), ['IMAGE 1', 'image/jpeg', 'IMAGE 2', 'image/jpeg']);
   assert.equal(JSON.parse(call.contents[0].parts.find(part => part.text).text).notes, 'Ismert elkészítés');
-  for (const section of ['KÉPPÁR-ELLENŐRZÉS', 'ADAGELLENŐRZÉS', 'TÁPÉRTÉKEK UGYANEBBEN A VÁLASZBAN', 'VÉGSŐ ELLENŐRZÉS UGYANEBBEN A KÉRÉSBEN', '1 g só = 400 mg nátrium']) assert.ok(prompt.includes(section));
-  assert.ok(prompt.length < 15000, 'Keep the shared prompt below the previous 15,784-character request');
-  assert.ok(prompt.includes('kompakt JSON'));
-  assert.ok(prompt.includes('a helytakarékosság miatt ne kerekíts vagy hagyj ki adatot'));
+  for (const section of ['VIEW CHECK', 'PORTIONS', 'NUTRIENTS', 'FINAL CHECK', '1 g salt = 400 mg sodium']) assert.ok(prompt.includes(section));
+  assert.ok(prompt.length < 13500, 'Keep the shared prompt below the previous 15,784-character request');
+  assert.ok(prompt.includes('compact JSON'));
+  assert.ok(prompt.includes('Do not round away data to save space'));
   for (const food of Object.values(FOOD_REFERENCE)) for (const fact of [food.label, food.description, food.matchNotes].filter(Boolean)) assert.ok(prompt.includes(fact), 'All food identities and substitution cautions reach the model');
-  for (const dish of Object.values(HUNGARIAN_DISHES)) for (const fact of [dish.label, dish.hint, ...dish.questions]) assert.ok(prompt.includes(fact), 'Hungarian preparation guidance remains complete');
+  for (const dish of Object.values(HUNGARIAN_DISHES)) for (const fact of [dish.label, dish.hint]) assert.ok(prompt.includes(fact), 'Hungarian preparation guidance remains complete');
   assert.equal(call.generationConfig.maxOutputTokens, 10000);
   assert.equal(Object.hasOwn(call.generationConfig, 'thinkingConfig'), false, 'Do not change the existing model reasoning setting');
-  for (const key of ['calories', 'protein', 'carbs', 'fat', 'fiber', 'sugar', 'sodium', 'saturatedFat']) assert.ok(call.generationConfig.responseJsonSchema.properties.ingredients.items.required.includes(key));
+  for (const key of ['calories', 'protein', 'carbs', 'fat', 'fiber', 'sugar', 'sodium', 'saturatedFat']) assert.ok(call.generationConfig.responseJsonSchema.properties.ingredients.items.properties.nutrients.required.includes(key), 'An estimated nutrition object must be complete');
 });
 test('compact requests retain a shared language-independent prefix and all billed usage metadata', async () => {
   const calls = [], usageMetadata = { promptTokenCount: 9000, candidatesTokenCount: 2000, thoughtsTokenCount: 1500, cachedContentTokenCount: 5000, cost: .0325, opencode: { billing_source: 'balance', tokens: { input: 4000, output: 3500, reasoning: 1500, cache_read: 5000 } } };
@@ -123,7 +123,7 @@ test('a missing AI nutrient is rejected after one request, without a fallback re
   let calls = 0;
   await assert.rejects(analyze(image, '', env, async (url, options) => {
     calls++; const payload = aiPayloadFor(analysis, options), raw = JSON.parse(payload.candidates[0].content.parts[0].text);
-    delete raw.ingredients[0].protein; payload.candidates[0].content.parts[0].text = JSON.stringify(raw);
+    delete raw.ingredients[0].nutrients.protein; payload.candidates[0].content.parts[0].text = JSON.stringify(raw);
     return Response.json(payload);
   }, { secondImage }), error => error.status === 502);
   assert.equal(calls, 1);
@@ -150,7 +150,7 @@ test('legacy single-photo records stay readable and retry requests explain the r
 test('OpenCode uses the native Gemini route, server-side bearer token and schema', async () => {
   const mock = mockProviders(); const result = await analyze(image, 'Megjegyzés', env, mock.fetcher, { secondImage });
   assert.equal(result.analysis.name, analysis.name);
-  assert.equal(mock.calls[0].url, 'https://opencode.ai/inference/google/v1beta/models/gemini-4-argon:generateContent');
+  assert.equal(mock.calls[0].url, 'https://opencode.ai/inference/google/v1beta/models/gemini-3.8-flash:generateContent');
   assert.equal(mock.calls[0].options.headers.Authorization, `Bearer ${env.OPENCODE_API_KEY}`);
   const body = JSON.parse(mock.calls[0].options.body);
   assert.equal(body.contents[0].parts.find(part => part.inlineData).inlineData.mimeType, 'image/jpeg');
@@ -200,6 +200,22 @@ test('the full measured portion is applied once; two views do not double the foo
   assert.ok(result.analysis.ingredients.every(item => item.gramsMin <= item.grams && item.gramsMax >= item.grams && item.weightBasis === 'measured_total'));
   assert.ok(analysisReport(result.analysis).energyRange.min < analysisReport(result.analysis).total.calories);
   assert.equal(result.analysis.portionScope, 'full_image');
+});
+
+test('canonical USDA nutrition need not be generated twice; missing estimated values still fail', async () => {
+  const inventory = visualInventory(analysis);
+  inventory.ingredients[0].referenceKey = 'fdc-171477'; inventory.ingredients[1].referenceKey = 'fdc-168878';
+  const fetcher = async (url, options) => {
+    const payload = aiPayloadFor(analysis, options, inventory);
+    const raw = JSON.parse(payload.candidates[0].content.parts[0].text);
+    for (const item of raw.ingredients) item.nutrients = null;
+    payload.candidates[0].content.parts[0].text = JSON.stringify(raw); return Response.json(payload);
+  };
+  const result = await analyze(image, '', env, fetcher, { secondImage });
+  assert.equal(result.analysis.ingredients[0].calories, FOOD_REFERENCE['fdc-171477'].nutrients.calories);
+  assert.equal(result.analysis.ingredients[1].carbs, FOOD_REFERENCE['fdc-168878'].nutrients.carbs);
+  inventory.ingredients[0].referenceKey = null;
+  await assert.rejects(analyze(image, '', env, fetcher, { secondImage }), error => error.status === 502);
 });
 test('poor images, invented reference IDs and invalid portion ranges are rejected early', async () => {
   const badQuality = visualInventory(analysis); badQuality.imageQuality.level = 'poor';

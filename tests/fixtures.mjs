@@ -12,7 +12,7 @@ export function visualInventory(analysis) {
   };
 }
 export function aiPayloadFor(analysis, request, inventory = visualInventory(analysis)) {
-  const parsed = { ...inventory, ingredients: inventory.ingredients.map((item, index) => ({ ...item, ...Object.fromEntries(['calories', 'protein', 'carbs', 'fat', 'fiber', 'sugar', 'sodium', 'saturatedFat'].map(key => [key, analysis.ingredients[index]?.[key] ?? null])) })) };
+  const parsed = { ...inventory, ingredients: inventory.ingredients.map((item, index) => ({ ...item, nutrients: Object.fromEntries(['calories', 'protein', 'carbs', 'fat', 'fiber', 'sugar', 'sodium', 'saturatedFat'].map(key => [key, analysis.ingredients[index]?.[key] ?? null])) })) };
   return { candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify(parsed) }] } }], usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 50 } };
 }
 export function testGoogleClient(overrides = {}) {

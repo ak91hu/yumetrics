@@ -63,7 +63,7 @@ test('AI output language survives durable context and does not change quantity o
   assert.equal(result.analysis.ingredients[0].grams,400);assert.equal(result.analysis.portionScope,'full_image');assert.ok(result.analysis.assumptions.includes('remaining 400 g edible food'));
   const hungarian=await analyze(image,'User notes',{OPENCODE_API_KEY:'test'},fetcher,{secondImage,context:{language:'hu',totalWeightG:600,inedibleWeightG:200}});
   const hungarianPrompt=calls[1].systemInstruction.parts[0].text;
-  for(const rule of ['természetes, választékos, igényes magyar nyelven','angolból tükörfordított szerkezeteket','magyar mondatritmusra','tapasztalt magyar szerkesztő'])assert.ok(hungarianPrompt.includes(rule));
+  for(const rule of ['természetes, választékos, gördülékeny magyar nyelven','tegezve','kerüld a tükörfordítást, szóismétlést','ünnepélyességet'])assert.ok(hungarianPrompt.includes(rule));
   assert.equal(calls.length,2,'The language policy must not add another AI request');
   assert.deepEqual(totals(result.analysis.ingredients),totals(hungarian.analysis.ingredients));
 });

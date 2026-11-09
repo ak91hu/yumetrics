@@ -4,7 +4,9 @@ Az admin `/admin#costs` nézete 7/30/365 napra mutatja az AI-hívások számát,
 
 ## Ellenőrzött díjszabás
 
-Forrás: [OpenCode Console modellek és díjszabás](https://opencode.ai/docs/console/models/#pricing), ellenőrizve 2026-11-09. A jelenlegi `gemini-4-argon` díjai, 1 millió tokenre:
+Forrás: [OpenCode Console modellek és díjszabás](https://opencode.ai/docs/console/models/#pricing), ellenőrizve 2026-11-09. Az új alapmodell `gemini-3.8-flash`: bemenet **1,50 USD**, gyorsítótárazott bemenet **0,15 USD**, válasz és gondolkodás **7,50 USD** / millió token. A díjhoz 2026-11-09-től van ellenőrzött pillanatkép; korábbi, ismeretlen árú rekordhoz nem találunk ki összeget.
+
+A korábbi vagy az adminban továbbra is választható `gemini-4-argon` díjai, 1 millió tokenre:
 
 | Időszak | Bemenet | Gyorsítótárazott bemenet | Válasz és gondolkodás |
 | --- | --- | --- | --- |
@@ -36,3 +38,9 @@ A korábban megmaradt `meals.usage` adatok induláskor és az admin első lekér
 Az `/admin#logs` a szerver indulását és hibáit, belépéseket/kijelentkezéseket, a feldolgozások indulását és sikerét, valamint az elemzési és törlési hibákat mutatja. Időszak, súlyosság és szöveg szerint szűrhető, lapozható. A beállítások változásai közérthető megnevezésekkel, a korábbi és az új értékkel a külön Módosítási előzmények nézetben látszanak.
 
 Az `app_logs` táblában nem tárolunk teljes HTTP-kérést, URL-paramétereket, titkokat vagy nyers szolgáltatói válaszokat. Ez az alkalmazás tartós működési naplója; a konténer összes stdout/stderr sora továbbra is Northflanken érhető el. Adatbázis-kiesés közben az adatbázisba írás nem garantálható, ennek hibája a szerver konzoljára kerül. A használati és naplóvégpontok ugyanazt a tulajdonosi Google-fiókellenőrzést kapják, mint az admin többi része.
+
+## Mért költségcsökkenés
+
+A v14 végső páros mérésében nyolc hívás tényleges költsége 0,258920-ról 0,1956405 USD-re csökkent, a gondolkodási tokenekkel együtt. Ez 24,4% megtakarítás a konkrét mintán. A kisebb költség mellett a pontossági részmutatókat is közöljük: [AI-EFFICIENCY-2026-11-09.md](AI-EFFICIENCY-2026-11-09.md). Az új modell díját az admin is ismeri; az előző kérések saját díjszabás-pillanatképe megmarad.
+
+A fejlesztési benchmark közvetlenül a szolgáltatót hívja. Díját külön, a verziózott mérési napló őrzi; ezek a próbák nem étkezések, ezért nem kerülnek az alkalmazás `ai_requests` naplójába. A szolgáltatói számla a fejlesztési mérések és más, alkalmazáson kívüli hívások miatt is eltérhet az admin étkezéselemzési költségétől.

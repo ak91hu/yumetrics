@@ -6,7 +6,7 @@ A jelenlegi folyamat egy AI-kéréssel és két fotóval működik. Ételeknél 
 
 Az alábbi verziózott leírások a korábbi módszertani döntéseket és a kompatibilitási hátteret is megőrzik; a csak grammos hivatkozások nem jelentik a milliliteres tételek kizárását.
 
-Verzió: `food-v9-compact-prompt`, 2026-11-08. A JSON-riport formátuma visszafelé kompatibilis v2; a korábbi étkezések olvashatók. A magyar piaci fókusz és forrásai: [HUNGARIAN-POSITIONING.md](HUNGARIAN-POSITIONING.md).
+Verzió: `food-v14-lean-evidence`, 2026-11-09. Alapmodell: `gemini-3.8-flash`. A JSON-riport formátuma visszafelé kompatibilis v2; a korábbi étkezések olvashatók. A magyar piaci fókusz és forrásai: [HUNGARIAN-POSITIONING.md](HUNGARIAN-POSITIONING.md).
 
 ## A számítás menete
 
@@ -61,8 +61,14 @@ A [Two-view 3D Reconstruction for Food Volume Estimation](https://arxiv.org/abs/
 
 A v8 háttérfeldolgozója lejárt, futó elemzést nem indít automatikusan újra: a korábbi kérés már eljuthatott az AI-hoz. A bejegyzés hibás állapotba kerül, a képek megmaradnak; új kéréshez kézi újrapróbálás szükséges. A még el nem indult, sorban álló munkák és a képtörlési feladatok továbbra is folytathatók.
 
-## Költségcsökkentés a pontossági követelmények megtartásával
+## Korábbi költségcsökkentés: v9
 
 A v9 az ismétlődő utasításokat összevonja, és behúzás nélküli kompakt JSON-t kér, a szöveges mezők közötti ismétlés nélkül. A számokat, egységeket, összetevőket, adagtartományokat és érdemi bizonytalanságokat nem szabad helytakarékosság miatt elhagyni vagy kerekíteni. Mind a 44 referencia teljes neve, leírása, állapota és helyettesítési megkötése, valamint a magyar ételcsoportok útmutatása változatlanul szerepel a kérésben.
 
 A magyar utasítás 15 784-ről 14 710 karakterre rövidült (6,8%). Ez szöveghossz-mérés, nem számlázott token- vagy költségmegtakarítás. A modell, a gondolkodási beállítás, a 10 000 tokenes kimeneti keret, a válaszséma és a két fotó feldolgozása változatlan. A közös prompt a nyelvi kiegészítés és a felhasználói adatok előtt marad; tényleges cache-találatot nem garantálunk. A teljes szolgáltatói `usageMetadata` megmarad, beleértve a gondolkodási/cache-tokeneket és a szolgáltató által közölt költséget. Az éles költség és fotós pontosság összehasonlításához azonos, lemért tesztkészlet szükséges.
+
+## Aktuális mérés és v14
+
+A v14 rövidebb belső utasítást és Gemini 3.8 Flash alapmodellt használ. USDA- vagy használható címkeadatnál az AI `nutrients=null` értéket adhat; a szerver tölti ki a kanonikus számokat. Más összetevőhöz teljes tápértékobjektum szükséges. A tárolt v2 elemzés, a képpár, a 10 000 tokenes keret és az egyszeri kérés megmarad.
+
+A négy étkezéses végső páros vizsgálat költsége 24,4%-kal csökkent; az együttes kalóriahiba 74,22-ről 70,30 kcal-ra mérséklődött. Ismert össztömegnél nem volt érdemi átlagos javulás, egyes részmutatók romlottak. A fenti korábbi költségszámok a saját verziójukra vonatkoznak. Az aktuális módszer, valamennyi próba és a korlátok: [AI-EFFICIENCY-2026-11-09.md](AI-EFFICIENCY-2026-11-09.md).

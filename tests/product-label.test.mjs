@@ -20,7 +20,9 @@ async function recognize(label, options = {}) {
   let calls = 0, request;
   try {
     const result = await analyze(image, '', { OPENCODE_API_KEY: 'test' }, async (url, args) => {
-      calls++; request = JSON.parse(args.body); return Response.json(aiPayloadFor(analysis, args, inventory));
+      calls++; request = JSON.parse(args.body); const payload = aiPayloadFor(analysis, args, inventory);
+      if (options.omitNutrients) { const raw = JSON.parse(payload.candidates[0].content.parts[0].text); for (const item of raw.ingredients) item.nutrients = null; payload.candidates[0].content.parts[0].text = JSON.stringify(raw); }
+      return Response.json(payload);
     }, { secondImage, context: options.context });
     assert.equal(calls, 1); return { ...result, request };
   } catch (error) { assert.equal(calls, 1, 'No automatic second AI request'); throw error; }
@@ -37,7 +39,14 @@ test('readable packaged drinks use original label values and ml; full packs are 
   assert.equal(report.total.calories, 277.2); assert.equal(report.volume, 660); assert.equal(report.weight, null); assert.equal(report.labelCount, 1);
   assert.equal(analysis.confidence, 'high');
   assert.equal(request.contents[0].parts.filter(part => part.inlineData).length, 2);
-  for (const phrase of ['ITALOK', 'ÉDESSÉGEK', 'sűrűség', 'RI%', 'poliolos', 'Total Carbohydrate', 'teljes fotózott csomagmennyiséget']) assert.ok(request.systemInstruction.parts[0].text.includes(phrase));
+  for (const phrase of ['Drinks', 'sweets', '1 ml=1 g', 'RI%', 'polyol', 'Total Carbohydrate', 'VISIBLE WHOLE packages']) assert.ok(request.systemInstruction.parts[0].text.includes(phrase));
+});
+
+test('readable label nutrients may be omitted from the duplicate item fields', async () => {
+  const result = await recognize(productLabelFixture(), { omitNutrients: true });
+  const item = result.analysis.ingredients[0];
+  assert.equal(item.sourceType, 'label'); assert.equal(item.calories, 42); assert.equal(item.grams, 330);
+  assert.deepEqual(item.productLabel.nutrients, normalizeLabel(productLabelFixture()).nutrients);
 });
 
 test('portion labels, US total carbs, kJ-only energy and salt are normalized on the server with original precision retained', () => {

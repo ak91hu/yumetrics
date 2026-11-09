@@ -16,6 +16,13 @@ test('AI cost includes uncached input, discounted cached input, response and thi
   assert.equal(estimatedCost({promptTokenCount:0,candidatesTokenCount:0},november),0);
   assert.deepEqual(usageTotals({promptTokenCount:5,candidatesTokenCount:3}),{input:5,output:3,cached:0,thoughts:0});
 });
+test('the measured Flash default includes thinking costs and does not invent historical rates',()=>{
+  const pricing=modelPricing('gemini-3.8-flash','2026-11-09T12:00:00Z');
+  assert.equal(pricing.input,1.5);assert.equal(pricing.output,7.5);assert.equal(pricing.cachedInput,.15);
+  assert.equal(estimatedCost({promptTokenCount:1000000,cachedContentTokenCount:400000,candidatesTokenCount:200000,thoughtsTokenCount:100000},pricing),3.21);
+  assert.equal(modelPricing('gemini-3.8-flash','2026-11-08'),null);
+});
+
 test('daily graphs retain empty days, missing costs, exact date boundaries and accessible escaped labels',()=>{
   const series=dailySeries([{day:'2026-11-08',cost:null},{day:'2026-11-09',cost:.003}], 'cost',3,'2026-11-09');
   assert.deepEqual(series,[{day:'2026-11-07',value:0},{day:'2026-11-08',value:null},{day:'2026-11-09',value:.003}]);

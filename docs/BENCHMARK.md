@@ -55,3 +55,9 @@ A v5 vizsgálatában a referencia is a teljes főképen látható ehető mennyis
 A v7 eredményeit külön kezeld a korábbi, egyképes `photo_only` futásoktól. A mód neve a fájlformátum kompatibilitása miatt maradt meg; a `promptVersion` jelzi a módszert. A képpár-elfogadást külön is ellenőrizd (azonos adag, eltérő szög, mindkét kép használható), és adj elutasítandó azonos/kivágott/tükrözött képpárokat is a vakteszthez. A v8 egykéréses elemzését a korábbi módszerekkel ugyanazon lezárt, mért készleten kell összehasonlítani; a prompt részletessége önmagában nem bizonyít kisebb hibát.
 
 A v9 tömörített promptját a v8-cal azonos modellen, gondolkodási beállítással, fotókkal és kontextussal hasonlítsd össze. A kalória-/tömeghiba és az elutasítások mellett a mentett `usage.passes` adatokból vizsgáld a `cost`, `promptTokenCount`, `candidatesTokenCount`, `thoughtsTokenCount` és `cachedContentTokenCount` mezőket, ha a szolgáltató közli őket. Hiányzó költség nem jelent ingyenes kérést. A rövidebb utasításból vagy kompaktabb JSON-ból önmagában ne állíts tényleges megtakarítási százalékot.
+
+## Költség és modellválasztás
+
+Az értékelő összesíti a sikertelen hívások szolgáltatói költségét is. A `billing.totalCostUsd` csak teljes ismert díjazásnál számszerű; a `knownCostUsd` és `pricedRequests` a részleges adatot mutatja. A tokenbontás a bemenetet, választ, gondolkodást és cache-t külön tartja, a `recordedRequests` a használati adatok lefedettségét jelzi. A tokenösszeg csak az ismert kéréseket tartalmazza; teljes adathiánynál `null`. A kifejezetten megadott `OPENCODE_MODEL` környezeti változó felülírja a helyi `.env` modelljét. A `--run` továbbra is fizetős hívásokat indít; az alapértelmezett futás csak a bemenetet ellenőrzi.
+
+A legutóbbi mérés képlenyomatokkal, összes próbával, tényleges költséggel és a mintavételi korlátokkal: [AI-EFFICIENCY-2026-11-09.md](AI-EFFICIENCY-2026-11-09.md).

@@ -32,7 +32,7 @@ for(const dialect of ['sqlite','postgres'])test(`${dialect}: one two-view analys
   const image='data:image/jpeg;base64,'+Buffer.concat([Buffer.from([255,216,255,224]),Buffer.alloc(200)]).toString('base64');let calls=0;
   const result=await analyze(image,'',{OPENCODE_API_KEY:'test'},async(url,options)=>{
     calls++;const request=JSON.parse(options.body),prompt=request.systemInstruction.parts[0].text;
-    assert.ok(prompt.includes('külön ingredients-tételként'));assert.ok(prompt.includes('többféle étel nem eltérő étkezés'));assert.ok(prompt.includes('minden étel névvel'));
+    assert.ok(prompt.includes('List EVERY'));assert.ok(prompt.includes('Several foods on one plate are one meal'));assert.ok(prompt.includes('match every food to both images'));
     assert.equal(request.contents[0].parts.filter(part=>part.inlineData).length,2);
     return Response.json(aiPayloadFor(multiFoodAnalysis(),options));
   },{secondImage});assert.equal(calls,1);assert.equal(result.analysis.ingredients.length,4);

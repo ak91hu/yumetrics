@@ -4,7 +4,7 @@
 
 **[Élő alkalmazás](https://yumetrics.app)** · **[Magyar útmutató](https://yumetrics.app/utmutato)** · **[English guide](https://yumetrics.app/guide)**
 
-Frissítve: 2026. november 9. · AI-módszerváltozat: `food-v13-verified-views`.
+Frissítve: 2026. november 9. · AI-módszerváltozat: `food-v14-lean-evidence`.
 
 Magyar és angol nyelvű étkezési napló Google-belépéssel, fotó alapján becsült tápértékekkel és javítható összetevőkkel. Az első AI-becslés a képen látható **teljes ehető étel és ital 100%-ából** indul ki; a naplóba mentendő mennyiséget a piszkozatban ellenőrizheted és javíthatod. A fotós elemzés nem közvetlen kalóriamérés: a felismerést, a mennyiségi becslést, a tápértékforrást és a számítást külön kezeljük.
 
@@ -98,7 +98,7 @@ A titkok kizárólag Northflank futtatási változóként kerülnek az alkalmaz�
 | `APP_ORIGIN` | Az alkalmazás éles HTTPS-alapcíme |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google OAuth-webkliens |
 | `GOOGLE_REDIRECT_URI` | A Google-nél regisztrált visszatérő cím |
-| `OPENCODE_API_KEY`, `OPENCODE_MODEL` | Szerveroldali AI-hozzáférés; alapmodell: `gemini-4-argon` |
+| `OPENCODE_API_KEY`, `OPENCODE_MODEL` | Szerveroldali AI-hozzáférés; alapmodell: `gemini-3.8-flash` |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Képtárolás |
 | `USDA_API_KEY` | FoodData Central keresés a beépített referenciákon túl |
 
@@ -143,3 +143,9 @@ A forrástár két README-je: ez az alkalmazásleírás és a [GeoIP-adatbázis 
 ## Teljes kódellenőrzés
 
 A 2026. november 9-i teljes review tíz hibát tárt fel; mindet javítottuk. A javítások megőrzik a lassú válasz közben végzett szerkesztést, védik az összetevők USDA-forrásválasztását, megállítják az elavult feldolgozóból induló AI-kérést, és egységesítik a tápértékek ellenőrzését. A heti kihívás választása, a törlés és az energiakeret mentése is kapott versenyhelyzetet vizsgáló böngészős próbát. Részletek, reprodukciók és korlátok: [teljes review](docs/CODE-REVIEW-2026-11-09.md). Az aktuális ellenőrzés 130 sikeres Node-tesztet tartalmaz, helyi PostgreSQL-lel, kihagyás nélkül; a böngészős próba saját ideiglenes profilja futás után törlődik.
+
+## Mért képelemzési költség és pontosság
+
+A v14 alapmodellje Gemini 3.8 Flash. A végső, négy étkezéses páros mérésben a szolgáltatói költség 24,4%-kal csökkent. A kalóriahiba tömegadat nélkül 96,36-ról 88,48 kcal-ra mérséklődött; ismert össztömegnél lényegében azonos maradt: 52,07 és 52,12 kcal. A nyolc helyzet együttes hibája 74,22-ről 70,30 kcal-ra csökkent. A részmutatók nem mind javultak, a kis minta nem általános pontossági garancia.
+
+A két fényképet továbbra is egyetlen kérés kezeli. A kiválasztott USDA- és címkeértékeket a szerver tölti ki; a modellnek ezeket nem kell újra leírnia. A teljes, elvetett próbákat is tartalmazó mérés 44 új hívása 1,1475516 USD volt. Módszer, pontos részmutatók, képlenyomatok és korlátok: [AI-EFFICIENCY-2026-11-09.md](docs/AI-EFFICIENCY-2026-11-09.md).

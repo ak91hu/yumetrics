@@ -24,7 +24,7 @@ Az `APP_ORIGIN=http://127.0.0.1:3000` ehhez tartozik. Élesben a saját HTTPS er
 
 ## OpenCode
 
-Jelentkezz be az [OpenCode Console-ba](https://opencode.ai/console), válaszd ki a workspace-t, hozz létre API-kulcsot és ellenőrizd a modellhez rendelkezésre álló keretet/jogosultságot. Az app `OPENCODE_MODEL=gemini-4-argon` értékkel, a natív Google `generateContent` protokollon hív. Az aktuális modell és a fiók hozzáférése a szolgáltatónál ellenőrizendő; a kulcs megadása önmagában nem igazolja a keretet. [Hivatalos modelllista](https://opencode.ai/docs/console/models/).
+Jelentkezz be az [OpenCode Console-ba](https://opencode.ai/console), válaszd ki a workspace-t, hozz létre API-kulcsot és ellenőrizd a modellhez rendelkezésre álló keretet/jogosultságot. Az app `OPENCODE_MODEL=gemini-3.8-flash` értékkel, a natív Google `generateContent` protokollon hív. Az aktuális modell és a fiók hozzáférése a szolgáltatónál ellenőrizendő; a kulcs megadása önmagában nem igazolja a keretet. [Hivatalos modelllista](https://opencode.ai/docs/console/models/).
 
 Ehhez a megvalósításhoz külön Google Gemini API-kulcs vagy OpenAI API-kulcs nem kell: az AI-kérés az OpenCode-on keresztül megy. A Google OAuth-azonosítók ettől különálló, belépési adatok.
 

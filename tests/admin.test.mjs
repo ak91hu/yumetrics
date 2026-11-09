@@ -12,7 +12,7 @@ for (const dialect of ['sqlite','postgres']) {
   const run=(name,fn)=>test(`${dialect}: admin ${name}`,{skip:dialect==='postgres'&&!process.env.TEST_ADMIN_DATABASE_URL},async t=>{
     if(dialect==='postgres')assert.ok(new URL(process.env.TEST_ADMIN_DATABASE_URL).pathname.endsWith('_admin_test'),'Use a dedicated admin test database');
     const db=dialect==='postgres'?await openPostgresDatabase(process.env.TEST_ADMIN_DATABASE_URL):openDatabase(':memory:');
-    const env={GOOGLE_CLIENT_ID:'test-client',GOOGLE_CLIENT_SECRET:'private-google-secret',OPENCODE_API_KEY:'private-ai-key',CLOUDINARY_CLOUD_NAME:'test-cloud',CLOUDINARY_API_KEY:'private-photo-key',CLOUDINARY_API_SECRET:'private-photo-secret'};
+    const env={GOOGLE_CLIENT_ID:'test-client',GOOGLE_CLIENT_SECRET:'private-google-secret',OPENCODE_API_KEY:'private-ai-key',OPENCODE_MODEL:'gemini-4-argon',CLOUDINARY_CLOUD_NAME:'test-cloud',CLOUDINARY_API_KEY:'private-photo-key',CLOUDINARY_API_SECRET:'private-photo-secret'};
     const owner=randomUUID(),other=randomUUID(),cookies={},time=new Date().toISOString(),calls=[];
     for(const [id,email] of [[owner,'thisisnotka@gmail.com'],[other,'other@example.test']]){
       await db.prepare('INSERT INTO users(id,google_sub,email,name,created_at,updated_at) VALUES(?,?,?,?,?,?)').bind(id,id,email,'Akos Kovacs',time,time).run();
