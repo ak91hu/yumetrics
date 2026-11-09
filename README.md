@@ -10,13 +10,13 @@ Magyar és angol nyelvű étkezési napló Google-belépéssel, fotó alapján b
 
 1. **Két nézet és vizuális leltár.** Kötelező egy felülről és egy ferdén oldalról készült fotó ugyanarról a változatlan, teljes adagról. Az azonos képtartalmat feltöltés előtt elutasítjuk. A Gemini 4 Argon a képpár és a megadott információk alapján javaslatot tesz az ételre, az összetevőkre, az elkészítési állapotra és az ehető grammokra. A köretet, szószt és italt is számba kell vennie. Megkülönbözteti a látható vagy megadott elemeket a feltételezésektől, például a nem látható olajtól. Egyetlen részletes AI-kérés tartalmazza a képpár ellenőrzését, a leltárt, az adag- és tápértékbecslést, valamint a végső ellenőrzést.
 2. **Ellenőrzés és forrásválasztás ugyanabban a válaszban.** Az AI ellenőrzi az adag azonosságát, az eltérő szöget, a képminőséget, a kihagyott/duplázott összetevőket és az elkészítést. A 44 USDA-rekord közül javasolhat megfelelő forrást; a szerver annak rögzített értékeit használja. Nyers referencia nem párosítható elkészített összetevőhöz.
-3. **Tápértékek ugyanabban az AI-válaszban.** Minden összetevőhöz 100 g-ra vonatkozó becslés is érkezik. Megfelelő USDA-forrás esetén a szerver a rögzített adatot használja, egyébként a becslést ellenőrzi. Hiányos vagy ellentmondó válaszra nem indít kiegészítő AI-hívást. A megszakadt elemzéshez új kérés csak kifejezett kézi újrapróbáláskor indul; azonos feltöltés ismétlése nem küld új kérést.
+3. **Tápértékek ugyanabban az AI-válaszban.** Minden összetevőhöz az egységének megfelelő 100 g-os vagy 100 ml-es tápérték is érkezik. Megfelelő USDA-forrás esetén a szerver a rögzített adatot használja, egyébként a becslést ellenőrzi. Hiányos vagy ellentmondó válaszra nem indít kiegészítő AI-hívást. A megszakadt elemzéshez új kérés csak kifejezett kézi újrapróbáláskor indul; azonos feltöltés ismétlése nem küld új kérést.
 4. **Mennyiség pontosítása.** Mérleg nélkül a grammok képi becslések. A megadott teljes ételtömegből levonjuk a külön lemért nem ehető részt, majd az összetevőket az így kapott ehető mennyiséghez arányosítjuk. A hús, köret és zsiradék egymáshoz viszonyított aránya ettől még becsült marad. Két fotó ugyanannak az adagnak két nézete; a mennyiséget nem duplázzuk.
-5. **Szerveroldali számítás.** Az összetevő ehető grammjait megszorozzuk a 100 grammra megadott tápértékkel, majd elosztjuk százzal. Az összes összetevő eredményét összeadjuk. A végső adagérték tehát ellenőrizhető számítás eredménye, amelynek pontossága a bevitt tömegtől, az étel felismerésétől és a választott forrástól függ.
+5. **Szerveroldali számítás.** A g vagy ml mennyiséget az azonos egységre megadott 100-as tápértékkel szorozzuk, majd elosztjuk százzal; sűrűséget nem feltételezünk. Az összes összetevő eredményét összeadjuk. A végső adagérték tehát ellenőrizhető számítás eredménye, amelynek pontossága a bevitt tömegtől, az étel felismerésétől és a választott forrástól függ.
 6. **Felhasználói ellenőrzés.** Az étel neve, mennyisége, elkészítése és tápértékforrása mentés előtt és után is javítható. Választható másik USDA-rekord vagy megadható termékcímke. Az eredeti AI-elemzést, a modell és a prompt verzióját, valamint a mentett javításokat külön őrizzük meg. Értékelhetetlen kép vagy hiányos AI-válasz esetén nem készítünk helyette kitalált eredményt.
 
 ```text
-Összetevő tápértéke = ehető tömeg (g) × 100 g-ra megadott érték ÷ 100
+Összetevő tápértéke = mennyiség (g vagy ml) × azonos egységű 100-as tápérték ÷ 100
 Teljes adag tápértéke = az összes ehető összetevő tápértékének összege
 ```
 
@@ -42,11 +42,17 @@ Az AI saját bizonyossági jelzése nem méréssel igazolt pontosság. Nincs kö
 
 Részletes módszertan: [PHOTO-ASSESSMENT.md](docs/PHOTO-ASSESSMENT.md). Források és kutatási döntések: [RESEARCH.md](docs/RESEARCH.md), [REFERENCE-CATALOG.md](docs/REFERENCE-CATALOG.md). A pontosságmérés eszköze: [BENCHMARK.md](docs/BENCHMARK.md).
 
+## Csomagolt termékek és italok
+
+Az egyetlen AI-kérésben az étel-, ital- és édességfelismerés mellett címkeolvasás is történik. Teljes termékfotó + ugyanazon csomag másik oldalán olvasható tápértéktábla is elfogadott képpár. A címke eredeti számai, alapja, termékneve, márkája, nettó mennyisége, olvasható összetevő- és allergénszövege megmarad; a vonalkód ellenőrzőszámát ellenőrizzük, de termékadatbázisból nem találgatunk márkás termékértéket. A szerver normalizál adagról 100 g/100 ml alapra, kJ-ról kcal-ra, sóról nátriumra, amerikai összes szénhidrátról rost nélküli értékre. Az olvashatatlan adat null, nem kitalált nulla. A gramm és ml nem válik egymásba sűrűség nélkül. A címke megváltoztatott tápértéke saját adat lesz, a címkés forrásként megjelölt eredeti pillanatkép nem írható át kliensoldalról.
+
+Bontatlan csomagnál a látható teljes csomagok nettó mennyisége az alapértelmezett adag; felbontott csomagnál a teljes kiszerelésből nem következtetünk a maradékra. A naplózott mennyiséget a felhasználó mentés előtt ellenőrzi és módosíthatja. Az AI-OCR és a címke egyaránt korlátos: [a címke tápértékei átlagos értékek](https://www.fsai.ie/business-advice/labelling/labelling-nutrition-information/nutrition-labelling), nem az adott darab laboreredményei.
+
 ## Használat és profil
 
 A naplózást ötszintű növényes fejlődés, hat jelvény és egy gördülő hétnapos cél ösztönzi. A fejlődés különböző mentett napokra épül, a régebbi napok is számítanak; az étkezések energiatartalma nem befolyásolja a jutalmat. A kihagyás nem von le fejlődési napot, a törlés vagy dátummódosítás viszont újraszámítja a jelvényeket. A főoldali kártya és a mentés utáni visszajelzés a meglévő profiladatokból működik, új AI-kérés nélkül.
 
-Google-belépés után tölts fel két fotót ugyanarról az egész adagról (felülről és ferdén oldalról), majd nézd át és mentsd a piszkozatot. A kiegészítő adatokat csak akkor add meg, ha ismered őket. A feldolgozás a fotó tartós feltöltése után a háttérben folytatódik. Az eredmény később is javítható.
+Google-belépés után tölts fel két fotót ugyanarról az egész adagról (felülről és ferdén oldalról), csomagolt terméknél a teljes csomagról és az olvasható címkéről, majd nézd át és mentsd a piszkozatot. A kiegészítő adatokat csak akkor add meg, ha ismered őket. A feldolgozás a fotó tartós feltöltése után a háttérben folytatódik. Az eredmény később is javítható.
 
 A **Fiókom** nézetben mai energiaösszesítés, választható 7/30/365 napos átlagok, étkezésenkénti és étkezéstípus szerinti bontás, valamint megnyitható hétnapos lista segíti az áttekintést. A részletek összecsukhatók, az időszakváltás nem jár AI-kéréssel. A nézet a Google-nevet, e-mail-címet, csatlakozást, mentett étkezéseket, aktív napokat és naplózási sorozatokat mutatja. A 365 napos, zöld aktivitási naptárból megnyithatók az adott nap bejegyzései. Az energia- és makróátlagok csak a ténylegesen naplózott napokra vonatkoznak. Piszkozat, hibás vagy törlés alatt álló elemzés és jövőbeli nap nem növeli a statisztikát; üres naplóhoz nem készülnek mintaadatok.
 
