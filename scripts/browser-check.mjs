@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
-import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import assert from 'node:assert/strict';
 import { createApp, openDatabase } from '../server.mjs';
@@ -56,7 +56,8 @@ runner = startJobRunner({db,env,fetcher});
 const server = createApp({db,env,fetcher,googleClient,wake:()=>runner.wake()});
 server.listen(0, '127.0.0.1'); await once(server, 'listening');
 const origin = `http://127.0.0.1:${server.address().port}`; env.APP_ORIGIN = origin; googleClient.callbackOrigin = origin;
-const processHandle = spawn(chrome, ['--headless=new', '--disable-gpu', '--disable-software-rasterizer', '--remote-debugging-port=0', `--user-data-dir=${resolve(out, `chrome-profile-${Date.now()}`)}`, '--no-first-run', '--no-default-browser-check', '--disable-extensions', '--disable-background-networking', '--hide-scrollbars', 'about:blank'], { windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
+const profileDirectory = resolve(out, `chrome-profile-${Date.now()}`);
+const processHandle = spawn(chrome, ['--headless=new', '--disable-gpu', '--disable-software-rasterizer', '--remote-debugging-port=0', `--user-data-dir=${profileDirectory}`, '--no-first-run', '--no-default-browser-check', '--disable-extensions', '--disable-background-networking', '--hide-scrollbars', 'about:blank'], { windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
 let ws, pending = new Map(), nextId = 0, sessionId, errors = [], chromeLog = '', fileChooser;
 processHandle.stderr.on('data', chunk => { chromeLog += chunk; });
 try {
@@ -189,7 +190,18 @@ try {
   await evaluate("document.querySelector('#weekly-challenge-form [value=recipe]').click()");
   await switchLanguage(language==='en'?'hu':'en','#settings-dialog');await switchLanguage(language,'#settings-dialog');
   assert.equal(await evaluate("document.querySelector('#weekly-challenge-form [name=kind]:checked').value"),'recipe');
-  await evaluate("document.querySelector('#weekly-challenge-form').requestSubmit()");
+  // A background profile read must not discard a successful challenge selection.
+  await evaluate(`window.reviewFetch=window.fetch;window.reviewHeld=false;window.reviewProfileSeen=false;window.reviewPostDone=false;
+    window.fetch=async (...args)=>{if(args[0]==='/api/weekly-challenge'){window.reviewHeld=true;await new Promise(resolve=>window.reviewRelease=resolve);const response=await window.reviewFetch(...args);window.reviewPostDone=true;return response;}
+      const response=await window.reviewFetch(...args);if(String(args[0]).startsWith('/api/profile?'))window.reviewProfileSeen=true;return response;};
+    document.querySelector('#weekly-challenge-form').requestSubmit()`);
+  await waitFor('window.reviewHeld');
+  await evaluate("document.dispatchEvent(new Event('visibilitychange'))");
+  // The fixed UI defers this refresh until selection finishes.
+  await new Promise(resolve=>setTimeout(resolve,100));
+  await evaluate('window.reviewRelease()');await waitFor('window.reviewPostDone');
+  await evaluate('window.fetch=window.reviewFetch');
+
   await waitFor("document.querySelector('#weekly-challenge-progress')?.value===0 && !document.querySelector('#weekly-challenge-form')");
   assert.equal(providerCalls,beforeChallengeCalls,'Choosing a challenge makes no provider request');
   assert.equal((await db.prepare('SELECT kind FROM weekly_challenges').bind().first()).kind,'recipe');
@@ -344,6 +356,38 @@ try {
   await viewport(device === 'desktop' ? 1440 : 390, device === 'desktop' ? 1100 : 844, device !== 'desktop');
   await send('Page.reload'); await waitFor("document.querySelector('#meal-count').textContent === '1'");
   await evaluate("document.querySelector('#meal-list [data-meal]').click()");
+  // A delayed USDA result must not overwrite a row that moved into the old index.
+  await evaluate("document.querySelector('#add-ingredient').click();document.querySelector('#ingredient-list .source-picker').open=true;document.querySelector('[data-food-query]').value='avocado raw';document.querySelector('[data-food-search]').click()");
+  await waitFor("!!document.querySelector('[data-food-id]')");
+  await evaluate(`window.reviewFetch=window.fetch;window.reviewHeld=false;window.reviewDone=false;
+    window.fetch=async (...args)=>{const response=await window.reviewFetch(...args);if(String(args[0]).startsWith('/api/foods/99991')){window.reviewHeld=true;await new Promise(resolve=>window.reviewRelease=resolve);window.reviewDone=true;}return response;};
+    document.querySelector('[data-food-id]').click()`);
+  await waitFor('window.reviewHeld');
+  await evaluate("document.querySelector('[data-remove=\"0\"]').click();window.reviewRelease()");await waitFor('window.reviewDone');
+  assert.equal(await evaluate("document.querySelector('[name=i-0-calories]').value"),'0','A removed row cannot redirect an old USDA result into another ingredient');
+  await evaluate("window.fetch=window.reviewFetch;document.querySelector('#meal-dialog').close();document.querySelector('#meal-list [data-meal]').click()");
+  await evaluate("window.reviewHeld=false;window.reviewDone=false;document.querySelector('#ingredient-list .source-picker').open=true;document.querySelector('[data-food-query]').value='avocado raw';document.querySelector('[data-food-search]').click()");
+  await waitFor("!!document.querySelector('[data-food-id]')");
+  await evaluate(`window.reviewFetch=window.fetch;window.fetch=async (...args)=>{const response=await window.reviewFetch(...args);if(String(args[0]).startsWith('/api/foods/99991')){window.reviewHeld=true;await new Promise(resolve=>window.reviewRelease=resolve);window.reviewDone=true;}return response;};document.querySelector('[data-food-id]').click()`);
+  await waitFor('window.reviewHeld');
+  await evaluate("document.querySelector('[name=i-0-calories]').value='175';document.querySelector('[name=i-0-calories]').dispatchEvent(new Event('input',{bubbles:true}));window.reviewRelease()");await waitFor('window.reviewDone');
+  assert.equal(await evaluate("document.querySelector('[name=i-0-calories]').value"),'175','A late source selection cannot overwrite newer manual values');
+  assert.equal(await evaluate("document.querySelector('[data-source-label=\"0\"]').textContent"),expected('Saját értékek','Your own values'));
+  await evaluate("window.fetch=window.reviewFetch;document.querySelector('#meal-dialog').close();document.querySelector('#meal-list [data-meal]').click()");
+  // Typing while a save response is delayed must retain the new unsaved version.
+  const originalName=await evaluate("document.querySelector('[name=name]').value");
+  await evaluate(`window.reviewFetch=window.fetch;window.reviewHeld=false;window.reviewDone=false;
+    window.fetch=async (...args)=>{const response=await window.reviewFetch(...args);if(args[1]?.method==='PATCH'&&String(args[0]).startsWith('/api/meals/')){window.reviewHeld=true;await new Promise(resolve=>window.reviewRelease=resolve);window.reviewDone=true;}return response;};
+    document.querySelector('#detail-form').requestSubmit()`);
+  await waitFor('window.reviewHeld');
+  await evaluate("document.querySelector('[name=name]').value='Új, még nem mentett név';document.querySelector('[name=name]').dispatchEvent(new Event('input',{bubbles:true}));window.reviewRelease()");
+  await waitFor('window.reviewDone');
+  await waitFor("!document.querySelector('#save-meal').disabled");
+  assert.ok(await evaluate("document.querySelector('#meal-dialog').open"),'Saving an earlier version must retain subsequent edits');
+  assert.equal(await evaluate("document.querySelector('[name=name]').value"),'Új, még nem mentett név');
+  await evaluate(`window.fetch=window.reviewFetch;document.querySelector('[name=name]').value=${JSON.stringify(originalName)};document.querySelector('[name=name]').dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('#detail-form').requestSubmit()`);
+  await waitFor("!document.querySelector('#meal-dialog').open");
+  await evaluate("document.querySelector('#meal-list [data-meal]').click()");
   await evaluate("document.querySelector('.recipe-tools').open=true; document.querySelector('#recipe-start').click()");
   assert.ok(await evaluate("document.querySelector('#save-meal').disabled"));
   assert.ok(await evaluate(`document.querySelector('.analysis-report').hidden && document.querySelector('#detail-heading').textContent.includes(${JSON.stringify(expected('teljes recept','whole recipe'))})`));
@@ -440,17 +484,33 @@ try {
   await evaluate("document.querySelector('#meal-list [data-meal]').click()");
   await evaluate("document.querySelector('#delete-meal').click(); document.querySelector('#confirm-dialog [data-close]').click()");
   assert.ok(await evaluate("!document.querySelector('#confirm-dialog').open && document.querySelector('#meal-dialog').open"));
-  await evaluate("document.querySelector('#delete-meal').click(); document.querySelector('#confirm-delete').click()");
+  await evaluate(`window.reviewFetch=window.fetch;window.reviewHeld=false;window.reviewDone=false;
+    window.fetch=async (...args)=>{if(args[1]?.method==='DELETE'){window.reviewHeld=true;await new Promise(resolve=>window.reviewRelease=resolve);const response=await window.reviewFetch(...args);window.reviewDone=true;return response;}return window.reviewFetch(...args);};
+    document.querySelector('#delete-meal').click();document.querySelector('#confirm-delete').click()`);
+  await waitFor('window.reviewHeld');
+  await evaluate("document.querySelector('#confirm-dialog [data-close]').click();document.querySelector('#meal-dialog').close();document.querySelector('#meal-list [data-meal]').click();document.querySelector('[name=name]').value='Újranyitott szerkesztő';document.querySelector('[name=name]').dispatchEvent(new Event('input',{bubbles:true}));window.reviewRelease()");
+  await waitFor('window.reviewDone');await waitFor("!document.querySelector('#confirm-delete').disabled");
+  assert.ok(await evaluate("document.querySelector('#meal-dialog').open"),'A deletion response must not close a newer editor');
+  assert.equal(await evaluate("document.querySelector('[name=name]').value"),'Újranyitott szerkesztő');
+  await evaluate("window.fetch=window.reviewFetch;document.querySelector('#meal-dialog').close()");
   await waitFor("document.querySelector('#meal-count').textContent === '0' && !document.querySelector('#meal-dialog').open");
   await waitFor("document.querySelector('#draft-list').children.length === 0");
-  assert.equal(providerCalls, 8, 'Provider calls excluding protected photo reads'); assert.deepEqual(errors, []);
+  assert.equal(providerCalls, 10, 'Provider calls including two stale USDA searches, excluding protected photo reads'); assert.deepEqual(errors, []);
   await evaluate("document.querySelector('.mobile-nav [data-action=settings]').click()");
   await waitFor("document.querySelectorAll('.activity-day').length === 365");
   assert.equal(await evaluate("document.querySelector('.profile-stat strong').textContent.trim()"), '0');
   assert.equal(await evaluate("document.querySelectorAll('.growth-badge.earned').length"),0);
   assert.equal(await evaluate("document.querySelectorAll('.challenge-rewards li').length"),1,'Earned weekly stamps survive later meal deletion');
   assert.ok(await evaluate("document.querySelectorAll('.profile-stat strong')[4].textContent.startsWith('—')"));
-  await evaluate("document.querySelector('#calorie-goal').value='2300'; document.querySelector('#settings-form').requestSubmit()");
+  await evaluate(`window.reviewFetch=window.fetch;window.reviewHeld=false;window.reviewDone=false;
+    window.fetch=async (...args)=>{const response=await window.reviewFetch(...args);if(args[0]==='/api/profile'&&args[1]?.method==='PATCH'){window.reviewHeld=true;await new Promise(resolve=>window.reviewRelease=resolve);window.reviewDone=true;}return response;};
+    document.querySelector('#calorie-goal').value='2300';document.querySelector('#settings-form').requestSubmit()`);
+  await waitFor('window.reviewHeld');
+  await evaluate("document.querySelector('#calorie-goal').value='2400';window.reviewRelease()");await waitFor('window.reviewDone');
+  await waitFor("!document.querySelector('#settings-form button[type=submit]').disabled");
+  assert.ok(await evaluate("document.querySelector('#settings-dialog').open"),'An earlier goal save must retain later changes');
+  assert.equal(await evaluate("document.querySelector('#calorie-goal').value"),'2400');
+  await evaluate("window.fetch=window.reviewFetch;document.querySelector('#calorie-goal').value='2300';document.querySelector('#settings-form').requestSubmit()");
   await waitFor("!document.querySelector('#settings-dialog').open");
   assert.equal((await db.prepare('SELECT calorie_goal FROM users').bind().first()).calorie_goal,2300);
   await evaluate("document.querySelector('.mobile-nav [data-action=settings]').click()");
@@ -653,5 +713,10 @@ try {
   writeFileSync(resolve(out, 'browser-check.json'), JSON.stringify({ passed: false, status: 'failed', error: error.message }, null, 2));
   writeFileSync(resolve(out, 'chrome-stderr.log'), chromeLog); console.error(chromeLog.slice(-5000)); throw error;
 } finally {
-  runner.stop(); ws?.close(); processHandle.kill(); await new Promise(resolve => server.close(resolve)); db.close();
+  runner.stop(); ws?.close();
+  if (processHandle.pid && processHandle.exitCode === null && processHandle.signalCode === null) { const exited = once(processHandle, 'exit'); processHandle.kill(); await exited; }
+  await new Promise(resolve => server.close(resolve)); db.close();
+  assert.equal(dirname(profileDirectory), out);
+  try { rmSync(profileDirectory, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); assert.ok(!existsSync(profileDirectory)); }
+  catch (error) { writeFileSync(resolve(out, 'browser-check.json'), JSON.stringify({ passed: false, status: 'cleanup_failed', error: error.message })); throw error; }
 }

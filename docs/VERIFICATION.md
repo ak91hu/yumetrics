@@ -1,5 +1,13 @@
 # Ellenőrzés
 
+## Teljes code review és javítások, 2026-11-09
+
+A teljes alkalmazás ellenőrzése tíz javítandó hibát azonosított; mind javítva. A késői mentési és törlési válasz már nem dobja el az újabb szerkesztést, a USDA-forrásválasztás nem írhat másik vagy közben módosított összetevőre, az energiakeret újabb bevitele és a heti kihívás választása is megmarad. Az AI-feldolgozó fizetős kérés előtt tranzakcióban ellenőrzi az érvényes feladatfoglalást. Az USDA szénhidrát–rost ellentmondását elutasítjuk, a nyers/főtt forráseltérés és a tápanyagok közötti számszerű ellentmondás ellenőrzése a közös validálásban működik. A tesztböngésző saját ideiglenes profilja a futás végén törlődik.
+
+**130/130 Node-teszt sikeres**, valódi helyi PostgreSQL-lel, kihagyás nélkül. A magyar/mobil és angol/asztali Chrome-folyamat a késleltetett válaszokkal előidézett versenyhelyzeteket, a meglévő felhasználói és adminfolyamatokat, valamint a súgókat és öt képernyőszélességet ellenőrzi. Új csomag vagy migráció nem szükséges. A függőségaudit nulla ismert sérülékenységet jelzett; ez nem általános biztonsági garancia. Részletes találatok, javítások és vizsgálati határok: [CODE-REVIEW-2026-11-09.md](CODE-REVIEW-2026-11-09.md).
+
+Új fizetős AI-pontosságmérés, külső behatolási teszt, tartós terhelési mérés, adatbázis-failover, mentés-visszaállítás, Firefox-, Safari- és képernyőolvasós próba nem történt.
+
 ## Választható heti kihívások, 2026-11-09
 
 Három feladatból hetente egy választható a Fiókom nézetben: naplózás három tényleges mentési napon, saját receptből számolt étkezés, illetve külön lemért grammos összetevő rögzítése. A kezdőlapon is megjelenik a választott feladat haladása. A választás, a részleges haladás és a teljesítés a `weekly_challenges` táblába kerül; a jutalom tartós heti pecsét. A szerver magyarországi naptári hetet használ. A háromnapos feladat péntekig indítható. Szabályok és adatszerződés: [WEEKLY-CHALLENGES.md](WEEKLY-CHALLENGES.md).

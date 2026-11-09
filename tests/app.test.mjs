@@ -281,6 +281,37 @@ test('an expired in-flight analysis never sends another AI request automatically
   assert.equal((await f.invoke(`/api/meals/${input.id}`)).body.meal.status, 'draft');
   assert.equal(f.calls.filter(call => call.url.startsWith('https://opencode.ai/')).length, 2, 'Only an explicit user retry permits another AI request');
 });
+test('all nutrient sources reject contradictory masses and subnutrients before saving', () => {
+  for (const sourceType of ['user', 'ai', 'reference']) {
+    for (const changes of [{ protein: 90, fat: 90 }, { carbs: 0, sugar: 20 }, { fat: 0, saturatedFat: 20 }]) {
+      assert.throws(() => validateAnalysis({ ...analysis, ingredients: [{ ...analysis.ingredients[0], sourceType, ...changes }] }), AppError);
+    }
+  }
+  assert.equal(validateAnalysis({ ...analysis, ingredients: [{ ...analysis.ingredients[0], quantityUnit: 'ml', protein: 90, fat: 90 }] }).ingredients[0].quantityUnit, 'ml', 'A volume must not be treated as an equal mass');
+});
+
+test('losing the job lease while fetching a photo prevents a paid AI request', async t => {
+  for (const expiredOnly of [false, true]) {
+    const f = fixture(); t.after(() => f.db.close()); const input = f.input();
+    assert.equal((await f.invoke('/api/analyze', 'POST', input)).status, 202);
+    let release, signal, calls = 0;
+    const paused = new Promise(resolve => { release = resolve; }), started = new Promise(resolve => { signal = resolve; });
+    const running = processNextJob({ db: f.db, env, fetcher: async (url, options) => {
+      if (url.startsWith('https://res.cloudinary.com/')) { signal(); await paused; }
+      if (url.startsWith('https://opencode.ai/')) calls++;
+      return f.fetcher(url, options);
+    } });
+    try {
+      await started;
+      await f.db.prepare('UPDATE analysis_jobs SET lease_until=? WHERE meal_id=?').bind('2000-01-01T00:00:00.000Z', input.id).run();
+      if (!expiredOnly) assert.equal(await f.process(), false);
+    } finally { release(); await running; }
+    assert.equal(calls, 0, 'An expired or revoked lease must not start a billed request');
+    assert.equal((await f.db.prepare('SELECT COUNT(*) AS n FROM ai_requests WHERE meal_id=?').bind(input.id).first()).n, 0);
+    assert.equal((await f.invoke(`/api/meals/${input.id}`)).body.meal.analysis, null);
+  }
+});
+
 test('every read/write is owner-scoped and rejects anonymous and cross-origin writes', async t => {
   const f = fixture(); t.after(() => f.db.close()); const input = f.input(); await f.create(input);
   assert.equal((await f.invoke('/api/status', 'GET', undefined, null)).status, 401);

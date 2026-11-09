@@ -11,6 +11,7 @@ import { userProfile } from '../lib/profile-stats.mjs';
 import { secondImage, aiPayloadFor } from './fixtures.mjs';
 
 const connection = process.env.TEST_DATABASE_URL;
+if (connection && !new URL(connection).pathname.endsWith('_test')) throw new Error('Use a dedicated _test database.');
 const image = 'data:image/jpeg;base64,'+Buffer.concat([Buffer.from([255,216,255,224]),Buffer.alloc(200)]).toString('base64');
 const env={OPENCODE_API_KEY:'test',CLOUDINARY_CLOUD_NAME:'test-cloud',CLOUDINARY_API_KEY:'test',CLOUDINARY_API_SECRET:'test'};
 const analysis={name:'Teszt',confidence:'medium',assumptions:'Teszt',ingredients:[{name:'Hús',grams:100,calories:200,protein:25,carbs:0,fat:11,fiber:0,sugar:0,sodium:70}]};
@@ -20,6 +21,28 @@ async function cleanup(db,id){await db.prepare('DELETE FROM meals WHERE user_id=
 function invoke(db,userId,path,method='GET',payload,provider=fetcher){return api(new Request('http://localhost'+path,{method,headers:payload?{'Content-Type':'application/json'}:{},...(payload?{body:JSON.stringify(payload)}:{})}),{db,env,userId,fetcher:provider});}
 const input=()=>({id:randomUUID(),image,secondImage,day:'2026-11-07',time:'12:30',type:'Ebéd',notes:''});
 async function eventually(fn){const end=Date.now()+12000;do{const result=await fn();if(result)return result;await new Promise(resolve=>setTimeout(resolve,80));}while(Date.now()<end);assert.fail('Timed out waiting for persisted state');}
+
+test('PostgreSQL: losing a lease before inference creates no paid request or cost-ledger row', {skip:!connection,timeout:20000}, async t => {
+  const db=await openPostgresDatabase(connection),other=await openPostgresDatabase(connection),owner=randomUUID();await seed(db,owner);
+  t.after(async()=>{await cleanup(db,owner);await db.close();await other.close();});
+  for(const expiredOnly of [false,true]){
+    const meal=input();assert.equal((await invoke(db,owner,'/api/analyze','POST',meal)).status,202);
+    let resume,started,calls=0;const began=new Promise(resolve=>started=resolve),pause=new Promise(resolve=>resume=resolve);
+    const running=processNextJob({db,env,fetcher:async(url,options)=>{
+      if(url.startsWith('https://res.cloudinary.com/')){started();await pause;}
+      if(url.startsWith('https://opencode.ai/'))calls++;
+      return fetcher(url,options);
+    }});
+    try{
+      await began;
+      await other.prepare('UPDATE analysis_jobs SET lease_until=? WHERE meal_id=?').bind('2000-01-01T00:00:00.000Z',meal.id).run();
+      if(!expiredOnly)assert.equal(await processNextJob({db:other,env,fetcher}),false);
+    }finally{resume();await running;}
+    assert.equal(calls,0);
+    assert.equal(Number((await db.prepare('SELECT COUNT(*) AS n FROM ai_requests WHERE meal_id=?').bind(meal.id).first()).n),0);
+    assert.equal((await db.prepare('SELECT analysis FROM meals WHERE id=?').bind(meal.id).first()).analysis,null);
+  }
+});
 
 test('PostgreSQL: real process replacement retains Google session, profile, queued/saved meals and deletion', {skip:!connection,timeout:45000}, async t=>{
   const db=await openPostgresDatabase(connection), sub='restart-'+randomUUID(), children=new Set();let owner;

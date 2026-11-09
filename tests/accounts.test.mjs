@@ -99,3 +99,10 @@ test('USDA search uses server credentials; selected canonical snapshots are cach
   await assert.rejects(fetchFood('54321',db,{USDA_API_KEY:'test-key'},fetcher),error=>error.status===502);
   await assert.rejects(searchFoods('aa',{USDA_API_KEY:'test-key'},fetcher),error=>error.status===400);
 });
+
+test('inconsistent USDA carbohydrates are rejected rather than clamped to zero', () => {
+  const food = structuredClone(usdaFixture);
+  food.foodNutrients.find(n => n.nutrient.id === 1005).amount = 2;
+  food.foodNutrients.find(n => n.nutrient.id === 1079).amount = 12;
+  assert.throws(() => foodRecord(food), error => error.status === 422);
+});

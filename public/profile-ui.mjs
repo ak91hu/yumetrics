@@ -8,6 +8,7 @@ const quantity = (count, one, many) => count === 1 ? t(one) : t(many).replace('{
 const dayUnit = count => locale().startsWith('en') && count !== 1 ? t('napok') : t('nap');
 let data;
 let loadVersion = 0;
+let challengePending = false;
 let period = 30;
 let profileRequest;
 const plant = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 22V11M12 15C4 16 2 11 3 6c6-1 10 3 9 9ZM12 11c-1-7 3-9 9-9 1 6-3 10-9 9Z"/></svg>';
@@ -65,6 +66,7 @@ export function renderAvatar(element, profile) {
 }
 export async function loadProfile(request, { quiet = false, celebrate = false } = {}) {
   profileRequest=request;
+  if (challengePending) return;
   const root = document.querySelector('#profile-summary');
   const version = ++loadVersion, previous = data?.statistics.motivation, previousChallenge=data?.weeklyChallenge;
   if (!quiet) { root.setAttribute('aria-busy', 'true'); root.textContent = t('Statisztikák betöltése…'); }
@@ -127,6 +129,8 @@ export function renderProfile() {
     ${life.lastLoggedDay ? `<p class="profile-caption">${escape(t('Legutóbbi naplózott nap:'))} ${escape(date(life.lastLoggedDay))}</p>` : html`<p class="profile-empty">Az első étkezés mentése után itt láthatod a naplód összesítéseit.</p>`}
     <details class="profile-disclosure" id="profile-account-details"><summary>Fiókadatok és időzóna</summary><dl class="profile-account"><div><dt>Bejelentkezés</dt><dd>Google</dd></div><div><dt>Csatlakozás</dt><dd>${escape(date(profile.joinedAt))}</dd></div><div><dt>Időzóna</dt><dd>${escape(s.timeZone)}</dd></div></dl></details>`;
   renderPeriod();
+  const challengeButton = document.querySelector('#weekly-challenge-form button[type=submit]');
+  if (challengeButton) challengeButton.disabled = challengePending;
   for(const radio of document.querySelectorAll('#weekly-challenge-form [name=kind]'))radio.checked=!radio.disabled&&radio.value===pendingChoice;
   for (const id of openSections) { const section = document.getElementById(id); if (section) section.open = true; }
   renderAvatar(document.querySelector('.profile-initials'), profile);
@@ -139,8 +143,9 @@ document.addEventListener('change', event => {
 });
 document.addEventListener('submit',async event=>{
   if(event.target.id!=='weekly-challenge-form')return;
-  event.preventDefault();const form=event.target,button=form.querySelector('button[type=submit]'),version=++loadVersion;
-  button.disabled=true;
+  event.preventDefault();if(challengePending)return;
+  const form=event.target,button=form.querySelector('button[type=submit]'),version=++loadVersion;
+  challengePending=true;button.disabled=true;
   try{
     const result=await profileRequest('/api/weekly-challenge',{method:'POST',body:JSON.stringify({kind:new FormData(form).get('kind'),weekStart:data.weeklyChallenge.week.start})});
     if(version!==loadVersion)return;
@@ -148,7 +153,7 @@ document.addEventListener('submit',async event=>{
     document.querySelector('#weekly-challenge-feedback').textContent=t('A heti kihívásod elindult. A haladásodat itt követheted.');
     document.querySelector('#weekly-challenge-title').focus({preventScroll:true});
   }catch(error){if(version===loadVersion)document.querySelector('#weekly-challenge-feedback').textContent=error.message;}
-  finally{button.disabled=false;if(version===loadVersion)document.querySelector('#profile-summary').setAttribute('aria-busy','false');}
+  finally{challengePending=false;button.disabled=false;if(version===loadVersion)document.querySelector('#profile-summary').setAttribute('aria-busy','false');await loadProfile(profileRequest,{quiet:true});}
 });
 document.addEventListener('keydown', event => {
   const button = event.target.closest('.activity-day'); if (!button) return;

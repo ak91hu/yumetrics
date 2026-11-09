@@ -41,3 +41,5 @@ Az IPv4-, IPv6-, IPv4-be ágyazott, helyi és hibás címeket, a megbízható fe
 Kapcsolódó források: [országfelismerés](../geoip.mjs), [nyelvi elsőbbség](../i18n.mjs), [nyelvi elvek](../../docs/LANGUAGE.md), [alkalmazás és telepítés](../../README.md). A mostani dokumentációfrissítés nem cserélte le az országadatbázist.
 
 A látogatottságmérés csak országonkénti napi számlálót őriz meg, IP-címet vagy látogatói profilt nem. Az eredményt a tulajdonosi admin mutatja; a mérés ott kikapcsolható. A nyelvválasztás ettől függetlenül működik. A mérés módja, szűrései és korlátai: [ADMIN.md](../../docs/ADMIN.md#a-beépített-látogatottságmérés).
+
+A teljes alkalmazás 2026. november 9-i kódellenőrzésében az országadatok és az alapnyelv kapcsolata is szerepelt. A GeoIP-adatbázist ez a javítás nem cseréli le. A feltárt hibák, javítások és ellenőrzési korlátok a [review-jegyzőkönyvben](../../docs/CODE-REVIEW-2026-11-09.md) találhatók.

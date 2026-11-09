@@ -39,7 +39,9 @@ const integer = n => new Intl.NumberFormat(locale(), { maximumFractionDigits: 0 
 const dateLabel = day => new Intl.DateTimeFormat(locale(), { month: 'short', day: 'numeric', weekday: 'short' }).format(asDate(day));
 const goal = 2000;
 const state = { selected: today(), month: today().slice(0, 7), meals: [], status: null, goal, photo: null, secondPhoto: null, busy: false, edit: null, dirty: false, deleting: null, loadVersion: 0, uploadId: null, pendingOpenId: null, recipeEditing: false, recipeBackup: null };
-let toastTimer, photoVersion = 0, secondPhotoVersion = 0, processingPhotos = 0;
+const foodRequests = new WeakMap();
+const savingMeals = new Set();
+let toastTimer, photoVersion = 0, secondPhotoVersion = 0, processingPhotos = 0, settingsVersion = 0;
 function toast(message) { $('#toast').dataset.message = messageSource(message); $('#toast').textContent = t(message); $('#toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('#toast').hidden = true; }, 5000); }
 function errorAt(id, error) { $(id).dataset.message = messageSource(error?.message || String(error)); $(id).textContent = t($(id).dataset.message); $(id).hidden = false; }
 async function request(path, options = {}) {
@@ -136,10 +138,10 @@ document.addEventListener('click', async event => {
   if (action === 'diary') window.scrollTo({ top: 0, behavior: 'smooth' });
   if (action === 'learn') show('#learn-dialog');
   if (action === 'settings') {
-    const previousGoal = String(state.goal);
+    const previousGoal = String(state.goal), version = ++settingsVersion;
     $('#calorie-goal').value = state.goal; show('#settings-dialog');
     loadProfile(request);
-    try { state.status = await request('/api/status'); if ($('#calorie-goal').value === previousGoal) { state.goal = state.status.user.calorieGoal; $('#calorie-goal').value = state.goal; } } catch { /* The login dialog handles expired sessions. */ }
+    try { state.status = await request('/api/status'); if (version === settingsVersion && String(state.goal) === previousGoal && $('#calorie-goal').value === previousGoal) { state.goal = state.status.user.calorieGoal; $('#calorie-goal').value = state.goal; } } catch { /* The login dialog handles expired sessions. */ }
   }
   if (action === 'today') await selectDay(today());
   if (action === 'prev-month' || action === 'next-month') await changeMonth(action === 'prev-month' ? -1 : 1);
@@ -150,8 +152,14 @@ document.addEventListener('click', async event => {
 });
 $('#meal-dialog').addEventListener('cancel', event => { if (state.dirty) { event.preventDefault(); close($('#meal-dialog')); } });
 $('#settings-form').addEventListener('submit', async event => {
-  event.preventDefault(); const button = event.submitter || $('#settings-form button[type="submit"]'); button.disabled = true;
-  try { const result = await request('/api/profile', { method: 'PATCH', body: JSON.stringify({ calorieGoal: Number($('#calorie-goal').value) }) }); state.goal = result.calorieGoal; $('#settings-dialog').close(); render(); toast(t('Elmentettük a napi energiakeretedet.')); }
+  event.preventDefault(); const button = event.submitter || $('#settings-form button[type="submit"]'); if (button.disabled) return;
+  const value = $('#calorie-goal').value, version = settingsVersion; button.disabled = true;
+  try {
+    const result = await request('/api/profile', { method: 'PATCH', body: JSON.stringify({ calorieGoal: Number(value) }) }); state.goal = result.calorieGoal;
+    const edited = $('#calorie-goal').value !== value;
+    if (version === settingsVersion && !edited) $('#settings-dialog').close();
+    render(); toast(t(edited ? 'A korábbi változatot elmentettük. A mostani módosításaid még nincsenek mentve.' : 'Elmentettük a napi energiakeretedet.'));
+  }
   catch (error) { toast(error.message); } finally { button.disabled = false; }
 });
 $('#logout-button').addEventListener('click', async () => {
@@ -295,19 +303,28 @@ function renderDetail() {
     const search = event.target.closest('[data-food-search]'), choose = event.target.closest('[data-food-id]');
     if (!search && !choose) return;
     const button = search || choose, index = Number(button.dataset.foodSearch ?? button.dataset.foodIndex), results = document.querySelector(`[data-food-results="${index}"]`); button.disabled = true;
+    syncDetail();
+    const editor = state.edit, ingredient = JSON.stringify(editor.analysis.ingredients[index]), token = {};
+    foodRequests.set(results, token);
+    const active = () => state.edit === editor && $('#meal-dialog').open && results.isConnected && foodRequests.get(results) === token;
     try {
       if (search) {
         const query = document.querySelector(`[data-food-query="${index}"]`).value;
         const { foods } = await request(`/api/foods/search?q=${encodeURIComponent(query)}`);
+        if (!active() || document.querySelector(`[data-food-query="${index}"]`).value !== query) return;
         results.innerHTML = foods.length ? foods.map(food => `<button type="button" data-food-id="${food.id}" data-food-index="${index}">${escape(food.description)} <small>${escape(food.dataType)} · FDC ${food.id}</small></button>`).join('') : html('<p>Nincs találat. Próbálj másik angol ételnevet, vagy add meg az elkészítés módját is.</p>');
       } else {
         const { key, record } = await request(`/api/foods/${choose.dataset.foodId}`);
-        syncDetail(); FOOD_REFERENCE[key] = record;
+        if (!active()) return;
+        syncDetail();
+        if (JSON.stringify(editor.analysis.ingredients[index]) !== ingredient) { toast(t('Az összetevő közben megváltozott. Válaszd ki újra az adatforrást.')); return; }
+        FOOD_REFERENCE[key] = record;
         Object.assign(state.edit.analysis.ingredients[index], { ...record.nutrients, referenceKey: key, referenceRecord: record, foodState: 'unknown', sourceType: 'reference', sourceConfirmed: true, preparation: record.description });
         state.dirty = true; renderDetail(); toast(t('Elmentettük a kiválasztott USDA-adatokat és a forrásukat. Ellenőrizd, hogy az elkészítés és a mennyiség megfelel-e az ételednek.'));
       }
-    } catch (error) { results.textContent = t(error.message); } finally { button.disabled = false; }
+    } catch (error) { if (active()) results.textContent = t(error.message); } finally { button.disabled = false; }
   });
+  if (savingMeals.has(meal.id)) $('#save-meal').disabled = true;
   $('#delete-meal')?.addEventListener('click', askDelete); updateDetailTotals();
 }
 function startRecipe() {
@@ -340,20 +357,38 @@ function updateDetailTotals() {
 }
 async function saveMeal(event) {
   event.preventDefault();
+  if (savingMeals.has(state.edit.id)) return;
   if (state.recipeEditing) { toast(t('Előbb kattints az „Adag kiszámítása” gombra, vagy szakítsd meg a recept szerkesztését a „Mégsem” gombbal.')); return; }
   $('#detail-error').hidden = true; syncDetail();
   try { validateAnalysis(state.edit.analysis); metadata(state.edit); } catch (error) { errorAt('#detail-error', error); return; }
-  const button = $('#save-meal'); button.disabled = true;
+  const editor = state.edit, body = JSON.stringify(editor), button = $('#save-meal');
+  savingMeals.add(editor.id); button.disabled = true;
   try {
-    const { meal } = await request(`/api/meals/${state.edit.id}`, { method: 'PATCH', body: JSON.stringify(state.edit) });
-    state.dirty = false; $('#meal-dialog').close(); state.meals = [...state.meals.filter(item => item.id !== meal.id), meal]; state.selected = meal.day; state.month = meal.day.slice(0, 7); render(); await loadMonth(); const reward = await loadProfile(request, { quiet: true, celebrate: true }); toast(reward || t('Elmentettük az étkezést a naplódba.'));
-  } catch (error) { errorAt('#detail-error', error); } finally { button.disabled = false; }
+    const { meal } = await request(`/api/meals/${editor.id}`, { method: 'PATCH', body });
+    const active = state.edit === editor && $('#meal-dialog').open;
+    if (active) syncDetail();
+    const edited = active && (state.recipeEditing || JSON.stringify(editor) !== body);
+    if (active && !edited) {
+      state.dirty = false; $('#meal-dialog').close(); state.selected = meal.day; state.month = meal.day.slice(0, 7);
+    } else if (edited) {
+      Object.assign(editor, { revision: meal.revision, status: meal.status, updatedAt: meal.updatedAt }); state.dirty = true;
+    }
+    state.meals = [...state.meals.filter(item => item.id !== meal.id), meal]; render(); await loadMonth();
+    const reward = await loadProfile(request, { quiet: true, celebrate: true });
+    toast(edited ? t('A korábbi változatot elmentettük. A mostani módosításaid még nincsenek mentve.') : reward || t('Elmentettük az étkezést a naplódba.'));
+  } catch (error) { if (state.edit === editor && $('#meal-dialog').open) errorAt('#detail-error', error); else toast(error.message); }
+  finally { savingMeals.delete(editor.id); button.disabled = false; if (state.edit?.id === editor.id && $('#save-meal')) $('#save-meal').disabled = state.recipeEditing; }
 }
 function askDelete() { state.deleting = state.edit.id; $('#delete-error').hidden = true; show('#confirm-dialog'); }
 $('#confirm-delete').addEventListener('click', async event => {
-  const button = event.currentTarget; button.disabled = true; $('#delete-error').hidden = true;
-  try { await request(`/api/meals/${state.deleting}`, { method: 'DELETE' }); state.dirty = false; $('#confirm-dialog').close(); $('#meal-dialog').close(); await loadMonth(); await loadProfile(request, { quiet: true }); toast(t('A törlés elindult. A képek törlése után a bejegyzést is eltávolítjuk.')); }
-  catch (error) { errorAt('#delete-error', error); } finally { button.disabled = false; }
+  const button = event.currentTarget, id = state.deleting, editor = state.edit; button.disabled = true; $('#delete-error').hidden = true;
+  try {
+    await request(`/api/meals/${id}`, { method: 'DELETE' });
+    if (state.deleting === id) $('#confirm-dialog').close();
+    if (state.edit === editor) { state.dirty = false; $('#meal-dialog').close(); }
+    await loadMonth(); await loadProfile(request, { quiet: true }); toast(t('A törlés elindult. A képek törlése után a bejegyzést is eltávolítjuk.'));
+  } catch (error) { if (state.deleting === id && $('#confirm-dialog').open) errorAt('#delete-error', error); else toast(error.message); }
+  finally { button.disabled = false; }
 });
 render(); await initialize();
 setInterval(() => { if (!document.hidden && state.meals.some(meal => ['uploading', 'queued', 'running'].includes(meal.job?.state))) loadMonth(); }, 3000);

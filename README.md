@@ -139,3 +139,7 @@ A kérdőjeles gombok a második fotóhoz, a lemért mennyiségekhez, az adagra 
 A súgó érintéssel, kattintással, illetve a gombra lépve Enterrel vagy szóközzel nyitható meg; Escape-pel, a gomb újbóli megnyomásával vagy a buborékon kívülre kattintva bezárható. A buborék a képernyőn belül marad, görgetéskor bezárul. A napló súgói követik a magyar vagy angol nyelvválasztást; az admin magyar marad. Megnyitásuk nem módosítja a kitöltött mezőket és nem indít AI-kérést.
 
 A forrástár két README-je: ez az alkalmazásleírás és a [GeoIP-adatbázis dokumentációja](lib/geoip/README.md). A korábbi vizsgálatok dátumozott dokumentumai a saját ellenőrzésük eredményét őrzik; az aktuális állapotot a [VERIFICATION.md](docs/VERIFICATION.md) legfrissebb bejegyzése írja le.
+
+## Teljes kódellenőrzés
+
+A 2026. november 9-i teljes review tíz hibát tárt fel; mindet javítottuk. A javítások megőrzik a lassú válasz közben végzett szerkesztést, védik az összetevők USDA-forrásválasztását, megállítják az elavult feldolgozóból induló AI-kérést, és egységesítik a tápértékek ellenőrzését. A heti kihívás választása, a törlés és az energiakeret mentése is kapott versenyhelyzetet vizsgáló böngészős próbát. Részletek, reprodukciók és korlátok: [teljes review](docs/CODE-REVIEW-2026-11-09.md). Az aktuális ellenőrzés 130 sikeres Node-tesztet tartalmaz, helyi PostgreSQL-lel, kihagyás nélkül; a böngészős próba saját ideiglenes profilja futás után törlődik.

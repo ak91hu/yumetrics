@@ -102,3 +102,15 @@ test('server save normalises recipe nutrients, keeps the original photo analysis
   const forged=structuredClone(payload);forged.revision=1;forged.analysis.recipe.ingredients[0].referenceKey='fdc-99999-0000000000000000';forged.analysis.recipe.ingredients[0].sourceType='reference';
   assert.equal((await call('alice',forged)).status,400);
 });
+
+test('explicit raw/cooked mismatches cannot retain a verified static reference on save', () => {
+  const key = 'fdc-169756', reference = FOOD_REFERENCE[key];
+  assert.equal(REFERENCE_STATES[key], 'raw');
+  const item = { name: reference.label, grams: 100, ...reference.nutrients, referenceKey: key, sourceType: 'reference', sourceConfirmed: true };
+  for (const foodState of ['prepared', 'as_sold']) {
+    const result = validateAnalysis({ name: 'Rizs', confidence: 'medium', ingredients: [{ ...item, foodState }] }).ingredients[0];
+    assert.equal(result.sourceType, 'user'); assert.equal(result.referenceKey, null); assert.equal(result.sourceConfirmed, false);
+    assert.equal(result.calories, item.calories, 'User values remain available for correction');
+  }
+  assert.equal(validateAnalysis({ name: 'Rizs', confidence: 'medium', ingredients: [{ ...item, foodState: 'raw' }] }).ingredients[0].sourceType, 'reference');
+});
