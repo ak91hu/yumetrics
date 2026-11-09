@@ -10,6 +10,7 @@ import { openPostgresDatabase } from './lib/database.mjs';
 import { startJobRunner } from './lib/jobs.mjs';
 import { SECURITY_HEADERS, STATIC_FILES } from './lib/http.mjs';
 import { guideMarkup, requestLanguage, translateSystemMessage } from './lib/i18n.mjs';
+import { isAdmin } from './lib/settings.mjs';
 export { openDatabase } from './lib/database.mjs';
 
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
@@ -32,11 +33,12 @@ export function createApp({ db, env = process.env, fetcher = fetch, publicOrigin
         else if (url.pathname === '/readyz') {
           if (db && authConfigured(env, db)) { await db.prepare('SELECT 1 AS ready').bind().first(); response = json({ ready: true }); }
           else response = json({ ready: false }, 503);
-        } else if (url.pathname === '/api/auth-status') response = json({ configured: authConfigured(env, db), google: Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET), database: Boolean(db) });
+        } else if (url.pathname === '/api/auth-status') response = json({ configured: authConfigured(env, db) });
         else response = await authRoute(request, { db, env, googleClient });
         if (!response) {
           const user = await currentUser(request, db);
           if (url.pathname.startsWith('/api/')) response = await api(request, { db, env, userId: user?.id, user, fetcher, wake });
+          else if (['/admin', '/admin.html'].includes(url.pathname) && !isAdmin(user)) response = json({ error: 'Ehhez a felülethez nincs hozzáférésed.' }, user ? 403 : 401);
           else if (STATIC_FILES[url.pathname] && ['GET', 'HEAD'].includes(incoming.method)) {
             const [name, type] = STATIC_FILES[url.pathname];
             const filename = !user && (url.pathname === '/' || url.pathname === '/index.html') ? 'login.html' : name;

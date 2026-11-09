@@ -60,6 +60,10 @@ A felület és az új AI-elemzés magyarul és angolul is használható. A jelv�
 
 ## Belépés, adattárolás és telepítés
 
+### Tulajdonosi adminfelület
+
+A [kezelőfelület](https://yumetrics.app/admin) kizárólag a Google által ellenőrzött `thisisnotka@gmail.com` fiókkal érhető el, a Fiókom nézetből is. Felhasználók és munkamenetek kezelése, étkezések és feldolgozási hibák megtekintése, részletes statisztikák, tartós alkalmazásbeállítások és változásnapló található itt. A szolgáltatói beállítások jelzéseit az átlagos felhasználó nem kapja meg. Részletek, beállítási határok és ellenőrzés: [ADMIN.md](docs/ADMIN.md). A hat egyedi, generált növényes jelvény és végleges promptjai: [BADGE-ART.md](docs/BADGE-ART.md).
+
 Az alkalmazás **Node.js 24+** szerveren fut. Az éles alkalmazás és a külön, tartós lemezes **PostgreSQL 17** adatbázis az `ak91hus-team/default` Northflank-projektben található. A felhasználói fotók Cloudinaryba kerülnek; a fiókok, munkamenetek, étkezések, forrásmásolatok és feldolgozási feladatok Northflanken tárolódnak. Újraindítás és új image-re történő telepítés után az adatok megőrzését éles próbával is ellenőriztük.
 
 A jelenlegi Google OAuth-visszatérő cím: **https://ak91hu.github.io/yumetrics/oauth.html**. A statikus GitHub Pages-oldal csak továbbítja az egyszer használható választ a Northflank szerverének. A state-, nonce-, PKCE- és ID-token-ellenőrzés, valamint a munkamenet létrehozása szerveroldalon történik. A Google-jelszót és az access/refresh tokeneket nem tároljuk; Gmail- vagy Drive-hozzáférést nem kérünk.

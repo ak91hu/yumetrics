@@ -52,7 +52,7 @@ async function request(path, options = {}) {
 }
 function showLogin() { if (!state.redirectingToLogin) { state.redirectingToLogin = true; window.location.assign('/'); } }
 async function initialize() {
-  try { state.status = await request('/api/status'); state.goal = state.status.user.calorieGoal; $('.profile strong').textContent = state.status.user.name; $('.profile small').textContent = state.status.user.email; renderAvatar($('.avatar'), state.status.user); $('#logout-button').hidden = false; await loadMonth(); await loadProfile(request, { quiet: true }); }
+  try { state.status = await request('/api/status'); state.goal = state.status.user.calorieGoal; $('.profile strong').textContent = state.status.user.name; $('.profile small').textContent = state.status.user.email; renderAvatar($('.avatar'), state.status.user); $('#logout-button').hidden = false; $('#admin-link').hidden = !state.status.user.admin; await loadMonth(); await loadProfile(request, { quiet: true }); }
   catch (error) { $('#loading').hidden = true; if (error.status !== 401) toast(error.message); }
 }
 async function loadMonth() {
@@ -136,9 +136,9 @@ document.addEventListener('click', async event => {
   if (action === 'learn') show('#learn-dialog');
   if (action === 'settings') {
     const previousGoal = String(state.goal);
-    $('#calorie-goal').value = state.goal; renderConnections(); show('#settings-dialog');
+    $('#calorie-goal').value = state.goal; show('#settings-dialog');
     loadProfile(request);
-    try { state.status = await request('/api/status'); if ($('#calorie-goal').value === previousGoal) { state.goal = state.status.user.calorieGoal; $('#calorie-goal').value = state.goal; } renderConnections(); } catch { /* The login dialog handles expired sessions. */ }
+    try { state.status = await request('/api/status'); if ($('#calorie-goal').value === previousGoal) { state.goal = state.status.user.calorieGoal; $('#calorie-goal').value = state.goal; } } catch { /* The login dialog handles expired sessions. */ }
   }
   if (action === 'today') await selectDay(today());
   if (action === 'prev-month' || action === 'next-month') await changeMonth(action === 'prev-month' ? -1 : 1);
@@ -148,9 +148,6 @@ document.addEventListener('click', async event => {
   }
 });
 $('#meal-dialog').addEventListener('cancel', event => { if (state.dirty) { event.preventDefault(); close($('#meal-dialog')); } });
-function renderConnections() {
-  $('#connection-status').innerHTML = [[t('OpenCode · AI-elemzés'), state.status?.ai], [t('Cloudinary képtár'), state.status?.photos], [t('USDA-keresés · választható'), state.status?.usda]].map(([name, ready]) => `<div class="connection-row"><span>${name}</span><small class="${ready ? '' : 'missing'}">${ready ? t('Hozzáférés megadva') : t('Hozzáférés hiányzik')}</small></div>`).join('');
-}
 $('#settings-form').addEventListener('submit', async event => {
   event.preventDefault(); const button = event.submitter || $('#settings-form button[type="submit"]'); button.disabled = true;
   try { const result = await request('/api/profile', { method: 'PATCH', body: JSON.stringify({ calorieGoal: Number($('#calorie-goal').value) }) }); state.goal = result.calorieGoal; $('#settings-dialog').close(); render(); toast(t('Elmentettük a napi energiakeretedet.')); }
@@ -169,7 +166,6 @@ function openUpload() {
   $('#photo-preview').hidden = true; $('#upload-zone').hidden = false; $('#change-photo').hidden = true; $('#upload-error').hidden = true; $('#analysis-progress').hidden = true;
   $('.second-preview-wrap').hidden = true;
   $('#analyze-button').disabled = false; $('#analyze-button').innerHTML = t`${icon('sparkles')}Elemzés indítása`;
-  if (!state.status?.ai || !state.status?.photos) errorAt('#upload-error', new Error(t('Az elemzéshez még nincs minden szolgáltatás beállítva. A részleteket a Beállításokban találod; a kapcsolatokat az alkalmazás üzemeltetője tudja beállítani.')));
   show('#upload-dialog');
 }
 async function choosePhoto(file, secondary = false) {
@@ -372,7 +368,7 @@ window.addEventListener('languagechanging', () => {
   };
 });
 window.addEventListener('languagechange', () => {
-  render(); renderConnections(); renderProfile(); renderMotivation();
+  render(); renderProfile(); renderMotivation();
   $('#dish-guidance').innerHTML = dishGuidance($('#dish-profile').value);
   $('#analyze-button').innerHTML = `${icon('sparkles')}${t('Elemzés indítása')}`;
   if (state.edit && $('#meal-dialog').open) {

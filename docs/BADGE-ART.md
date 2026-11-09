@@ -1,0 +1,29 @@
+# Jelvényképek
+
+Hat különálló, beépített ImageGen eszközzel generált, átlátszó hátterű, webes használathoz legfeljebb 256 pixelesre kicsinyített PNG a `public/badges/` könyvtárban. Az eredeti képek megmaradtak a generálási könyvtárban is. A profil a már meglévő napküszöbök szerint mutatja őket; a még meg nem szerzett jelvények visszafogott színnel jelennek meg.
+
+## Végleges promptok
+
+### first.png
+
+Use case: stylized-concept. Asset type: a single premium achievement badge image for Yumetrics, a calm Hungarian food diary web app. Primary request: Első levél, represented by a single fresh olive-green leaf with a tiny seed. A tactile handcrafted botanical enamel medallion, circular scalloped warm ivory ceramic base, antique brass fine rim, matte sage and olive leaves (#708252), restrained muted terracotta accents, subtle paper grain and soft 3D relief. Front-facing centered symmetrical composition, entire badge contained with generous transparent margins, soft diffuse studio light, readable at 80px. Elegant natural editorial design, warm cream app background #f8f5ee. ONE badge only, no letters, no numerals, no text, no watermark, no UI mockup, no other objects, genuinely transparent outside the medallion. All badges in this series share this material, lighting and scale.
+
+### three.png
+
+Use case: stylized-concept. Asset type: a single premium achievement badge image for Yumetrics, a calm Hungarian food diary web app. Primary request: Jó kezdet, represented by a young sprout with three rounded leaves. A tactile handcrafted botanical enamel medallion, circular scalloped warm ivory ceramic base, antique brass fine rim, matte sage and olive leaves (#708252), restrained muted terracotta accents, subtle paper grain and soft 3D relief. Front-facing centered symmetrical composition, entire badge contained with generous transparent margins, soft diffuse studio light, readable at 80px. Elegant natural editorial design, warm cream app background #f8f5ee. ONE badge only, no letters, no numerals, no text, no watermark, no UI mockup, no other objects, genuinely transparent outside the medallion. All badges in this series share this material, lighting and scale.
+
+### seven.png
+
+Use case: stylized-concept. Asset type: a single premium achievement badge image for Yumetrics, a calm Hungarian food diary web app. Primary request: Egy hét tapasztalat, represented by a healthy leafy plant with seven small leaves. A tactile handcrafted botanical enamel medallion, circular scalloped warm ivory ceramic base, antique brass fine rim, matte sage and olive leaves (#708252), restrained muted terracotta accents, subtle paper grain and soft 3D relief. Front-facing centered symmetrical composition, entire badge contained with generous transparent margins, soft diffuse studio light, readable at 80px. Elegant natural editorial design, warm cream app background #f8f5ee. ONE badge only, no letters, no numerals, no text, no watermark, no UI mockup, no other objects, genuinely transparent outside the medallion. All badges in this series share this material, lighting and scale.
+
+### fourteen.png
+
+Use case: stylized-concept. Asset type: a single premium achievement badge image for Yumetrics, a calm Hungarian food diary web app. Primary request: Gyökeret eresztett, represented by a strong small plant with visible decorative golden roots. A tactile handcrafted botanical enamel medallion, circular scalloped warm ivory ceramic base, antique brass fine rim, matte sage and olive leaves (#708252), restrained muted terracotta accents, subtle paper grain and soft 3D relief. Front-facing centered symmetrical composition, entire badge contained with generous transparent margins, soft diffuse studio light, readable at 80px. Elegant natural editorial design, warm cream app background #f8f5ee. ONE badge only, no letters, no numerals, no text, no watermark, no UI mockup, no other objects, genuinely transparent outside the medallion. All badges in this series share this material, lighting and scale.
+
+### thirty.png
+
+Use case: stylized-concept. Asset type: a single premium achievement badge image for Yumetrics, a calm Hungarian food diary web app. Primary request: Harminc nap emléke, represented by a flowering olive-green plant with small cream and terracotta flowers. A tactile handcrafted botanical enamel medallion, circular scalloped warm ivory ceramic base, antique brass fine rim, matte sage and olive leaves (#708252), restrained muted terracotta accents, subtle paper grain and soft 3D relief. Front-facing centered symmetrical composition, entire badge contained with generous transparent margins, soft diffuse studio light, readable at 80px. Elegant natural editorial design, warm cream app background #f8f5ee. ONE badge only, no letters, no numerals, no text, no watermark, no UI mockup, no other objects, genuinely transparent outside the medallion. All badges in this series share this material, lighting and scale.
+
+### hundred.png
+
+Use case: stylized-concept. Asset type: a single premium achievement badge image for Yumetrics, a calm Hungarian food diary web app. Primary request: Naplókertész, represented by a lush miniature garden with leaves and flowers, a small elegant golden gardening crown. A tactile handcrafted botanical enamel medallion, circular scalloped warm ivory ceramic base, antique brass fine rim, matte sage and olive leaves (#708252), restrained muted terracotta accents, subtle paper grain and soft 3D relief. Front-facing centered symmetrical composition, entire badge contained with generous transparent margins, soft diffuse studio light, readable at 80px. Elegant natural editorial design, warm cream app background #f8f5ee. ONE badge only, no letters, no numerals, no text, no watermark, no UI mockup, no other objects, genuinely transparent outside the medallion. All badges in this series share this material, lighting and scale.

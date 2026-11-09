@@ -103,6 +103,7 @@ try {
   async function waitFor(expression) {
     const started = Date.now();
     while (Date.now() - started < 12_000) { if (await evaluate(expression.replace(/\??\.textContent/g, '?.textContent'))) return; await new Promise(resolve => setTimeout(resolve, 100)); }
+    writeFileSync(resolve(out,'browser-last-state.json'),JSON.stringify({expression,errors,state:await evaluate("({url:location.href,text:document.body.innerText,invalid:[...document.querySelectorAll('input:invalid')].map(input=>({name:input.name,message:input.validationMessage}))})")},null,2));
     throw new Error(`Browser condition not met: ${expression}`);
   }
   async function screenshot(name, full = true) {
@@ -146,6 +147,7 @@ try {
   await evaluate("document.querySelector('#avatar-test').remove()");
   assert.equal(await evaluate("getComputedStyle(document.querySelector('#month-label')).textTransform"),'none');
   assert.ok(await evaluate("!document.querySelector('#demo-button')"));
+  assert.ok(await evaluate("document.querySelector('#admin-link').hidden && !document.querySelector('#connection-status')"), 'Ordinary users have no admin link or provider panel');
   await screenshot('desktop.png');
   for (const width of [320,390,768,1024,1440]) { await viewport(width,844,width<768); assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth'), 'App fits '+width); }
   await viewport(device === 'desktop' ? 1440 : 390, device === 'desktop' ? 1100 : 844, device !== 'desktop'); await screenshot('mobile.png');
@@ -343,7 +345,10 @@ try {
   await auditEnglish();
   await viewport(390,844,true);
   await evaluate("document.querySelector('.profile-growth').scrollIntoView({block:'start'})");
+  await evaluate("(async()=>{const images=[...document.querySelectorAll('.growth-badge-image')];if(images.length!==6)throw Error('Six badge images required');for(const image of images){image.loading='eager';await image.decode();if(image.naturalWidth<250)throw Error('Badge image did not load');}})()");
   await screenshot('growth-mobile.png',false);
+  await evaluate("document.querySelector('.growth-badges').scrollIntoView({block:'start'})");
+  await screenshot('badges-mobile.png',false);
   await evaluate("document.querySelector('#profile-nutrition-details').open=true; document.querySelector('#profile-daily-details').open=true");
   for (const width of [320,390,768,1024,1440]) {
     await viewport(width,900,width<768);
@@ -433,6 +438,46 @@ try {
   await send('Emulation.setEmulatedMedia',{media:'print'});
   assert.equal(await evaluate("getComputedStyle(document.querySelector('.toc')).display"),'none');
   await send('Emulation.setEmulatedMedia',{media:'screen'});
+  const adminClient=testGoogleClient({email:'thisisnotka@gmail.com',sub:'admin-browser-fixture',name:'Akos Kovacs'});
+  Object.assign(googleClient,adminClient); googleClient.callbackOrigin=origin;
+  await send('Page.navigate',{url:origin+'/auth/google'});
+  await waitFor("document.querySelector('#admin-link')?.hidden === false");
+  await evaluate("document.querySelector('#admin-link').click()");
+  await waitFor("document.querySelector('#admin-view')?.getAttribute('aria-busy') === 'false' && !!document.querySelector('.admin-card')");
+  assert.equal(await evaluate("document.querySelector('#admin-identity').textContent"),'thisisnotka@gmail.com');
+  await viewport(1440,1100,false); await screenshot('admin-overview-desktop.png');
+  await viewport(390,844,true); await screenshot('admin-overview-mobile.png',false);
+  const adminId=(await db.prepare('SELECT id FROM users WHERE google_sub=?').bind('admin-browser-fixture').first()).id;
+  const adminMeal=randomUUID(),adminAnalysis={name:'Admin tesztétkezés',confidence:'medium',assumptions:'Tesztadat',ingredients:[ingredient]},adminTime=new Date().toISOString();
+  await db.prepare('INSERT INTO meals(id,user_id,day,time,type,status,analysis,original_analysis,photo,public_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').bind(adminMeal,adminId,adminTime.slice(0,10),'12:00','Ebéd','draft',JSON.stringify(adminAnalysis),JSON.stringify(adminAnalysis),'{}',adminMeal,adminTime,adminTime).run();
+  await db.prepare("INSERT INTO analysis_jobs(meal_id,kind,state,input_hash,error,created_at,updated_at) VALUES(?,'analyze','failed','','Provider diagnostic visible only to the owner',?,?)").bind(adminMeal,adminTime,adminTime).run();
+  for(const tab of ['users','meals','jobs','settings','audit']){
+    await evaluate(`location.hash=${JSON.stringify(tab)}`);
+    await waitFor(`document.querySelector('#admin-title').textContent === ${JSON.stringify({users:'Felhasználók',meals:'Étkezések',jobs:'Feldolgozási feladatok',settings:'Beállítások és kapcsolatok',audit:'Változásnapló'}[tab])} && document.querySelector('#admin-view').getAttribute('aria-busy') === 'false'`);
+    assert.ok(await evaluate("document.querySelector('#admin-message').hidden"),'Admin tab loads '+tab);
+    for(const width of [320,390,768,1024,1440]){await viewport(width,1000,width<768);assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth'),'Admin '+tab+' fits '+width);}
+    if(tab==='users'){
+      await evaluate("document.querySelector('#user-filter [name=q]').value='teszt@example.test';document.querySelector('#user-filter').requestSubmit()");
+      await waitFor("document.querySelector('#admin-view').getAttribute('aria-busy') === 'false' && document.querySelectorAll('[data-user]').length === 1");
+      await evaluate("document.querySelector('[data-goal]').value='2450';document.querySelector('[data-save-user]').click()");
+      await waitFor("!document.querySelector('#admin-message').hidden && document.querySelector('[data-goal]')?.value === '2450'");
+    }
+    if(tab==='meals'){
+      await evaluate("document.querySelector('[data-meal]').click()");await waitFor("document.querySelector('#admin-detail').open");
+      assert.ok(await evaluate("document.querySelector('#admin-meal-detail').textContent.includes('160')"));
+      await evaluate("document.querySelector('#close-detail').click()");
+    }
+    if(tab==='settings'){
+      await evaluate("document.querySelector('[name=hourlyLimit]').value='2';document.querySelector('#admin-settings').requestSubmit()");
+      await waitFor("!document.querySelector('#admin-message').hidden && document.querySelector('#admin-message').textContent.includes('Elmentettük')");
+      await send('Page.reload');await waitFor("document.querySelector('[name=hourlyLimit]')?.value === '2'");
+      await viewport(1440,1100,false);await screenshot('admin-settings-desktop.png');
+      await viewport(390,844,true);await screenshot('admin-settings-mobile.png');
+    }
+  }
+  await evaluate("location.hash='audit'");await evaluate("document.querySelector('#refresh').click()");
+  await waitFor("document.querySelector('#admin-view').getAttribute('aria-busy') === 'false' && document.querySelectorAll('.admin-table tbody tr').length >= 2");
+  await viewport(1440,1100,false);await screenshot('admin-audit-desktop.png');
   assert.deepEqual(errors,[]);
 
   const result = { passed: true, language, device, desktop: '1440×1100', mobile: '390×844', checkedWidths: [320, 390, 768, 1024, 1440], checks: ['no horizontal overflow', 'meal cards fit at every breakpoint', 'mandatory Google login (mock exchange)', 'no demo entry', 'mobile navigation', 'calendar selection', 'photo decode and JPEG conversion', 'two-view upload', 'full-image portion and measured weight; no consumption fraction', 'single-request mocked AI and signed Cloudinary upload', 'live portion scaling', 'USDA reference selection', '44 reference options and Hungarian substitution caveats', 'live USDA search and canonical selection (mock API)', 'separately measured edible portion', 'manual edit invalidates reference provenance', 'expanded source and nutrient controls fit at 320px', 'review form fits mobile', 'save', 'reload persistence', 'both views deleted', 'profile stored in database', 'logout', 'Hungarian dish guidance and preserved preparation facts', 'whole-pot recipe, loss confirmation and measured yield', 'recipe save/reload preserves original AI result', 'public documentation route and independent file bundle', 'documentation responsive at five widths and print styles'], providerMode: 'mocked; no real credentials or external API requests', screenshots: ['login-desktop.png', 'login-mobile.png', 'desktop.png', 'mobile.png', 'mobile-review.png', 'mobile-ingredients.png', 'mobile-recipe.png', 'documentation-desktop.png', 'documentation-mobile.png'] };
@@ -451,6 +496,8 @@ try {
   result.checks.push('expanded AI methodology fits five viewport widths and links to the selected language guide');
   result.checks.push('both photos mandatory; missing and duplicate second views blocked before provider work', 'native camera chooser for both views; 2048px image preparation', 'one detailed AI request for pair checking, visual inventory and nutrient estimation');
   result.screenshots.push('methodology-desktop.png', 'methodology-mobile.png');
+  result.checks.push('six generated botanical badge images load; ordinary users see no provider panel or admin link', 'owner Google identity opens admin; every tab fits five widths; user goal and application settings persist; meal details and audit log work');
+  result.screenshots.push('badges-mobile.png','admin-overview-desktop.png','admin-overview-mobile.png','admin-settings-desktop.png','admin-settings-mobile.png','admin-audit-desktop.png');
   writeFileSync(resolve(out, 'browser-check.json'), JSON.stringify(result, null, 2)); console.log(JSON.stringify(result, null, 2));
 } catch (error) {
   writeFileSync(resolve(out, 'browser-check.json'), JSON.stringify({ passed: false, status: 'failed', error: error.message }, null, 2));
