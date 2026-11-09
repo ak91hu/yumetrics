@@ -1,5 +1,9 @@
 # Ellenőrzés
 
+## Szövegpontosítás és code review, 2026-11-09
+
+A [részletes review](REVIEW-2026-11-09.md) hét javított találatcsoportot dokumentál. A címkeadatok következetességét azonos 100 g/ml-es alapon ellenőrizzük, a tizedes csomagmennyiség megőrzi a jelölését és pontosságát. A folyadékok tartomány- és mérési szövege, a dinamikus mezők fordítása, a jelvényértesítés nyelvváltása és a forrásrészletek nyitva maradása külön regressziós ellenőrzést kapott. A README, a bejelentkezőoldal, a főoldal, a feltöltés, a módszertani ablak és a nyilvános útmutató szövegei a kétfotós/címkés folyamathoz igazodnak. Teljes Node-futás: 78/78 sikeres, helyi PostgreSQL-lel, kihagyás nélkül. A magyar/mobil és angol/asztali böngészős ellenőrzés öt szélességet fed le; a build is sikeres. Új fizetős AI-hívás nem történt. A korábbi pontossági korlátok továbbra is érvényesek.
+
 ## Ételek, italok és csomagolási címkék, 2026-11-09
 
 A teljes Node-futás 75/75 sikeres, helyi PostgreSQL-lel, kihagyás nélkül. Az új tesztek lefedik a 100 g/100 ml és adagonkénti címkéket, a külön megőrzött g/ml mennyiségeket, a kJ/kcal és só/nátrium átváltást, az amerikai összes szénhidrát rostkorrekcióját, a poliolos édességek nyomtatott energiájának megtartását, a részleges/olvashatatlan címkéket és az ellentmondások elutasítását. A címke eredeti pillanatképe mentés után is megmarad; tápértékmódosítás saját értékre váltja a forrást, a kliens átírt címkéje nem őrizheti meg az eredeti forrásmegjelölést. A milliliteres címke a PostgreSQL-profil összesítésében is ellenőrzött. A meglévő 44 USDA-rekord minden neve, leírása és helyettesítési megkötése, valamint a magyar ételcsoportok teljes támpontjai változatlanul eljutnak a modellhez. A közös prompt 15 000 karakter alatt marad; a modell, a gondolkodási beállítás, a két kép és a 10 000 kimeneti tokenkorlát változatlan.

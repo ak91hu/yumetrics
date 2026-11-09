@@ -1,5 +1,11 @@
 # A megvalósított ételértékelés
 
+## Aktuális működés: címkék és g/ml mennyiségek
+
+A jelenlegi folyamat egy AI-kéréssel és két fotóval működik. Ételeknél felül-/oldalnézet, csomagolt terméknél teljes termék + olvasható tápértéktábla az elfogadott képpár. A gramm és a milliliter külön mennyiség; ismeretlen sűrűséget nem feltételezünk. A konkrét termékhez illő, olvasható címke az elsődleges forrás, majd megfelelő USDA-adat vagy AI-becslés következik. A címke eredeti adatai megmaradnak, a szerver a vonatkoztatási alapot és egységeket kezeli. Kis adagalapnál is 100 g/ml-re átszámítva ellenőrzi a kcal/kJ és só/nátrium összhangját; a tizedes kiszerelést ismételt mentéskor is megőrzi. A mentendő mennyiség a piszkozatban kézzel pontosítható. Részletes, aktuális felhasználói leírás: [Használati útmutató](https://yumetrics.app/utmutato).
+
+Az alábbi verziózott leírások a korábbi módszertani döntéseket és a kompatibilitási hátteret is megőrzik; a csak grammos hivatkozások nem jelentik a milliliteres tételek kizárását.
+
 Verzió: `food-v9-compact-prompt`, 2026-11-08. A JSON-riport formátuma visszafelé kompatibilis v2; a korábbi étkezések olvashatók. A magyar piaci fókusz és forrásai: [HUNGARIAN-POSITIONING.md](HUNGARIAN-POSITIONING.md).
 
 ## A számítás menete
@@ -27,7 +33,7 @@ A felhasználónak meg kell erősítenie az ételben maradt mennyiségek és az 
 
 ## Források és egységek
 
-Az energia kcal, a fehérje/zsír/szénhidrát/rost/cukor/telített zsír gramm, a nátrium mg, minden referencia 100 g-ra vonatkozik. Az adagérték `gramm × referencia / 100`. A nátriumból számolt sóegyenérték `nátrium mg × 2,5 / 1000`, gramm. A 4/4/9 és rostnál 2 kcal/g képlet csak durva következetességi ellenőrzés; nem írja felül a közölt referenciaenergiát.
+Az energia kcal, a fehérje/zsír/szénhidrát/rost/cukor/telített zsír gramm, a nátrium mg, a USDA-referenciák 100 g-ra, az italok címkeadatai 100 ml-re is vonatkozhatnak. Az adagérték `g vagy ml mennyiség × azonos egységű 100-as érték / 100`. A nátriumból számolt sóegyenérték `nátrium mg × 2,5 / 1000`, gramm. A 4/4/9 és rostnál 2 kcal/g képlet csak durva következetességi ellenőrzés; nem írja felül a közölt referenciaenergiát.
 
 A szénhidrát az elérhető szénhidrát közelítése: a USDA carbohydrate-by-difference értékéből kivonjuk a rostot. Ez nem minden terméknél azonos a laboratóriumi EU-címkeértékkel. Olyan élő USDA-rekordot, amelynél ehhez nincs adat, nem importálunk automatikusan. Márkás terméknél a saját címke értékeit kell megadni. Az élő rekord import az Atwater specific energiát részesíti előnyben, aztán a kcal energiarekordot, végül az Atwater general értéket; kJ-t nem értelmez kcal-ként.
 

@@ -66,7 +66,7 @@ test('a prepared ingredient cannot inherit a raw USDA reference; the single requ
   let calls=0,lastRequest;
   const fetcher=async(url,request)=>{calls++;lastRequest=JSON.parse(request.body);return Response.json(aiPayloadFor({...base,ingredients:[base.ingredients[0]]},request,inventory));};
   const result=await analyze(image,'Teszt',{OPENCODE_API_KEY:'test'},fetcher,{secondImage,context:{dishProfile:'teszta',preparationNotes:'A tészta főtt tömegét adtam meg.'}});
-  assert.equal(calls,1);assert.equal(result.analysis.ingredients[0].sourceType,'ai');assert.equal(result.analysis.ingredients[0].referenceKey,null);assert.ok(result.analysis.ingredients[0].portionNote.includes('más elkészítési módhoz'));
+  assert.equal(calls,1);assert.equal(result.analysis.ingredients[0].sourceType,'ai');assert.equal(result.analysis.ingredients[0].referenceKey,null);assert.ok(result.analysis.ingredients[0].portionNote.includes('elkészítési állapota vagy mértékegysége'));
   assert.ok(JSON.parse(lastRequest.contents[0].parts.find(part => part.text).text).context.preparationNotes.includes('főtt tömeg'));
 });
 test('two photos without supplementary fields produce a complete editable estimate with at most one optional question', async () => {

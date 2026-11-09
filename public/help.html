@@ -23,7 +23,7 @@
     <p class="kicker">Használati útmutató · Módszertan</p>
     <h1>Az egész adag.<br>Érthető számok.</h1>
     <p class="lead">Így használhatod az ételfotókat, a lemért mennyiségeket és a saját receptjeidet az étkezéseid tápértékének becsléséhez.</p>
-    <p class="version">Módszertan: v5 · Frissítve: 2026. november 7.</p>
+    <p class="version">Módszertan: v6 · Frissítve: 2026. november 9.</p>
   </header>
   <div class="layout">
     <nav class="toc" aria-label="Az útmutató tartalma"><strong>Tartalom</strong><ol>
@@ -42,11 +42,11 @@
     <main class="content" id="tartalom">
       <section id="teljes-adag">
         <h2>Mit jelent egy adag?</h2>
-        <div class="rule"><strong>Egy adag = a képen látható teljes ehető étel és ital.</strong><p>Úgy számolunk, hogy a képen látható teljes mennyiséget, vagyis annak 100%-át elfogyasztod. Ha kisebb mennyiséget szeretnél naplózni, csak azt az adagot fotózd le.</p></div>
+        <div class="rule"><strong>Kiinduló adag = a képen látható teljes ehető étel és ital.</strong><p>Az első becslés erre a teljes mennyiségre, vagyis annak 100%-ára készül. Csomagolt terméknél a teljes kiszerelés is lehet a kiinduló mennyiség. Mentés előtt ellenőrizd és szükség esetén javítsd az egyes összetevők g-ban vagy ml-ben megadott mennyiségét.</p></div>
         <p>A képen látható hús, köret, saláta, szósz, kenyér és ital együtt tartozik az adaghoz. Több tányér vagy pohár esetén is a teljes látható ehető tartalom számít. A fotón kívüli mennyiséget nem találjuk ki.</p>
         <p>A tányért, a csomagolást, a csontot és a nem ehető héjat nem számoljuk bele az adagba. Csontos ételnél a lemért teljes ételtömegből a külön megadott nem ehető rész tömegét levonjuk.</p>
         <div class="example"><h3>Csülök és saláta</h3><p>Ha a tányér nélküli teljes ételtömeg 600 g, ebből 200 g csont, akkor 400 g ehető adagot értékelünk. A hús, bőr, zsír és saláta aránya ettől még pontosításra szorulhat.</p></div>
-        <p class="note">Ha csak kisebb mennyiséget szeretnél naplózni, azt az önálló, teljes adagot fotózd le. A főfotó és a második nézet ugyanazt a mennyiséget mutassa.</p>
+        <p class="note">Ha teheted, eleve a naplózni kívánt adagot fotózd le. Csomagolt terméknél a termék és a címke tartozzon össze; a ténylegesen naplózandó mennyiséget a piszkozatban ellenőrizd.</p>
       </section>
       <section id="hasznalat">
         <h2>Használat lépésről lépésre</h2>
@@ -109,11 +109,11 @@
         <ul><li>A jó megvilágítás, a teljes adag láthatósága és az elkészítés módjának ismerete is számít.</li><li>A mért össztömeg nem bizonyítja az összetevők arányát.</li><li>A külön lemért összetevők és a megfelelő ételhez tartozó tápértékadatok megalapozottabb számítást tesznek lehetővé.</li><li>Az AI saját maga jelzi, mennyire biztos a becslésében. Ez nem méréssel igazolt pontosság.</li><li>Ismeretlen tápanyag, só vagy zsír nem tekinthető biztos nullának.</li></ul>
         <p>Jelenleg nincs közzétett, függetlenül lemért magyar ételfotókon igazolt pontossági százalék. A szoftveres tesztek a számítás és a folyamat működését ellenőrzik; a fotós felismerés tényleges hibájához külön mérési vizsgálat szükséges.</p>
         <p>Allergénmentességet, vitaminbevitelt, glikémiás indexet vagy orvosi alkalmasságot nem igazolunk fotóból. A napi energiakeretet te választod meg: ehhez hasonlítjuk a mentett étkezéseid kalóriatartalmát. Ez nem személyre szabott táplálkozási ajánlás.</p>
-        <p class="small">A korábban mentett részadagok eredeti adatait megőrizzük, és külön jelezzük, ha egy ilyen bejegyzést nyitsz meg. Az új elemzéseknél mindig a képen látható teljes adaggal számolunk.</p>
+        <p class="small">A korábban mentett részadagok eredeti adatait megőrizzük, és külön jelezzük, ha egy ilyen bejegyzést nyitsz meg. Az új AI-elemzés a teljes látható adagból indul ki; a piszkozat mennyiségeit mentés előtt kézzel pontosíthatod.</p>
       </section>
       <section id="beallitas">
         <h2>Üzemeltetői beállítás</h2>
-        <p>Az API-kulcsokat és más titkos hozzáférési adatokat kizárólag a szerveren add meg. A „Beállítva” jelzés azt mutatja, hogy az adatokat megadtad; azt nem ellenőrzi, hogy a kulcs érvényes-e, vagy van-e még felhasználható szolgáltatói keret.</p>
+        <p>Az API-kulcsokat és más titkos hozzáférési adatokat kizárólag a szerveren add meg. A „Hozzáférés megadva” jelzés csak az adatok meglétét mutatja; a kulcs érvényességét és a szolgáltatói keretet nem ellenőrzi.</p>
         <div class="table-wrap"><table><thead><tr><th scope="col">Szolgáltatás és beszerzés</th><th scope="col">Szerveroldali változók</th></tr></thead><tbody>
           <tr><td><a href="https://developers.google.com/identity/protocols/oauth2/web-server">Google OAuth webkliens</a><br>Belépéshez szükséges.</td><td><code>GOOGLE_CLIENT_ID</code><br><code>GOOGLE_CLIENT_SECRET</code></td></tr>
           <tr><td><a href="https://opencode.ai/console">OpenCode Console</a><br>AI-elemzéshez szükséges.</td><td><code>OPENCODE_API_KEY</code><br><code>OPENCODE_MODEL</code> – modellbeállítás</td></tr>
@@ -121,13 +121,13 @@
           <tr><td><a href="https://northflank.com/docs/v1/application/databases-and-persistence/deploy-databases-on-northflank/deploy-postgresql-on-northflank">Northflank PostgreSQL primary URI</a><br>Tartós naplóhoz szükséges; kapcsolati titok, nem platform-API-kulcs.</td><td><code>DATABASE_URL</code></td></tr>
           <tr><td><a href="https://fdc.nal.usda.gov/api-key-signup/">USDA FoodData Central</a><br>Az adatbázisban történő kereséshez használható; nem kötelező.</td><td><code>USDA_API_KEY</code></td></tr>
         </tbody></table></div>
-        <p>A jelenlegi éles Google-visszatérő cím a saját GitHub Pages-oldalunk. Ezt a teljes címet a Google OAuth-webkliens engedélyezett visszatérő címei közé kell felvenni. A szerver GOOGLE_REDIRECT_URI beállítása erre mutat, az APP_ORIGIN pedig az alkalmazás Northflank HTTPS-alapcíme marad. Saját domainnél közvetlen szerveroldali callback is használható. A képelemzés az OpenCode-on keresztül történik, külön Gemini- vagy OpenAI-kulcs nem szükséges.</p>
+        <p>A jelenlegi éles Google-visszatérő cím a saját GitHub Pages-oldalunk. Ezt a teljes címet a Google OAuth-webkliens engedélyezett visszatérő címei közé kell felvenni. A szerver GOOGLE_REDIRECT_URI beállítása erre mutat, az APP_ORIGIN pedig az elsődleges HTTPS-cím: https://yumetrics.app. Saját domainnél közvetlen szerveroldali callback is használható. A képelemzés az OpenCode-on keresztül történik, külön Gemini- vagy OpenAI-kulcs nem szükséges.</p>
         <p>Az adatbázis az alkalmazást futtató konténertől elkülönítve működjön. Így az alkalmazás újraindítása vagy új verziójának telepítése nem törli a naplót, a belépési adatokat és a feldolgozásra váró feladatokat. Az adatbázis meghibásodása ellen külön védelmet kell kialakítani: megfelelő rendelkezésre állásra, biztonsági mentésekre és kipróbált helyreállításra is szükség van. Teljes adatvesztés-mentességet ez önmagában nem garantál.</p>
       </section>
       <section id="gyik">
         <h2>Gyakori kérdések</h2>
         <details open><summary>A képen két tányér van. Csak az egyik számít?</summary><p>A teljes látható ehető mennyiség számít. Egyetlen adaghoz csak az ahhoz tartozó ételt és italt fotózd le.</p></details>
-        <details open><summary>A képen a teljes fazék látszik. Megadhatom, hogy csak a negyedét ettem?</summary><p>Új elemzésnél a kép teljes ehető tartalmával számolunk. Egy kisebb adaghoz azt az önálló adagot fotózd le. Az egész elkészült étel tömege külön támpont lehet az adag tápértékének kiszámításához.</p></details>
+        <details open><summary>A képen a teljes fazék látszik. Megadhatom, hogy csak a negyedét ettem?</summary><p>Az AI a kép teljes ehető tartalmából indul ki. Kisebb adaghoz lehetőleg azt az adagot fotózd le, vagy mentés előtt pontosítsd a mennyiségeket. Saját receptnél a kész étel és a naplózandó adag lemért tömegét használd.</p></details>
         <details open><summary>A második fotótól kétszeres lesz a mennyiség?</summary><p>Nem. A második fotó ugyanannak az adagnak másik nézete; nem új adag és nem előtte–utána kép.</p></details>
         <details open><summary>Megmértem az ételt. Miért marad bizonytalanság?</summary><p>A mérleg az össztömeget adja meg. Az olaj, a bőr, a hús, a szósz és a köret aránya ettől még becsült lehet. A kijelzett kalóriatartomány ezért azonos össztömeg mellett az összetevők lehetséges arányait veszi figyelembe.</p></details>
         <details open><summary>A milliliter ugyanannyi grammnak számít?</summary><p>Nem alkalmazunk általános 1 ml = 1 g átváltást minden ételre és italra. A tömeget mérd le, vagy használj az adott termékhez tartozó, megfelelő egységű adatot.</p></details>

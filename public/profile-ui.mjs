@@ -61,7 +61,7 @@ export async function loadProfile(request, { quiet = false, celebrate = false } 
     if (celebrate && previous) {
       const m = data.statistics.motivation;
       const badge = m.badges.findLast(badge => badge.earned && !previous.badges.some(old => old.id === badge.id && old.earned));
-      if (badge) return t`Új jelvényed: ${t(badge.name)}! Elmentettük az étkezésedet.`;
+      if (badge) return t('Új jelvényt szereztél! Elmentettük az étkezésedet.');
       if (previous.weekly.activeDays < m.weekly.target && m.weekly.activeDays >= m.weekly.target) return t('Elmentettük az étkezésedet. A heti naplózási célod is teljesült!');
     }
   }

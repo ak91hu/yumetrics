@@ -74,7 +74,7 @@ test('pair checks reject mismatched meals, repeated angles, unusable views and i
     const inventory = visualInventory(analysis);
     if (field === 'missing') delete inventory.viewCheck; else { inventory.viewCheck[field] = false; inventory.imageQuality.level = 'poor'; }
     const mock = mockProviders({ inventory });
-    await assert.rejects(analyze(image, '', env, mock.fetcher, { secondImage }), error => error.status === status && (field !== 'sameMeal' || error.message.includes('nem ugyanaz a teljes adag')));
+    await assert.rejects(analyze(image, '', env, mock.fetcher, { secondImage }), error => error.status === status && (field !== 'sameMeal' || error.message.includes('ugyanaz az adag vagy csomagolt termék')));
     assert.equal(mock.calls.length, 1, 'Unacceptable AI results never trigger another request');
   }
 });

@@ -20,6 +20,9 @@ test('translations preserve interpolation values, whitespace and markup boundari
   assert.equal(messageSource('Text is missing or exceeds the 99-character limit.'),'A szöveg hiányzik, vagy hosszabb a megengedett 99 karakternél.');
   assert.equal(translateSystemMessage('Zsír: 100 g ételre vonatkozó, 0 és 100 g közötti értéket adj meg.','en'),'Fat: enter a value between 0 and 100 g per 100 g of food.');
   assert.equal(messageSource('Fat: enter a value between 0 and 100 g per 100 g of food.'),'Zsír: 100 g ételre vonatkozó, 0 és 100 g közötti értéket adj meg.');
+  assert.equal(translate(' · külön megmért térfogat', 'en'), ' · separately measured volume');
+  assert.equal(translate(' · kézzel pontosított mennyiség', 'en'), ' · manually adjusted quantity');
+  assert.equal(messageSource('You earned a badge! Your meal has been saved.'), 'Új jelvényt szereztél! Elmentettük az étkezésedet.');
   for(const [hu,en] of Object.entries(ENGLISH)){
     assert.ok(en.length>0,hu);
     assert.deepEqual([...new Set([...en.matchAll(/\{(\d+)\}/g)].map(m=>m[1]))].sort(),[...new Set([...hu.matchAll(/\{(\d+)\}/g)].map(m=>m[1]))].sort(),'Interpolation slots: '+hu);

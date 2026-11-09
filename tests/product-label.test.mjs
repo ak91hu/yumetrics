@@ -6,6 +6,8 @@ import { analyze } from '../lib/providers.mjs';
 import { validateAnalysis, analysisReport, totals } from '../lib/domain.mjs';
 import { openDatabase, openPostgresDatabase } from '../lib/database.mjs';
 import { userProfile } from '../lib/profile-stats.mjs';
+import { FOOD_REFERENCE } from '../lib/food-reference.mjs';
+import { REFERENCE_STATES } from '../lib/hungarian-food.mjs';
 import { api } from '../lib/api.mjs';
 import { aiPayloadFor, visualInventory, secondImage, productLabelFixture } from './fixtures.mjs';
 
@@ -56,6 +58,24 @@ test('sweets and sugar-free polyols retain printed energy instead of a fabricate
   assert.equal(analysis.ingredients[0].sourceType, 'label'); assert.ok(!analysisReport(analysis).warnings.some(warning => warning.includes('jelentősen eltér')));
 });
 
+test('decimal pack sizes retain their declared basis and precision after analysis and validation', async () => {
+  for (const [netAmount, count, expected] of [[10.1, 3, 30.3], [10.1234, 3, 30.3702]]) {
+    const label = productLabelFixture({ netAmount, packageCount: count, netUnit: 'g', basisUnit: 'g' });
+    const { analysis } = await recognize(label, { item: { quantityUnit: 'g' } });
+    assert.equal(analysis.ingredients[0].grams, expected);
+    assert.equal(analysis.ingredients[0].gramsMin, expected); assert.equal(analysis.ingredients[0].gramsMax, expected);
+    assert.equal(analysis.ingredients[0].weightBasis, 'label');
+    assert.equal(validateAnalysis(analysis).ingredients[0].weightBasis, 'label');
+  }
+});
+
+test('label consistency tolerances use the normalized basis, including very small servings', () => {
+  const base = productLabelFixture({ basisAmount: 1, nutrients: { ...productLabelFixture().nutrients, protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, sodium: 0, saltG: 0 } });
+  assert.throws(() => labelNutrients(normalizeLabel({ ...base, nutrients: { ...base.nutrients, energyKj: 20 } })), /kcal/);
+  assert.throws(() => labelNutrients(normalizeLabel({ ...base, nutrients: { ...base.nutrients, saltG: .02 } })), /nátrium/);
+  assert.equal(labelNutrients(normalizeLabel(base)).calories, 0);
+});
+
 test('open packages retain the visible amount; incomplete or mismatched prepared labels never claim label-derived nutrition', async () => {
   const open = await recognize(productLabelFixture({ packageCount: null }));
   assert.equal(open.analysis.ingredients[0].grams, 150); assert.equal(open.analysis.ingredients[0].weightBasis, 'visual'); assert.equal(open.analysis.confidence, 'medium');
@@ -77,6 +97,13 @@ test('ambiguous bases, impossible label values and g/ml conflicts fail after exa
     { nutrients: { ...productLabelFixture().nutrients, sodium: 9999 } },
     { nutrients: { ...productLabelFixture().nutrients, sugar: 99 } },
   ]) await assert.rejects(recognize(productLabelFixture(changes)));
+});
+
+test('a gram-based reference is rejected for an ml ingredient with a truthful explanation', async () => {
+  const key = Object.keys(FOOD_REFERENCE)[0];
+  const { analysis } = await recognize(null, { item: { foodState: REFERENCE_STATES[key] }, inventory: { referenceKey: key } });
+  assert.equal(analysis.ingredients[0].sourceType, 'ai'); assert.equal(analysis.ingredients[0].referenceKey, null);
+  assert.ok(analysis.ingredients[0].portionNote.includes('mértékegysége'));
 });
 
 test('mixed food and drink totals keep g/ml separate, and recipe scaling uses measured cooked yield', async () => {

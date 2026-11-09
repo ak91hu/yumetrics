@@ -272,7 +272,10 @@ try {
   await screenshot('mobile-ingredients.png', false);
   await evaluate("document.querySelector('#detail-form').requestSubmit()");
   await waitFor("document.querySelector('#meal-count').textContent === '1' && !document.querySelector('#meal-dialog').open");
-  await waitFor(`document.querySelector('#toast').textContent.includes(${JSON.stringify(expected('Új jelvényed:', 'New badge:'))})`);
+  await waitFor(`document.querySelector('#toast').textContent.includes(${JSON.stringify(expected('Új jelvényt szereztél!', 'You earned a badge!'))})`);
+  await switchLanguage(language === 'en' ? 'hu' : 'en');
+  await switchLanguage(language);
+  assert.ok(await evaluate(`document.querySelector('#toast').textContent.includes(${JSON.stringify(expected('Új jelvényt szereztél!', 'You earned a badge!'))})`));
   assert.equal(await evaluate("document.querySelectorAll('#motivation-card .growth-steps .complete').length"),1);
   assert.equal(await evaluate("document.querySelector('#calorie-total').textContent"), '320');
   for (const width of [320,390,768,1024,1440]) { await viewport(width,844,width<768); assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth'), 'Saved meal fits '+width); assert.ok(await evaluate("document.querySelector('.meal-card').getBoundingClientRect().right <= document.querySelector('main').getBoundingClientRect().right")); }
@@ -387,6 +390,7 @@ try {
   assert.ok(await evaluate(`document.querySelector('[data-source-label="0"]').textContent.includes(${JSON.stringify(expected('Címkéről','label'))})`));
   assert.ok(await evaluate(`document.querySelector('[name=i-0-grams]').closest('label').textContent.includes('ml')`));
   assert.equal(await evaluate("document.querySelectorAll('[data-reference-index]').length"),0);
+  assert.ok(await evaluate(`['fiber','sodium'].every(key=>document.querySelector('[name=i-0-'+key+']').placeholder === ${JSON.stringify(expected('Ismeretlen','Unknown'))})`));
   assert.equal(await evaluate("document.querySelector('[data-package-count]').textContent"),'1');
   await evaluate("document.querySelector('.product-label-details').open=true");
   assert.ok(await evaluate(`document.querySelector('.product-label-details').textContent.includes(${JSON.stringify(expected('0,0125','0.0125'))})`));
@@ -406,6 +410,9 @@ try {
   await evaluate("document.querySelector('#detail-form').requestSubmit()"); await waitFor("!document.querySelector('#meal-dialog').open");
   savedLabel = JSON.parse((await db.prepare('SELECT analysis FROM meals WHERE id=?').bind(packagedId).first()).analysis);
   assert.equal(savedLabel.ingredients[0].sourceType,'user'); assert.equal(savedLabel.ingredients[0].productLabel.nutrients.calories,42);
+  const rangeMeal = { analysis: structuredClone(savedLabel) };
+  Object.assign(rangeMeal.analysis.ingredients[0], { weightBasis: 'visual', gramsMin: 120, gramsMax: 200 });
+  await evaluate(`(async()=>{const {ingredientMarkup,reportMarkup,refreshReport}=await import('/analysis-ui.mjs');const meal=${JSON.stringify(rangeMeal)};document.querySelector('#meal-detail').innerHTML=reportMarkup(meal)+'<div data-ingredient="0">'+ingredientMarkup(meal.analysis.ingredients[0],0)+'</div>';refreshReport(meal);const portion=document.querySelector('[data-portion-label="0"]');if(!portion.textContent.includes('ml'))throw Error('Liquid range lost its ml unit');const source=document.querySelector('.source-picker');source.open=true;refreshReport(meal);if(!source.isConnected||!source.open)throw Error('Source disclosure was replaced during refresh');meal.analysis.ingredients[0].weightBasis='measured_ingredient';refreshReport(meal);if(!portion.textContent.includes(${JSON.stringify(expected('térfogat', 'volume'))}))throw Error('Measured liquid is described as mass');})()`);
   await db.prepare('DELETE FROM meals WHERE id=?').bind(packagedId).run();
   await send('Page.reload'); await waitFor("document.querySelector('#loading')?.hidden === true");
   await evaluate("document.querySelector('.mobile-nav [data-action=settings]').click()"); await waitFor("document.querySelector('#profile-summary').getAttribute('aria-busy') === 'false'");
@@ -437,6 +444,7 @@ try {
   result.checks.push('diary-growth card, today CTA from a past selection, first-badge celebration, six badges and reset after last saved meal is deleted');
   result.screenshots.push('growth-mobile.png');
   result.checks.push('packaged drink label, original decimal precision, ml amount edits, label-source preservation and invalidation after nutrient edits');
+  result.checks.push('liquid ranges and measured volumes keep their units; source disclosures stay open; badge messages follow language switching');
   result.screenshots.push('packaged-label-mobile.png');
   result.checks.push('Google avatar in sidebar and profile, safe URL checks and failed-image initials fallback', 'all supplementary upload fields collapsed, valid automatic metadata and reset on reopening', 'optional review questions and notes collapsed');
   result.screenshots.push('upload-simple.png');
