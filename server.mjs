@@ -10,6 +10,7 @@ import { openPostgresDatabase } from './lib/database.mjs';
 import { startJobRunner } from './lib/jobs.mjs';
 import { SECURITY_HEADERS, STATIC_FILES } from './lib/http.mjs';
 import { guideMarkup, requestLanguage, translateSystemMessage } from './lib/i18n.mjs';
+import { requestCountry } from './lib/geoip.mjs';
 import { isAdmin } from './lib/settings.mjs';
 import { logEvent, importHistoricalUsage } from './lib/telemetry.mjs';
 export { openDatabase } from './lib/database.mjs';
@@ -17,7 +18,7 @@ export { openDatabase } from './lib/database.mjs';
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
 export function createApp({ db, env = process.env, fetcher = fetch, publicOrigin = null, googleClient, wake = () => {} } = {}) {
   return createServer(async (incoming, outgoing) => {
-    let response, language = 'hu';
+    let response, language = 'en';
     try {
       const origin = publicOrigin || env.APP_ORIGIN || `http://${incoming.headers.host}`;
       const url = new URL(incoming.url, origin);
@@ -29,7 +30,7 @@ export function createApp({ db, env = process.env, fetcher = fetch, publicOrigin
       }
       else {
         const request = new Request(url, { method: incoming.method, headers: incoming.headers, ...(incoming.method !== 'GET' && incoming.method !== 'HEAD' ? { body: Readable.toWeb(incoming), duplex: 'half' } : {}) });
-        language = requestLanguage(request);
+        language = requestLanguage(request, requestCountry(request, incoming.socket.remoteAddress, env.NODE_ENV === 'production'));
         if (url.pathname === '/healthz') response = json({ ok: true });
         else if (url.pathname === '/readyz') {
           if (db && authConfigured(env, db)) { await db.prepare('SELECT 1 AS ready').bind().first(); response = json({ ready: true }); }
@@ -44,15 +45,16 @@ export function createApp({ db, env = process.env, fetcher = fetch, publicOrigin
             const [name, type] = STATIC_FILES[url.pathname];
             const filename = !user && (url.pathname === '/' || url.pathname === '/index.html') ? 'login.html' : name;
             const isGuide = name === 'help.html', guideLanguage = ['/guide', '/help-en.html'].includes(url.pathname) ? 'en' : 'hu';
-            const content = isGuide ? guideMarkup(readFileSync(resolve(ROOT, 'public', filename), 'utf8'), guideLanguage) : readFileSync(resolve(ROOT, 'public', filename));
-            response = new Response(incoming.method === 'HEAD' ? null : content, { headers: { 'Content-Type': type, 'Cache-Control': 'no-store', ...(isGuide ? { 'Content-Language': guideLanguage } : {}) } });
+            const localizedPage = ['index.html', 'login.html'].includes(filename);
+            const content = isGuide ? guideMarkup(readFileSync(resolve(ROOT, 'public', filename), 'utf8'), guideLanguage) : localizedPage ? readFileSync(resolve(ROOT, 'public', filename), 'utf8').replace('<html lang="hu"', `<html lang="hu" data-default-language="${language}"`) : readFileSync(resolve(ROOT, 'public', filename));
+            response = new Response(incoming.method === 'HEAD' ? null : content, { headers: { 'Content-Type': type, 'Cache-Control': 'no-store', ...(isGuide || localizedPage ? { 'Content-Language': isGuide ? guideLanguage : language, Vary: 'Cookie' } : {}) } });
           } else response = json({ error: 'Nem található.' }, 404);
         }
       }
     } catch (error) {
       console.error('HTTP request failed:', error.code || error.name);
       if (db && !error.status) await logEvent(db,{level:'error',category:'server',event:'server.failed',message:'Hiba történt a kérés kiszolgálása közben.',code:error.code || error.name}).catch(()=>console.error('Operational log could not be saved'));
-      response = json({ error: error.status ? error.message : 'A szolgáltatás átmenetileg nem elérhető. A már tárolt adatokat megőriztük.' }, error.status || 503);
+      response = json({ error: error.status ? error.message : 'Az alkalmazás átmenetileg nem érhető el. A korábban mentett adatok megmaradtak.' }, error.status || 503);
     }
     if (response.status >= 400 && response.headers.get('content-type')?.includes('application/json')) {
       const data = await response.json();

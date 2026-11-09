@@ -1,22 +1,42 @@
-# Tulajdonosi adminisztráció
+# Tulajdonosi adminfelület
 
-Az `/admin` külön, magyar nyelvű kezelőfelület. A napló Fiókom nézetében csak a Google által ellenőrzött `thisisnotka@gmail.com` fiók kap hozzá hivatkozást. Minden admin API-kérés a szerveroldali munkamenetből, frissen visszaolvasott adatbázis-fiókból ellenőrzi ugyanezt az e-mail-címet. A megjelenített név nem jogosultság; más felhasználó nem válhat adminná a profil vagy a kérés módosításával. A névtelen hozzáférés 401, a többi fióké 403, a HTML-oldalon is.
+Az `/admin` magyar nyelvű kezelőfelület. A napló Fiókom ablakából is megnyithatod, ha a Google által ellenőrzött `thisisnotka@gmail.com` fiókkal jelentkeztél be. A megjelenített név önmagában nem jogosít hozzáférésre.
 
-- Áttekintés: 7/30/365 nap, felhasználók, regisztrációk, aktív naplózók, mentett/összes bejegyzés, próbálkozások, munkamenetek, késleltetés, tokenhasználat, napi diagramok, állapot-, étkezéstípus-, modell- és módszerváltozat-bontás, feldolgozási sor.
-- Felhasználók: keresés és lapozás, napi energiakeret módosítása, hozzáférés tiltása/feloldása és az összes munkamenet visszavonása. A tiltás megőrzi a naplót, de kijelentkezteti a felhasználót és az új belépést is elutasítja. A tulajdonosi fiók ezen a felületen nem tiltható le.
-- Étkezések: állapot és felhasználó szerinti szűrés, fotók, összetevők, számított összesítés, eredeti és javított elemzés, bemenetek és használati adatok megtekintése. Az adminnézet olvas; a napló módosítási/törlési és fizetős újrapróbálási műveletei a tulajdonos naplójában maradnak.
-- Feladatok: állapot, futási próbálkozások, hiba, foglalás lejárata, kapcsolódó bejegyzés. Munkamenettoken, worker-lease-token és bemeneti hash nem kerül a listákba.
-- Beállítások: új elemzések és új fiókok engedélyezése, óránkénti/napi korlát, új fiókok napi energiakerete, Gemini-kompatibilis modellazonosító, maximális válaszhossz és várakozási idő. A napi korlát legalább az óránkénti korlát. A várakozási idő felső határa a jelenlegi worker működéséhez igazodik.
-- Változásnapló: az alkalmazás- és felhasználói beállítások előtte/utána értékei, valamint a kijelentkeztetések, végrehajtóval és időponttal. A művelet és naplózása egy adatbázis-tranzakció. Elavult alkalmazásbeállítás-verzió 409 választ kap, nem írja felül egy másik lap mentését.
+A szerver minden adminisztrációs kérésnél a munkamenethez tartozó, adatbázisból visszaolvasott fiókot ellenőrzi. Bejelentkezés nélkül 401-es, más Google-fiókkal 403-as választ ad; a védelem a HTML-oldalra és az API-ra is kiterjed. A kliensoldali profil vagy a kérés fejléceinek módosításával nem lehet adminisztrátori jogosultságot szerezni.
 
-Az alkalmazásbeállítások az `app_settings` táblában vannak, az adminnapló az `admin_audit` táblában. A PostgreSQL `0002_admin` és SQLite `0004_admin` migráció hozzáadja őket és a felhasználói tiltás mezőjét; a meglévő bejegyzéseket nem írja át. Az indítás ugyanazzal a zárolt migrációs folyamattal alkalmazza az új PostgreSQL-migrációt.
+## Mit találsz az egyes nézetekben?
 
-A korlátokat a feltöltés és a kézi újrapróbálás ténylegesen érvényesíti, felhasználónként zárolva. A worker minden új elemzés előtt a mentett AI-beállításokat olvassa. Az elemzési szünet az új beküldéseket tiltja, a már elfogadott feladatokat és a törléseket nem szakítja meg. A regisztrációs szünet a meglévő felhasználókat és a tulajdonost nem zárja ki. Az új alapértelmezett energiakeret csak az új fiókokra vonatkozik.
+| Nézet | Lehetőségek |
+| --- | --- |
+| Áttekintés | 7, 30 vagy 365 nap adatai; felhasználók, aktív naplózók, mentett étkezések, becsült AI-költség és feldolgozások. A napi bejegyzések és regisztrációk alakulását vonalgrafikon, az állapotokat és étkezéstípusokat oszlopok szemléltetik. |
+| Felhasználók | Keresés, lapozás, a napi energiakeret módosítása, hozzáférés tiltása vagy visszaállítása, valamint kijelentkeztetés minden eszközről. A felhasználó bejegyzései innen külön is megnyithatók. |
+| Étkezések | Szűrés felhasználó és állapot szerint; fotók, összetevők, számított értékek, eredeti és javított elemzések, valamint használati adatok megtekintése. |
+| AI-használat és költségek | Napi költséggrafikon, modellenkénti és hívásonkénti bontás. A felület jelzi, hány hívás költsége számítható ki, és hol hiányzik adat. |
+| Feldolgozások | Elemzések és törlések állapota, próbálkozások száma, hibák és a futó feladat foglalásának lejárata. |
+| Működési napló | Indulások, belépések, kijelentkezések és feldolgozási események. Időszak, súlyosság és szöveg szerint szűrhető. |
+| Beállítások | Új elemzések és csatlakozások engedélyezése, elemzési korlátok, az új fiókok napi energiakerete, AI-modell, válaszhossz és várakozási idő. |
+| Módosítási előzmények | A beállítások és fiókok módosításai: végrehajtó, időpont, érintett adat, korábbi és új érték. A kijelentkeztetéseket is rögzítjük. |
 
-Az API-kulcsok, OAuth-titkok, adatbázis-URI és domainek továbbra is Northflanken kezelendők. Az adminfelület innen közvetlen hivatkozást ad a Northflankra; titokértéket nem olvas vissza és nem tárol a böngészőben vagy a változásnaplóban. A kapcsolati jelzések konfiguráció meglétét, nem érvényességet, élő szolgáltatói állapotot vagy egyenleget igazolnak. Az átlagos felhasználó státuszválasza csak a saját profilját tartalmazza; a szolgáltatói állapotpanel megszűnt. A szolgáltatói működési hibák részletei az admin feladatlistájában láthatók, a naplóban általános, újrapróbálható hiba jelenik meg.
+Mobilon a teljes menü több sorban látható. Az időszak- és állapotszűrő módosítása azonnal frissíti a nézetet. A széles táblázatokat oldalirányban görgetheted; a grafikonok napi értékeit táblázatként is megnyithatod.
 
-A statisztikák UTC szerinti létrehozási napokra vonatkoznak, nem a felhasználó által visszadátumozható étkezési napokra. A tokenkimutatás a megőrzött, sikeresen visszaadott elemzések metaadataiból készül. Törölt bejegyzések és hiányzó szolgáltatói válaszok miatt nem teljes számlázási kimutatás. Valódi látogatottsági követés nem készült. A tartós AI-használati napló és a publikált árakból számolt USD-becslés külön nézetet kapott: [AI-COSTS.md](AI-COSTS.md).
+## A módosítások hatása
 
-Tesztelés: `npm test`; a meglévő PostgreSQL-próbákhoz `TEST_DATABASE_URL`, az adminpróbákhoz külön, `_admin_test` végű adatbázis URL-je a `TEST_ADMIN_DATABASE_URL` változóban. Az adminpróbák a saját tesztadatbázis alkalmazásbeállításait visszaállítják; éles adatbázissal nem futtathatók. A `scripts/browser-check.mjs` a szokásos naplófolyamat mellett teszt-Google-belépéssel az admin összes nézetét, a mentéseket, jelvényképeket és öt képernyőszélességet ellenőriz.
+A felhasználó letiltásakor megőrizzük a naplóját, de visszavonjuk a munkameneteit, és az új belépést is elutasítjuk. A tulajdonosi fiók ezen a felületen nem tiltható le. Az étkezések adatai az adminban megtekinthetők; a javítás, a törlés és a szolgáltatói költséggel járó újrapróbálás a bejegyzés tulajdonosának naplójából indítható.
 
-Az admin új feliratai rövidebb, közérthető magyar szövegek. Az időszak és állapotszűrők automatikusan frissülnek, mobilon a teljes menü több sorban elérhető, a grafikonokhoz táblázatos alternatíva tartozik. A Módosítási előzmények nyers JSON helyett a megváltozott beállítások magyar nevét, korábbi és új értékét mutatja. A PostgreSQL `0003_telemetry` és SQLite `0005_telemetry` migráció hozzáadja az AI-hívások és működési napló tábláit.
+A beállítások módosítását és naplózását egyetlen adatbázis-tranzakcióban végezzük. Ha egy másik ablak közben már mentette az alkalmazásbeállításokat, a régi változat mentése 409-es választ kap: az újabb adatokat nem írjuk felül.
+
+Az óránkénti és napi korlátokat a feltöltésnél és a kézi újrapróbálásnál is érvényesítjük, PostgreSQL-en felhasználónkénti zárolással. A napi korlát nem lehet kisebb az óránkéntinél. Az AI-beállításokat minden új elemzés előtt visszaolvassuk. Az elemzések szüneteltetése az új beküldéseket tiltja; az elfogadott feladatokat és a törléseket nem szakítja meg. Ha az új felhasználók csatlakozását kapcsolod ki, a meglévő fiókok és a tulajdonos továbbra is beléphetnek. Az alapértelmezett energiakeret módosítása csak az ezután létrehozott fiókokra vonatkozik.
+
+## Szolgáltatói beállítások és adatok
+
+Az API-kulcsokat, az OAuth-hitelesítési adatokat, az adatbázis-kapcsolatot és a domaineket továbbra is Northflanken kell kezelni. Az adminfelület hivatkozást ad hozzá; a titkos értékeket nem küldi a böngészőnek, és nem írja a változásnaplóba. A kapcsolati jelzések a szükséges beállítások meglétét mutatják, nem a kulcsok érvényességét vagy a szolgáltatói egyenleget. Ezeket az adatokat az átlagos felhasználó nem kapja meg.
+
+A statisztikák a bejegyzések UTC szerinti létrehozási napjára vonatkoznak, nem a felhasználó által módosítható étkezési dátumra. A költségbecslés részletes módszere, forrásai és korlátai az [AI-COSTS.md](AI-COSTS.md) dokumentumban olvashatók. Valódi látogatottsági adatokat nem gyűjtünk.
+
+Az alkalmazásbeállítások az `app_settings`, a módosítási előzmények az `admin_audit`, az AI-hívások az `ai_requests`, a működési napló eseményei az `app_logs` táblába kerülnek. A szükséges PostgreSQL-migrációk: `0002_admin` és `0003_telemetry`; a SQLite-változatok: `0004_admin` és `0005_telemetry`. Induláskor a meglévő, zárolt migrációs folyamat futtatja őket, a mentett étkezések átírása nélkül.
+
+## Ellenőrzés
+
+A tesztsor a `npm test` paranccsal fut. A PostgreSQL-próbákhoz a `TEST_DATABASE_URL`, az adminpróbákhoz külön, `_admin_test` végű adatbázis címe szükséges a `TEST_ADMIN_DATABASE_URL` változóban. Az adminpróbák a saját tesztadatbázisuk alkalmazásbeállításait visszaállítják; éles adatbázison nem futtathatók.
+
+A `scripts/browser-check.mjs` teszt-Google-belépéssel ellenőrzi a napló és az admin működését, a mentéseket, jelvényeket és grafikonokat, öt képernyőszélességen. A magyar szövegek szerkesztési elvei: [LANGUAGE.md](LANGUAGE.md).

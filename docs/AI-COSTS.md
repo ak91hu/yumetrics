@@ -1,6 +1,6 @@
 # AI-használat, becsült költségek és működési napló
 
-Az admin `/admin#costs` nézete 7/30/365 napra mutatja az AI-hívások számát, a kiszámítható költségrészt USD-ben, az adatlefedettséget, a napi grafikont, a modellenkénti és hívásonkénti bontást. A grafikon pontos értékei hozzáférhető táblázatban is megnyithatók. Az áttekintés vonalgrafikonon mutatja a bejegyzéseket és regisztrációkat, oszlopokon az állapot- és étkezéstípus-bontást.
+Az admin `/admin#costs` nézete 7/30/365 napra mutatja az AI-hívások számát, a kiszámítható költségrészt USD-ben, az ismert költségű hívások arányát, a napi grafikont, a modellenkénti és hívásonkénti bontást. A grafikon pontos értékei hozzáférhető táblázatban is megnyithatók. Az áttekintés vonalgrafikonon mutatja a bejegyzéseket és regisztrációkat, oszlopokon az állapot- és étkezéstípus-bontást.
 
 ## Ellenőrzött díjszabás
 
@@ -33,6 +33,6 @@ A korábban megmaradt `meals.usage` adatok induláskor és az admin első lekér
 
 ## Működési napló
 
-Az `/admin#logs` a szerver indulását és hibáit, belépéseket/kijelentkezéseket, a feldolgozások indulását és sikerét, valamint az elemzési és törlési hibákat mutatja. Időszak, súlyosság és szöveg szerint szűrhető, lapozható. A beállításváltozások emberi mezőnevekkel, korábbi és új értékkel a külön Módosítási előzmények nézetben látszanak.
+Az `/admin#logs` a szerver indulását és hibáit, belépéseket/kijelentkezéseket, a feldolgozások indulását és sikerét, valamint az elemzési és törlési hibákat mutatja. Időszak, súlyosság és szöveg szerint szűrhető, lapozható. A beállítások változásai közérthető megnevezésekkel, a korábbi és az új értékkel a külön Módosítási előzmények nézetben látszanak.
 
 Az `app_logs` táblában nem tárolunk teljes HTTP-kérést, URL-paramétereket, titkokat vagy nyers szolgáltatói válaszokat. Ez az alkalmazás tartós működési naplója; a konténer összes stdout/stderr sora továbbra is Northflanken érhető el. Adatbázis-kiesés közben az adatbázisba írás nem garantálható, ennek hibája a szerver konzoljára kerül. A használati és naplóvégpontok ugyanazt a tulajdonosi Google-fiókellenőrzést kapják, mint az admin többi része.

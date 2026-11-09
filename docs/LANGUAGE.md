@@ -1,6 +1,26 @@
 # A Yumetrics magyar nyelvű szövegei
 
-Nyelvi átdolgozás: 2026. november 7.
+Nyelvi átdolgozás: 2026. november 9.
+
+## Minden magyar szövegre érvényes szerkesztési elv
+
+Fogalmazz természetes, választékos, igényes magyar nyelven. Kerüld az angolból tükörfordított szerkezeteket, a közhelyeket, a fölösleges szóismétléseket és a mesterségesen ünnepélyes hangnemet. Ügyelj a magyar mondatritmusra, az idiomatikus szóhasználatra és a szöveg gördülékenységére. A szöveg olyan legyen, mintha egy tapasztalt magyar szerkesztő írta volna.
+
+Ez az elv a napló, a belépőoldal, a profil, a jelvények, az adminfelület, a grafikonok, a hiba- és állapotüzenetek, az útmutató és a fejlesztői dokumentáció saját szövegeire egyaránt vonatkozik. Az új AI-elemzések magyar megfogalmazását is ugyanez az utasítás szabályozza. A gombokhoz rövid, egyértelmű feliratot írunk; a részletes magyarázatoknál az olvasó tájékozódását segítő mondatokat és bekezdéseket használunk.
+
+A szerkesztés nem változtathatja meg a számítások, az adatkezelés, a hozzáférés vagy a költségbecslés jelentését. A technikai azonosítók, mértékegységek, forráscímek és idézett eredeti adatok megmaradnak. A felhasználók saját szövegeit és a korábbi, megőrzött AI-elemzéseket nem fogalmazzuk át.
+
+Néhány szerkesztési példa:
+
+| Korábbi szöveg | Szerkesztett változat |
+| --- | --- |
+| Minden falat számít | Személyes étkezési napló |
+| A mai napod már számít. Köszönjük, hogy naplóztál! | Ma már naplóztál étkezést. |
+| A naplód minden új nappal tovább gazdagodik. | A szöveg elhagyva; a szint és a naplózott napok száma önmagában tájékoztat. |
+| Mutatott időszak | Időszak |
+| Mérleg nélkül az összetevők grammjai képi becslések. | Mérleg nélkül az összetevők tömegét a fotók alapján becsüljük. |
+
+Az AI-kérés nyelvi utasítása a `food-v11-editorial-hu` változatban frissült. Az egyetlen kérésből álló elemzés, a számítás szabályai és a modellbeállítások nem változtak. A magyar forrásszövegek fordítási kulcsként is szolgálnak, ezért az angol szótár kulcsait és az eltérő jelentésű mondatok angol megfelelőit együtt módosítottuk. A nyelvi javításokhoz nem küldünk külön AI-kérést.
 
 ## Hangnem és fogalmazás
 
@@ -34,8 +54,6 @@ A technikai azonosítókat, a szolgáltatók neveit és az eredeti adatforrások
 - [A magyar helyesírás szabályai, 12. kiadás](https://helyesiras.mta.hu/helyesiras/default/akh) – különösen a mértékegységek jelölése (279.), a jelek toldalékolása (275.) és a számok írása (290–294.).
 - [Közérthető fogalmazás: Fogalmazz érthetően](https://kozerthetofogalmazas.hu/fogalmazz-erthetoen/) – az olvasó céljához igazodó szöveg, az egyértelmű szóhasználat és az egy gondolat köré szervezett mondatok, bekezdések.
 
-Ez szerkesztési útmutató, nem nyelvészeti vagy hatósági tanúsítás.
-
 ## Magyar és angol felület
 
 A magyar feliratokhoz tartozó angol fordítások közös szótára a `lib/translations-en.mjs`. A felület és az API hibaüzenetei ezt használják. A magyar eredeti szövegek fordítási kulcsokként is szolgálnak; változtatásukhoz a megfelelő angol bejegyzést is frissíteni kell.
@@ -47,3 +65,9 @@ A nyelvváltás megtartja a feltöltési mezőket és a fotókat. A részletes s
 Az új fotóelemzés a beadáskor választott nyelvet a tartós `analysis_context` mezőben kapja meg. Ez az újraindulás után folytatott feladatnál is megmarad. Régebbi bejegyzésekben a hiányzó nyelv magyar alapértéket jelent; az eredeti AI-szövegeket és a felhasználói tartalmakat nem fordítjuk át utólag.
 
 A nyilvános útmutató angol változatát ugyanebből a szótárból állítjuk elő. Mindkét útmutató önálló HTML marad, és JavaScript nélkül is olvasható.
+
+## Az oldal alapnyelve
+
+Első megnyitáskor a szerver helyben, IP-cím alapján állapítja meg az országot. Magyarországról magyar, más országból vagy ismeretlen címről angol a kezdőnyelv, a böngésző nyelvi beállításától függetlenül. A kézzel választott nyelvet megőrizzük; az érvényes `?lang=hu` és `?lang=en` hivatkozás szintén felülírja az alapbeállítást. A külön magyar és angol útmutató címe, valamint a magyar adminfelület nyelve rögzített.
+
+A nyelvválasztáshoz nem kérünk helymeghatározási engedélyt, nem küldjük el az IP-címet külön szolgáltatásnak, és nem tároljuk azt. A VPN és a proxy befolyásolhatja az ország becslését. Adatforrás, licenc és frissítés: [az országadatbázis leírása](../lib/geoip/README.md).

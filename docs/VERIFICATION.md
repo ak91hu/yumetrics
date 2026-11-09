@@ -1,5 +1,15 @@
 # Ellenőrzés
 
+## Magyar szövegek és IP-alapú alapnyelv, 2026-11-09
+
+A saját magyar szövegeket a felületen, az adminban, a hibaüzenetekben, az útmutatóban és a kapcsolódó dokumentációban átszerkesztettük. Az AI-kérés változatlanul egyetlen hívásból áll; a `food-v11-editorial-hu` változat a kért szerkesztési elveket szó szerint tartalmazza. A prompt továbbra is 15 000 karakter alatt marad, a számítások és a forráskezelés szabályai nem változtak. A korábbi AI-eredményeket és a felhasználók saját szövegeit nem módosítottuk.
+
+A teljes Node-tesztsor **96/96 sikeres**, valódi helyi PostgreSQL-lel, kihagyás nélkül. Három új próba ellenőrzi az offline országfelismerést IPv4-, IPv6- és IPv4-be ágyazott címmel; a helyi, hibás és ismeretlen címeket; a Northflank ellenőrzött fejlécét és a nem megbízható továbbítási fejlécek figyelmen kívül hagyását; a magyarországi magyar és az egyéb angol alapnyelvet; a böngésző beállításától való függetlenséget; valamint a nyelvi süti és az érvényes hivatkozás elsőbbségét. A HTML és a hibaválasz nyelve, a gyorsítótárazás tiltása, a védett útvonalak és a külön angol útmutató is ellenőrzött.
+
+A magyar/mobil és angol/asztali teljes Chrome-folyamat sikeres, mindkettő öt szélességen: 320, 390, 768, 1024 és 1440 px. Az első megnyitást két magyar és egy külföldi IP-címmel, ellentétes böngészőnyelv mellett is ellenőrzi. A kézi nyelvváltás, a beírt adatok megőrzése, az újratöltés és a kijelentkezés utáni nyelv változatlanul működik. A belépőoldalt, a módszertani ablakot és az adminköltségek nézetét képernyőképen is átnéztük. A build sikeres; az országfelismerés a buildbe csomagolt adatbázissal is működik. A DB-IP 2026. novemberi adatbázisának tömörítetlen ellenőrzőösszege megegyezik a forrásoldalon közölt értékkel.
+
+A külső szolgáltatások válaszait a böngészőpróba helyettesíti. Új fizetős AI-elemzés, fizikai telefonos próba és külön magyar/külföldi VPN-ről végzett ellenőrzés nem történt. Az IP-cím országa nem bizonyítja a látogató nyelvét vagy tényleges tartózkodási helyét; a kézi nyelvválasztás ezért mindig elérhető. Az országadatbázis frissítésének menete és licence: [geoip/README.md](../lib/geoip/README.md).
+
 ## Szövegpontosítás és code review, 2026-11-09
 
 A [részletes review](REVIEW-2026-11-09.md) hét javított találatcsoportot dokumentál. A címkeadatok következetességét azonos 100 g/ml-es alapon ellenőrizzük, a tizedes csomagmennyiség megőrzi a jelölését és pontosságát. A folyadékok tartomány- és mérési szövege, a dinamikus mezők fordítása, a jelvényértesítés nyelvváltása és a forrásrészletek nyitva maradása külön regressziós ellenőrzést kapott. A README, a bejelentkezőoldal, a főoldal, a feltöltés, a módszertani ablak és a nyilvános útmutató szövegei a kétfotós/címkés folyamathoz igazodnak. Teljes Node-futás: 79/79 sikeres, helyi PostgreSQL-lel, kihagyás nélkül. A magyar/mobil és angol/asztali böngészős ellenőrzés öt szélességet fed le; a build is sikeres. Új fizetős AI-hívás nem történt. A korábbi pontossági korlátok továbbra is érvényesek.
@@ -76,4 +86,4 @@ A teljes tesztsor 93/93 sikeres valódi PostgreSQL-lel, kihagyás nélkül. Kül
 
 A magyar/mobil és angol/asztali teljes Chrome-folyamat sikeres, minden adminnézettel öt szélességen. Új ellenőrzések: négy valódi SVG-grafikon az áttekintésen; automatikus 7 napos időszakváltás; hozzáférhető napi adattábla; becsült és hiányos költségadat; kizárólag hibákat mutató működési napló. A hat új nevet és képet mindkét nyelv kezeli; az 1/3/7/14/30/100 napos jogosultságok nem változtak. A jelvényeket, grafikonokat és költségnézetet képen is átnéztük. Új helyi képek: `admin-costs-desktop.png`, `admin-costs-mobile.png`, `admin-logs-desktop.png`, `admin-logs-mobile.png`.
 
-A böngészőfolyamat továbbra is helyettesített külső szolgáltatásokat használ; a grafikonokhoz kizárólag tesztadatot hoz létre a memóriabeli tesztadatbázisban. Fizikai telefon és valós szolgáltatói számlaegyeztetés nem történt. Árazási forrás és módszer: [AI-COSTS.md](AI-COSTS.md).
+A böngészőfolyamat továbbra is helyettesített külső szolgáltatásokat használ; a grafikonokhoz kizárólag tesztadatot hoz létre a memóriabeli tesztadatbázisban. Fizikai telefon és valós szolgáltatói számlaegyeztetés nem történt. Az árak forrása és a számítás módja: [AI-COSTS.md](AI-COSTS.md).

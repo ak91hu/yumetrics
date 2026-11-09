@@ -25,7 +25,7 @@ const ingredient = { name: 'Teszt avokádó', grams: 100, calories: 160, protein
 const avatarUrl = 'https://lh3.googleusercontent.com/a/browser-avatar';
 const avatarSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#547a93"/><circle cx="32" cy="24" r="12" fill="#f3d4b4"/><path d="M8 64a24 24 0 0 1 48 0" fill="#f3d4b4"/></svg>';
 let providerCalls = 0, aiRequests = 0, failFirstAnalysis = true; const storedPhotos = new Map(), googleClient = testGoogleClient({ picture: avatarUrl });
-const env = { USDA_API_KEY:'test-usda', GOOGLE_CLIENT_ID: 'test-client', GOOGLE_CLIENT_SECRET: 'test-secret', OPENCODE_API_KEY: 'browser-test', CLOUDINARY_CLOUD_NAME: 'test-cloud', CLOUDINARY_API_KEY: 'browser-test', CLOUDINARY_API_SECRET: 'browser-test' };
+const env = { NODE_ENV: 'production', USDA_API_KEY:'test-usda', GOOGLE_CLIENT_ID: 'test-client', GOOGLE_CLIENT_SECRET: 'test-secret', OPENCODE_API_KEY: 'browser-test', CLOUDINARY_CLOUD_NAME: 'test-cloud', CLOUDINARY_API_KEY: 'browser-test', CLOUDINARY_API_SECRET: 'browser-test' };
 let runner;
 const db = openDatabase(':memory:');
 const fetcher = async (url, options) => {
@@ -90,7 +90,7 @@ try {
   }
   const target = await send('Target.createTarget', { url: 'about:blank' }, null);
   sessionId = (await send('Target.attachToTarget', { targetId: target.targetId, flatten: true }, null)).sessionId;
-  await send('Runtime.enable'); await send('Page.enable');
+  await send('Runtime.enable'); await send('Page.enable'); await send('Network.enable');
   await send('Fetch.enable', { patterns: [{urlPattern:'https://res.cloudinary.com/*',requestStage:'Request'}, {urlPattern:'https://lh3.googleusercontent.com/*',requestStage:'Request'}] });
   async function evaluate(expression) {
     if (device === 'desktop') expression = expression.replaceAll('.mobile-nav [data-action=upload]', '.page-heading [data-action=upload]');
@@ -124,6 +124,15 @@ try {
     const remaining=await evaluate(`(async()=>{const {translate}=await import('/i18n.mjs');const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT),result=[];while(walker.nextNode()){const node=walker.currentNode,value=node.textContent.trim();if(value&&!node.parentElement.closest('script,style,[data-language-switch]')&&translate(value,'en')!==value)result.push(value);}return result;})()`);
     assert.deepEqual(remaining,[],'Untranslated interface text');
   }
+  for (const [address, initialLanguage] of [['84.2.44.1', 'hu'], ['2001:4c48::1', 'hu'], ['8.8.8.8', 'en']]) {
+    await send('Network.clearBrowserCookies');
+    await send('Network.setExtraHTTPHeaders', { headers: { 'X-Envoy-External-Address': address, 'Accept-Language': initialLanguage === 'hu' ? 'en-US' : 'hu-HU' } });
+    await send('Page.navigate', { url: origin });
+    await waitFor("document.documentElement.dataset.languageReady === 'true' && !!document.querySelector('#google-signin')");
+    assert.equal(await evaluate('document.documentElement.lang'), initialLanguage);
+    assert.equal(await evaluate("document.querySelector('[data-language-switch]').value"), initialLanguage);
+  }
+  await send('Network.setExtraHTTPHeaders', { headers: {} });
   await viewport(1440, 1100, false); await send('Page.navigate', { url: origin + '?lang=' + language });
   await waitFor("document.documentElement.dataset.languageReady === 'true' && !!document.querySelector('#google-signin') && document.querySelector('#google-signin').getAttribute('aria-disabled') !== 'true'");
   assert.ok(await evaluate("!!document.querySelector('#google-signin')"));
@@ -522,6 +531,7 @@ try {
   result.screenshots.push('methodology-desktop.png', 'methodology-mobile.png');
   result.checks.push('six generated botanical badge images load; ordinary users see no provider panel or admin link', 'owner Google identity opens admin; every tab fits five widths; user goal and application settings persist; meal details and audit log work');
   result.checks.push('redesigned culinary badge names in both languages; line and distribution charts with accessible daily data; automatic period filters; AI cost breakdown with incomplete coverage; error-only operational log filtering');
+  result.checks.push('first-visit IP language defaults for Hungarian IPv4/IPv6 and foreign IPv4 override browser language; explicit language survives navigation and sign-out');
   result.screenshots.push('admin-costs-desktop.png','admin-costs-mobile.png','admin-logs-desktop.png','admin-logs-mobile.png');
   result.screenshots.push('badges-mobile.png','admin-overview-desktop.png','admin-overview-mobile.png','admin-settings-desktop.png','admin-settings-mobile.png','admin-audit-desktop.png');
   writeFileSync(resolve(out, 'browser-check.json'), JSON.stringify(result, null, 2)); console.log(JSON.stringify(result, null, 2));

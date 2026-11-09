@@ -2,7 +2,7 @@ import { translate, translateMarkup, formatMessage, languageCode, localeFor } fr
 export { messageSource } from '/i18n.mjs';
 
 const requested = new URL(location.href).searchParams.get('lang');
-const preferredLanguage = languageCode(requested || document.cookie.match(/(?:^|;\s*)yumetrics_language=(hu|en)(?:;|$)/)?.[1]);
+const preferredLanguage = languageCode((['hu', 'en'].includes(requested) ? requested : null) || document.cookie.match(/(?:^|;\s*)yumetrics_language=(hu|en)(?:;|$)/)?.[1] || document.documentElement.dataset.defaultLanguage || 'en');
 let language = 'hu';
 export const getLanguage = () => language;
 export const locale = () => localeFor(language);
