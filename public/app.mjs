@@ -1,5 +1,5 @@
 import { t, html, initializeLanguage, getLanguage, locale, messageSource } from '/localization.mjs';
-import { totals, NUTRIENTS, OPTIONAL_NUTRIENTS, TYPES, validateAnalysis, validateImagePair, metadata } from '/domain.mjs';
+import { totals, NUTRIENTS, OPTIONAL_NUTRIENTS, TYPES, validateAnalysis, validateImages, metadata } from '/domain.mjs';
 import { FOOD_REFERENCE } from '/food-reference.mjs';
 import { REFERENCE_STATES } from '/hungarian-food.mjs';
 import { installAnalysisUI, dishGuidance, reportMarkup, ingredientMarkup, refreshReport, recipeMarkup } from '/analysis-ui.mjs';
@@ -216,7 +216,7 @@ $('#upload-form').addEventListener('submit', async event => {
   event.preventDefault(); if (state.busy || processingPhotos > 0) return;
   $('#upload-error').hidden = true;
   if (!state.photo) { errorAt('#upload-error', new Error(t('Válassz egy ételfotót az elemzéshez.'))); return; }
-  try { validateImagePair(state.photo, state.secondPhoto); } catch (error) { errorAt('#upload-error', error); return; }
+  try { validateImages(state.photo, state.secondPhoto); } catch (error) { errorAt('#upload-error', error); return; }
   state.busy = true; $('#analyze-button').disabled = true; $('#analysis-progress').hidden = false;
   const id = state.uploadId;
   try {

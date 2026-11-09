@@ -2,17 +2,17 @@
 
 ## Aktuális működés: címkék és g/ml mennyiségek
 
-A jelenlegi folyamat egy AI-kéréssel és két fotóval működik. Ételeknél felül-/oldalnézet, csomagolt terméknél teljes termék + olvasható tápértéktábla az elfogadott képpár. A gramm és a milliliter külön mennyiség; ismeretlen sűrűséget nem feltételezünk. A konkrét termékhez illő, olvasható címke az elsődleges forrás, majd megfelelő USDA-adat vagy AI-becslés következik. A címke eredeti adatai megmaradnak, a szerver a vonatkoztatási alapot és egységeket kezeli. Kis adagalapnál is 100 g/ml-re átszámítva ellenőrzi a kcal/kJ és só/nátrium összhangját; a tizedes kiszerelést ismételt mentéskor is megőrzi. A mentendő mennyiség a piszkozatban kézzel pontosítható. Részletes, aktuális felhasználói leírás: [Használati útmutató](https://yumetrics.app/utmutato).
+A jelenlegi folyamat egy AI-kéréssel, egy kötelező és egy opcionális fotóval működik. Ételeknél felül-/oldalnézet, csomagolt terméknél teljes termék + olvasható tápértéktábla az elfogadott képpár. A gramm és a milliliter külön mennyiség; ismeretlen sűrűséget nem feltételezünk. A konkrét termékhez illő, olvasható címke az elsődleges forrás, majd megfelelő USDA-adat vagy AI-becslés következik. A címke eredeti adatai megmaradnak, a szerver a vonatkoztatási alapot és egységeket kezeli. Kis adagalapnál is 100 g/ml-re átszámítva ellenőrzi a kcal/kJ és só/nátrium összhangját; a tizedes kiszerelést ismételt mentéskor is megőrzi. A mentendő mennyiség a piszkozatban kézzel pontosítható. Részletes, aktuális felhasználói leírás: [Használati útmutató](https://yumetrics.app/utmutato).
 
 Az alábbi verziózott leírások a korábbi módszertani döntéseket és a kompatibilitási hátteret is megőrzik; a csak grammos hivatkozások nem jelentik a milliliteres tételek kizárását.
 
-Verzió: `food-v14-lean-evidence`, 2026-11-09. Alapmodell: `gemini-3.8-flash`. A JSON-riport formátuma visszafelé kompatibilis v2; a korábbi étkezések olvashatók. A magyar piaci fókusz és forrásai: [HUNGARIAN-POSITIONING.md](HUNGARIAN-POSITIONING.md).
+Verzió: `food-v15-optional-view`, 2026-11-09. Alapmodell: `gemini-3.8-flash`. A JSON-riport formátuma visszafelé kompatibilis v2; a korábbi étkezések olvashatók. A magyar piaci fókusz és forrásai: [HUNGARIAN-POSITIONING.md](HUNGARIAN-POSITIONING.md).
 
 ## A számítás menete
 
-1. Két kötelező fotó készül ugyanarról a teljes adagról: felülről és ferdén oldalról. A böngésző legfeljebb 2048 pixeles hosszabb oldallal, 0,92 JPEG-minőséggel újrarajzolja őket. Az azonos képtartalmat a kliens és a szerver is elutasítja feltöltés és fizetős modellhívás előtt; a két nézet egy adagnak számít.
+1. Egy fotó kötelező ugyanarról a teljes adagról; opcionálisan egy másik szögből készült második kép is hozzáadható. A böngésző legfeljebb 2048 pixeles hosszabb oldallal, 0,92 JPEG-minőséggel újrarajzolja őket. Az azonos képtartalmat a kliens és a szerver is elutasítja feltöltés és fizetős modellhívás előtt; a két nézet egy adagnak számít.
 2. A szerver előre menti az étkezés tulajdonosát, metaadatait, képazonosítóit és a tartós feladatot; majd feltölti a képeket Cloudinaryba. Csak ezután ad elfogadott választ. Az elemző worker innen tölti vissza a képeket.
-3. Pontosan egy AI-kérés kapja meg mindkét eredeti fotót és a megadott kontextust. Egy válaszban adja a képpár ellenőrzését, a látható/feltételezett összetevőket, az elkészítést, az ehető grammokat és határaikat, az alternatívákat, legfeljebb egy opcionális kérdést, a képminőséget, a referenciakulcsokat és minden összetevő 100 g-ra vonatkozó tápértékét.
+3. Pontosan egy AI-kérés kapja meg az egy vagy két feltöltött fotót és a megadott kontextust. Egy válaszban adja a képpár ellenőrzését, a látható/feltételezett összetevőket, az elkészítést, az ehető grammokat és határaikat, az alternatívákat, legfeljebb egy opcionális kérdést, a képminőséget, a referenciakulcsokat és minden összetevő 100 g-ra vonatkozó tápértékét.
 4. A részletes prompt ugyanebben a kérésben végső ellenőrzést kér az adagmagasságra, a kihagyásra/duplázásra, a nyers/főtt állapotra, az ehető részre és a referenciára. Hiányos ellenőrzés vagy elutasított képpár esetén nincs menthető becslés és nem indul újabb AI-hívás.
 5. A 44 rögzített USDA-referenciához való párosításnál a szerver a tényleges rekord tápértékét másolja be, az AI számait figyelmen kívül hagyja. Referencia nélkül ugyanebből a válaszból használja a jelölt 100 g-os becslést. A fizikailag ellentmondó AI-tápanyagösszetételt elutasítja; nincs kiegészítő vagy javító AI-hívás.
 6. Ismert teljes tömegnél a szerver levonja a lemért csont/héj tömegét, az ehető összetevőket ehhez arányosítja, és a teljes képen látható ehető mennyiség 100%-ával számol. Az összetevőarányok továbbra is becslések.
@@ -67,8 +67,12 @@ A v9 az ismétlődő utasításokat összevonja, és behúzás nélküli kompakt
 
 A magyar utasítás 15 784-ről 14 710 karakterre rövidült (6,8%). Ez szöveghossz-mérés, nem számlázott token- vagy költségmegtakarítás. A modell, a gondolkodási beállítás, a 10 000 tokenes kimeneti keret, a válaszséma és a két fotó feldolgozása változatlan. A közös prompt a nyelvi kiegészítés és a felhasználói adatok előtt marad; tényleges cache-találatot nem garantálunk. A teljes szolgáltatói `usageMetadata` megmarad, beleértve a gondolkodási/cache-tokeneket és a szolgáltató által közölt költséget. Az éles költség és fotós pontosság összehasonlításához azonos, lemért tesztkészlet szükséges.
 
-## Aktuális mérés és v14
+## A v14 költség- és pontosságmérése
 
 A v14 rövidebb belső utasítást és Gemini 3.8 Flash alapmodellt használ. USDA- vagy használható címkeadatnál az AI `nutrients=null` értéket adhat; a szerver tölti ki a kanonikus számokat. Más összetevőhöz teljes tápértékobjektum szükséges. A tárolt v2 elemzés, a képpár, a 10 000 tokenes keret és az egyszeri kérés megmarad.
 
 A négy étkezéses végső páros vizsgálat költsége 24,4%-kal csökkent; az együttes kalóriahiba 74,22-ről 70,30 kcal-ra mérséklődött. Ismert össztömegnél nem volt érdemi átlagos javulás, egyes részmutatók romlottak. A fenti korábbi költségszámok a saját verziójukra vonatkoznak. Az aktuális módszer, valamennyi próba és a korlátok: [AI-EFFICIENCY-2026-11-09.md](AI-EFFICIENCY-2026-11-09.md).
+
+## V15: egy kötelező, egy opcionális kép
+
+A kliens és a szerver is elfogad egyetlen képet. A kérésben az `imageCount` jelzi a tényleges képszámot; egy képhez nem kerül üres második képrész az AI-kérésbe. Egy képnél a `viewCheck` három jelzője `false`, mert képpárt nem ellenőriztünk; ez önmagában nem elutasítási ok. Az ételfelismerés, a képminőség és a tápértékek ellenőrzése továbbra is kötelező. Két képnél a képpár összetartozásának és eltérő nézőpontjának ellenőrzése megmarad. Egyképes eredménynél külön megjegyzés jelzi, hogy egy második nézet segíthet a pontosításban. Új fizetős pontosság-összehasonlítás nem történt.

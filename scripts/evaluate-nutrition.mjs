@@ -3,7 +3,7 @@ import { resolve, dirname, relative, isAbsolute, extname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseEnv } from 'node:util';
 import { createHash } from 'node:crypto';
-import { check, analysisContext, analysisReport, validateImage, validateImagePair, text, PROMPT_VERSION } from '../lib/domain.mjs';
+import { check, analysisContext, analysisReport, validateImage, validateImages, text, PROMPT_VERSION } from '../lib/domain.mjs';
 import { analyze, DEFAULT_MODEL } from '../lib/providers.mjs';
 import { HUNGARIAN_DISHES } from '../lib/hungarian-food.mjs';
 import { FOOD_REFERENCE } from '../lib/food-reference.mjs';
@@ -23,12 +23,12 @@ export function loadCases(filename) {
     check(['available','total_including_fiber'].includes(carbohydrateBasis), 'A szénhidrát vonatkoztatási alapja nem támogatott.');
     check(Number.isFinite(item.reference.edibleWeightG) && item.reference.edibleWeightG > 0 && item.reference.edibleWeightG <= 5000, 'Hiányzó ehető referenciatömeg.');
     for (const key of metrics) check(Number.isFinite(item.reference[key]) && item.reference[key] >= 0 || !['calories','protein','carbs','fat'].includes(key) && item.reference[key] == null, `Hibás referencia: ${key}.`);
-    const paths = [item.image, item.secondImage].map(file => {
+    const paths = [item.image, ...(item.secondImage == null ? [] : [item.secondImage])].map(file => {
       check(typeof file === 'string', 'Hiányzó képfájl.'); const path = resolve(directory,file), inside = relative(directory,path);
       check(inside && !inside.startsWith('..') && !isAbsolute(inside) && ['.jpg','.jpeg','.png','.webp'].includes(extname(path).toLowerCase()), 'A kép a manifest könyvtárán belüli JPEG/PNG/WebP fájl legyen.');
       return path;
     });
-    validateImagePair(imageData(paths[0]), imageData(paths[1]));
+    validateImages(imageData(paths[0]), paths[1] ? imageData(paths[1]) : undefined);
     return { id:item.id,group:item.group,paths,notes:text(item.notes || '',2000,true),context:analysisContext(item.context),reference:{...Object.fromEntries(metrics.map(key=>[key,item.reference[key]??null])),edibleWeightG:item.reference.edibleWeightG,method:item.reference.method,carbohydrateBasis,provenance} };
   });
 }
@@ -79,7 +79,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
       };
       for(const item of cases.slice(0,limit))for(const mode of ['photo_only','with_context']){
         const row={id:item.id,group:item.group,mode,reference:item.reference};
-        try{const result=await analyze(imageData(item.paths[0]),mode==='with_context'?item.notes:'',env,fetch,{context:mode==='with_context'?item.context:{},secondImage:imageData(item.paths[1]),onResponse:data=>{row.providerResponse=data;}});Object.assign(row,{predicted:evaluationPrediction(result.analysis,item.reference),analysis:result.analysis,usage:result.usage,latencyMs:result.latencyMs});}
+        try{const result=await analyze(imageData(item.paths[0]),mode==='with_context'?item.notes:'',env,fetch,{context:mode==='with_context'?item.context:{},secondImage:item.paths[1]?imageData(item.paths[1]):undefined,onResponse:data=>{row.providerResponse=data;}});Object.assign(row,{predicted:evaluationPrediction(result.analysis,item.reference),analysis:result.analysis,usage:result.usage,latencyMs:result.latencyMs});}
         catch(error){row.error=error.status?error.message:'A szolgáltatói hívás nem sikerült.';}
         rows.push(row);save();console.log(`${item.id} / ${mode}: ${row.predicted?'eredmény rögzítve':'elutasítás rögzítve'}`);
       }

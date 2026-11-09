@@ -51,6 +51,7 @@ test('benchmark input requires reference provenance, existing local images and i
   const report=JSON.parse(readFileSync(resolve(directory,'outputs',results[0]),'utf8'));assert.equal(report.complete,true);assert.equal(report.planned,2);assert.equal(report.rows.length,2);assert.equal(report.summary.photo_only.errors.calories.mae,100);assert.equal(report.referenceCount,44);assert.match(report.referenceCatalogSha256,/^[a-f0-9]{64}$/);
   assert.equal(report.summary.with_context.rejected,1);assert.equal(report.rows[1].providerResponse.usage.cost,0.03);assert.equal(report.rows[1].providerResponse.httpStatus,200);assert.ok(report.rows[1].providerResponse.latencyMs>=0);
   assert.equal(report.model,'gemini-3.8-flash','Explicit environment overrides a local .env model during comparisons');
-  for(const invalid of [{...item,secondImage:undefined},{...item,secondImage:item.image},{...item,image:'../outside.jpg'},{...item,reference:{...item.reference,measured:false}},{...item,reference:{...item.reference,method:'ai'}},{...item,reference:{...item.reference,carbohydrateBasis:'unknown'}},{...item,reference:{...item.reference,calories:NaN}}]){save([invalid]);assert.throws(()=>loadCases(path));}
+  for(const invalid of [{...item,image:undefined},{...item,secondImage:item.image},{...item,image:'../outside.jpg'},{...item,reference:{...item.reference,measured:false}},{...item,reference:{...item.reference,method:'ai'}},{...item,reference:{...item.reference,carbohydrateBasis:'unknown'}},{...item,reference:{...item.reference,calories:NaN}}]){save([invalid]);assert.throws(()=>loadCases(path));}
+  save([{...item,secondImage:undefined}]);assert.equal(loadCases(path)[0].paths.length,1);
   save([item,item]);assert.throws(()=>loadCases(path));
 });

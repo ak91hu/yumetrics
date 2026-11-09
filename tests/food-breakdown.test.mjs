@@ -25,17 +25,17 @@ test('recipe breakdown describes the ingredients in the saved portion without ad
   const ingredients=multiFoodAnalysis().ingredients.slice(0,2),analysis=validateAnalysis({name:'Csirkés rizs',confidence:'medium',ingredients,recipe:{cookedWeightG:450,eatenWeightG:225,lossesAccountedFor:true,ingredients}});
   const report=analysisReport(analysis);assert.equal(report.items.length,2);assert.deepEqual(report.items.map(item=>item.quantity),[75,100]);assert.equal(report.total.calories,253.8);assert.equal(report.weight,225);assert.equal(report.volume,null);
 });
-for(const dialect of ['sqlite','postgres'])test(`${dialect}: one two-view analysis preserves all food names and portion nutrients through save and reload`,{skip:dialect==='postgres'&&!process.env.TEST_DATABASE_URL},async t=>{
+for(const dialect of ['sqlite','postgres'])for(const viewCount of [1,2])test(`${dialect}: ${viewCount}-photo analysis preserves all food names and portion nutrients through save and reload`,{skip:dialect==='postgres'&&!process.env.TEST_DATABASE_URL},async t=>{
   const db=dialect==='postgres'?await openPostgresDatabase(process.env.TEST_DATABASE_URL):openDatabase(':memory:'),userId=randomUUID(),id=randomUUID(),now=new Date().toISOString();
   t.after(async()=>{await db.prepare('DELETE FROM meals WHERE user_id=?').bind(userId).run();await db.prepare('DELETE FROM users WHERE id=?').bind(userId).run();await db.close();});
   await db.prepare('INSERT INTO users(id,google_sub,email,name,created_at,updated_at) VALUES(?,?,?,?,?,?)').bind(userId,userId,'foods@example.test','Foods test',now,now).run();
   const image='data:image/jpeg;base64,'+Buffer.concat([Buffer.from([255,216,255,224]),Buffer.alloc(200)]).toString('base64');let calls=0;
   const result=await analyze(image,'',{OPENCODE_API_KEY:'test'},async(url,options)=>{
     calls++;const request=JSON.parse(options.body),prompt=request.systemInstruction.parts[0].text;
-    assert.ok(prompt.includes('List EVERY'));assert.ok(prompt.includes('Several foods on one plate are one meal'));assert.ok(prompt.includes('match every food to both images'));
-    assert.equal(request.contents[0].parts.filter(part=>part.inlineData).length,2);
+    assert.ok(prompt.includes('List EVERY'));assert.ok(prompt.includes('Several foods on one plate are one meal'));assert.ok(prompt.includes('match every food to the supplied images'));
+    assert.equal(request.contents[0].parts.filter(part=>part.inlineData).length,viewCount);
     return Response.json(aiPayloadFor(multiFoodAnalysis(),options));
-  },{secondImage});assert.equal(calls,1);assert.equal(result.analysis.ingredients.length,4);
+  },{secondImage:viewCount===2?secondImage:undefined});assert.equal(calls,1);assert.equal(result.analysis.ingredients.length,4);
   await db.prepare('INSERT INTO meals(id,user_id,day,time,type,status,analysis,original_analysis,photo,public_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').bind(id,userId,'2026-11-09','12:00','Ebéd','draft',JSON.stringify(result.analysis),JSON.stringify(result.analysis),'{}','yumetrics/'+id,now,now).run();
   const call=(path,method='GET',body)=>api(new Request('http://localhost'+path,{method,headers:{'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})}),{db,userId,env:{}});
   let {meal}=await(await call('/api/meals/'+id)).json();assert.equal(meal.report.items.length,4);

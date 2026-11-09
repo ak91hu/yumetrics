@@ -58,9 +58,9 @@ test('rejects disguised uploads and excessive input size', () => {
   assert.equal(validateImage(image).mime, 'image/jpeg');
   for (const value of ['data:image/svg+xml;base64,PHN2Zz4=', 'data:image/jpeg;base64,' + Buffer.alloc(200).toString('base64'), 'https://example.com/a.jpg', 'x'.repeat(5_600_001)]) assert.throws(() => validateImage(value), AppError);
 });
-test('missing, duplicated and invalid second photos fail before storage, rate limits or provider calls', async t => {
+test('duplicated and invalid optional second photos fail before storage, rate limits or provider calls', async t => {
   const f = fixture(); t.after(() => f.db.close());
-  for (const second of [undefined, null, image, 'not-an-image']) {
+  for (const second of [image, 'not-an-image', '']) {
     const result = await f.invoke('/api/analyze', 'POST', { ...f.input(), secondImage: second });
     assert.equal(result.status, 400);
     await assert.rejects(analyze(image, '', env, f.fetcher, { secondImage: second }), error => error.status === 400);
@@ -68,6 +68,32 @@ test('missing, duplicated and invalid second photos fail before storage, rate li
   assert.equal(f.calls.length, 0);
   assert.equal((await f.db.prepare('SELECT COUNT(*) AS n FROM meals').bind().first()).n, 0);
   assert.equal((await f.db.prepare('SELECT COUNT(*) AS n FROM analysis_attempts').bind().first()).n, 0);
+});
+
+test('one photo completes analysis and saving without claiming that a pair was checked', async t => {
+  for (const secondImage of [undefined, null]) {
+    const inventory = visualInventory(analysis); inventory.viewCheck = { sameMeal: false, differentAngles: false, bothUsable: false, issues: [] };
+    const f = fixture({ inventory }); t.after(() => f.db.close());
+    const input = { ...f.input(), secondImage }, result = await f.create(input);
+    assert.equal(result.body.meal.status, 'draft');
+    assert.equal(result.body.meal.context.additionalView, false);
+    assert.equal(result.body.meal.photo.additional, undefined);
+    assert.deepEqual(result.body.meal.analysis.viewCheck, inventory.viewCheck);
+    assert.ok(result.body.meal.analysis.assumptions.includes('egy fotó alapján'));
+    const ai = f.calls.filter(call => call.url.startsWith('https://opencode.ai/'));
+    assert.equal(ai.length, 1); const body = JSON.parse(ai[0].options.body);
+    assert.equal(body.contents[0].parts.filter(part => part.inlineData).length, 1);
+    assert.equal(JSON.parse(body.contents[0].parts[0].text).imageCount, 1);
+    assert.equal(body.contents[0].parts.some(part => part.text === 'IMAGE 2'), false);
+    assert.equal(f.calls.filter(call => call.url.endsWith('/upload')).length, 1);
+    assert.equal((await f.invoke(`/api/meals/${input.id}`, 'PATCH', result.body.meal)).status, 200);
+    assert.equal((await f.invoke(`/api/meals/${input.id}`)).body.meal.status, 'saved');
+  }
+  const long = visualInventory(analysis); long.assumptions = 'x'.repeat(2999);
+  const retained = await analyze(image, '', env, mockProviders({ inventory: long }).fetcher);
+  assert.equal(retained.analysis.assumptions, long.assumptions, 'The optional reminder must not overflow or truncate valid assumptions');
+  const inventory = visualInventory(analysis); inventory.imageQuality.level = 'poor';
+  await assert.rejects(analyze(image, '', env, mockProviders({ inventory }).fetcher), error => error.status === 422);
 });
 test('pair checks reject mismatched meals, repeated angles, unusable views and incomplete assessments', async () => {
   for (const [field, status] of [['sameMeal', 422], ['differentAngles', 422], ['bothUsable', 422], ['missing', 502]]) {

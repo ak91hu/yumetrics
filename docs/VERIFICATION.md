@@ -1,5 +1,13 @@
 # Ellenőrzés
 
+## Egy kötelező és egy opcionális fotó, v15, 2026-11-09
+
+Egy fotóval is elindítható az elemzés. A feltöltő, a kezdőlap és az útmutató magyarul és angolul is jelzi, hogy a második nézet vagy az olvasható címke opcionális, és segíthet a pontosításban. A kliens és az API közös validálása elfogadja a hiányzó második képet; a hibás vagy azonos második kép továbbra sem jut tárolásig vagy AI-hívásig. Egy képhez egy képrész kerül a szolgáltatói kérésbe, és nincs képpár-ellenőrzés; két képnél az eredeti ellenőrzések megmaradnak.
+
+**137/137 Node-teszt sikeres**, PostgreSQL-lel, kihagyás nélkül. Az egy- és kétképes tápértékek mentése/visszaolvasása mindkét adatbázison ellenőrzött. A magyar és angol teljes böngészős próba egyetlen kép feltöltését, egyszeri AI-kérését, mentését, újratöltését és törlését is végigviszi; a kétképes folyamat és a második kép eltávolítása is megmaradt a tesztben.
+
+Egy valós, Gemini 3.8 Flash szolgáltatói működési próba is sikeres volt egy Nutrition5k-almaképpel: egy kérés, 0,0153795 USD. A válasz nem állít képpár-ellenőrzést. Ez működési ellenőrzés, nem új egy- és kétképes pontosság-összehasonlítás. A korábbi v14-es mérési adatok a saját kétképes módszerükre vonatkoznak.
+
 ## Mért AI-pontosság és költség, 2026-11-09
 
 A v14 alapmodellje Gemini 3.8 Flash. A végső, négy étkezéses páros összehasonlításban a költség 24,4%-kal csökkent; a tömeg nélküli kcal-hiba 96,36-ról 88,48-ra mérséklődött, ismert össztömegnél lényegében azonos maradt: 52,07 és 52,12 kcal. A két új ellenőrző eset részmutatói között romló is van. A 44 új, valódi szolgáltatói kérés teljes költsége 1,1475516 USD; négy korábbi alapválaszt új hívás nélkül használtunk fel. A sikertelen és elvetett változatok is megmaradtak a [mérési naplóban](AI-EFFICIENCY-2026-11-09.json); módszer és korlátok: [AI-EFFICIENCY-2026-11-09.md](AI-EFFICIENCY-2026-11-09.md). A kis minta nem általános pontossági garancia.

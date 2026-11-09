@@ -35,11 +35,13 @@ const fetcher = async (url, options) => {
   if (url.startsWith('https://opencode.ai/')) {
     aiRequests++;
     const body = JSON.parse(options.body), input = JSON.parse(body.contents[0].parts.find(part => part.text).text);
-    assert.equal(body.contents[0].parts.filter(part => part.inlineData).length, 2);
+    assert.ok([1,2].includes(input.imageCount));
+    assert.equal(body.contents[0].parts.filter(part => part.inlineData).length, input.imageCount);
     assert.equal(input.context.language, language);
     if (failFirstAnalysis) { failFirstAnalysis = false; return Response.json({error:'Simulated recoverable failure'},{status:503}); }
     const analysis = { name: expected('Tesztétkezés', 'Test meal'), confidence: 'medium', assumptions: expected('Automatizált teszt: nem valódi AI-elemzés.', 'Automated test, not a real AI analysis.'), ingredients: [{ ...ingredient, name: expected(ingredient.name, 'Test avocado') }] };
     const inventory = visualInventory(analysis);
+    if (input.imageCount === 1) inventory.viewCheck = {sameMeal:false,differentAngles:false,bothUsable:false,issues:[]};
     if (language === 'en') {
       assert.ok(body.systemInstruction.parts[0].text.includes('OUTPUT LANGUAGE: English'));
       Object.assign(inventory, { summary: 'Food with separately estimated ingredients. Measured quantities can improve the estimate.', observations: ['The side dish and main ingredient can be assessed separately.'], questions: ['How much oil was added?'], imageQuality: { level: 'limited', issues: ['A photo cannot measure exact weight.'] } });
@@ -265,9 +267,8 @@ try {
   await send('DOM.setFileInputFiles',{nodeId:cameraInput.nodeId,files:[photoFile]});
   await waitFor("!document.querySelector('#analyze-button').disabled");
   const beforePair = providerCalls;
-  await evaluate("document.querySelector('#upload-form').requestSubmit()");
-  assert.ok(await evaluate(`!document.querySelector('#upload-error').hidden && document.querySelector('#upload-error').textContent.includes(${JSON.stringify(expected('Két fotó szükséges', 'Two photos are required'))})`));
-  assert.equal(providerCalls, beforePair, 'A single photo cannot start provider work');
+  assert.ok(await evaluate(`document.querySelector('.second-photo-picker').textContent.includes(${JSON.stringify(expected('nem kötelező','optional'))})`));
+  assert.ok(await evaluate("document.querySelector('#upload-form').checkValidity()"),'One photo satisfies the upload form');
   await evaluate("document.querySelector('#context-panel').open = true; document.querySelector('#context-weight').value='100'");
   const angleInput = await send('DOM.querySelector', { nodeId: doc.root.nodeId, selector: '#second-photo-input' });
   await send('DOM.setFileInputFiles', { nodeId: angleInput.nodeId, files: [photoFile] });
@@ -515,6 +516,24 @@ try {
   assert.equal((await db.prepare('SELECT calorie_goal FROM users').bind().first()).calorie_goal,2300);
   await evaluate("document.querySelector('.mobile-nav [data-action=settings]').click()");
   await waitFor("document.querySelector('#profile-summary').getAttribute('aria-busy') === 'false'");
+  // One image is enough for upload, analysis, save, reload and deletion.
+  await evaluate("document.querySelector('.mobile-nav [data-action=upload]').click()");
+  const singleDoc=await send('DOM.getDocument'),singleInput=await send('DOM.querySelector',{nodeId:singleDoc.root.nodeId,selector:'#photo-input'});
+  await send('DOM.setFileInputFiles',{nodeId:singleInput.nodeId,files:[photoFile]});
+  await waitFor("!document.querySelector('#photo-preview').hidden && !document.querySelector('#analyze-button').disabled");
+  const singleCalls=aiRequests;
+  await evaluate("document.querySelector('#upload-form').requestSubmit()");
+  await waitFor("document.querySelector('#detail-calories')?.textContent==='160'");
+  assert.equal(aiRequests,singleCalls+1);assert.ok(await evaluate("!document.querySelector('.additional-view')"));
+  const single=await db.prepare('SELECT id,photo,analysis_context,analysis FROM meals').bind().first();
+  assert.equal(JSON.parse(single.photo).additional,undefined);assert.equal(JSON.parse(single.analysis_context).additionalView,false);
+  assert.equal(JSON.parse(single.analysis).viewCheck.differentAngles,false);
+  await auditEnglish();await evaluate("document.querySelector('#detail-form').requestSubmit()");
+  await waitFor("!document.querySelector('#meal-dialog').open && document.querySelector('#meal-count').textContent==='1'");
+  await send('Page.reload');await waitFor("document.querySelector('#meal-count')?.textContent==='1'");
+  await evaluate("document.querySelector('#meal-list [data-meal]').click();document.querySelector('#delete-meal').click();document.querySelector('#confirm-delete').click()");
+  await waitFor("document.querySelector('#meal-count').textContent==='0' && !document.querySelector('#meal-dialog').open");
+  await waitFor("document.querySelector('#draft-list').children.length===0");
   const label = normalizeLabel(productLabelFixture()), packagedId = randomUUID(), owner = (await db.prepare('SELECT id FROM users').bind().first()).id;
   const packaged = validateAnalysis({ name: 'Test drink', confidence: 'high', ingredients: [{ name: label.productName, grams: 330, gramsMin: 330, gramsMax: 330, quantityUnit: 'ml', productLabel: label, sourceType: 'label', weightBasis: 'label', foodState: 'as_sold', ...labelNutrients(label) }] });
   storedPhotos.set('yumetrics/'+packagedId,'data:image/png;base64,'+readFileSync('public/badges/first.png').toString('base64'));
