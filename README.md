@@ -4,6 +4,8 @@
 
 **[Élő alkalmazás](https://yumetrics.app)** · **[Magyar útmutató](https://yumetrics.app/utmutato)** · **[English guide](https://yumetrics.app/guide)**
 
+Frissítve: 2026. november 9. · AI-módszerváltozat: `food-v13-verified-views`.
+
 Magyar és angol nyelvű étkezési napló Google-belépéssel, fotó alapján becsült tápértékekkel és javítható összetevőkkel. Az első AI-becslés a képen látható **teljes ehető étel és ital 100%-ából** indul ki; a naplóba mentendő mennyiséget a piszkozatban ellenőrizheted és javíthatod. A fotós elemzés nem közvetlen kalóriamérés: a felismerést, a mennyiségi becslést, a tápértékforrást és a számítást külön kezeljük.
 
 ## A számítás módszere és az AI szerepe
@@ -42,7 +44,9 @@ Az AI azt jelzi, mennyire biztos a saját becslésében; ez nem méréssel igazo
 
 Részletes módszertan: [PHOTO-ASSESSMENT.md](docs/PHOTO-ASSESSMENT.md). Források és kutatási döntések: [RESEARCH.md](docs/RESEARCH.md), [REFERENCE-CATALOG.md](docs/REFERENCE-CATALOG.md). A pontosságmérés eszköze: [BENCHMARK.md](docs/BENCHMARK.md).
 
-Az első valódi, négy lemért Nutrition5k-étkezést vizsgáló AI-ellenőrzés eredményei és korlátai: [2026. november 9-i jelentés](docs/AI-VALIDATION-2026-11-09.md). A képpár-ellenőrzés és az ételnevek javultak; az összetevők azonossága és tömegaránya továbbra is tévedhet.
+Az első valódi, négy lemért Nutrition5k-étkezést vizsgáló AI-ellenőrzésben összesen 20 szolgáltatói hívás történt, a régi és az új változat összehasonlításával és négy ellenőrző bemenettel. Az ismert össztömegű négy eset átlagos abszolút kalóriahibája 86,1-ről 76,5 kcal-ra csökkent; tömeg nélkül az elfogadott képpárok száma 2/4-ről 4/4-re nőtt. Ez kis, a javításokhoz is felhasznált diagnosztikai minta, nem független vakteszt vagy magyar étkezésekre igazolt pontosság. A modell egy ételt továbbra is félreismert, és a hús tömegarányát is alábecsülte.
+
+A teljes módszer, a sikertelen esetek, a hibamutatók és a 0,59052 USD szolgáltatói költség: [2026. november 9-i jelentés](docs/AI-VALIDATION-2026-11-09.md), [mérési napló](docs/AI-VALIDATION-2026-11-09.json). Az értékelő az elutasított hívások használati adatait is megőrzi, és a rostot tartalmazó, illetve rost nélküli szénhidrátértékeket azonos alapra hozza. A képpár-ellenőrzés perspektívát és takarást vizsgál, az ételnevekhez külön megfogalmazási szabály tartozik; ezek sem garantálják a helyes felismerést minden képen.
 
 ## Csomagolt termékek és italok
 
@@ -86,9 +90,9 @@ A titkok kizárólag Northflank futtatási változóként kerülnek az alkalmaz�
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Képtárolás |
 | `USDA_API_KEY` | FoodData Central keresés a beépített referenciákon túl |
 
-A normál Cloudinary-képlink a hivatkozás birtokában megnyitható. A Google-belépés a naplót és az alkalmazás API-ját védi. A képek feltöltéskor újrarajzolt, átméretezett JPEG-ek; eredeti EXIF/GPS-adatot nem archiválunk.
+A fotók a Cloudinaryban hitelesítést igénylő tárolást használnak. A böngésző a saját alkalmazás `/api/meals/:id/photo/primary` és `/api/meals/:id/photo/additional` útvonalán kéri le őket; a szerver minden kérésnél ellenőrzi a tulajdonosi vagy adminjogot. Közvetlen szolgáltatói képlinket az API nem ad a felhasználónak. A fotók a naplóban csak a tulajdonosuknak és az alkalmazás tulajdonosának érhetők el, bejelentkezés után. A képek feltöltéskor újrarajzolt, átméretezett JPEG-ek; eredeti EXIF/GPS-adatot nem archiválunk.
 
-Kulcsok és OAuth-beállítás: [API-KEYS.md](docs/API-KEYS.md). Telepítés, heti mentés, helyreállítás és adatmodell: [NORTHFLANK.md](docs/NORTHFLANK.md).
+Kulcsok és OAuth-beállítás: [API-KEYS.md](docs/API-KEYS.md). Telepítés, mentési javaslatok, helyreállítás és adatmodell: [NORTHFLANK.md](docs/NORTHFLANK.md).
 
 ## Fejlesztés és ellenőrzés
 
@@ -98,7 +102,7 @@ npm test
 npm run build
 ```
 
-A PostgreSQL-integrációs tesztekhez külön tesztadatbázis kapcsolatát kell megadni a `TEST_DATABASE_URL` folyamatváltozóban; enélkül ezek kimaradnak. A böngészős ellenőrzés `node scripts/browser-check.mjs` paranccsal fut, headless Chrome-ban. A `TEST_LANGUAGE=hu|en` és `TEST_DEVICE=mobile|desktop` választja ki a nyelvet és a kezelőfelületet.
+A PostgreSQL-integrációs tesztekhez külön tesztadatbázis kapcsolatát kell megadni a `TEST_DATABASE_URL` folyamatváltozóban. Az admin PostgreSQL-próbáihoz egy másik, `_admin_test` végű tesztadatbázis kapcsolata szükséges `TEST_ADMIN_DATABASE_URL` néven. A megfelelő változó nélkül az adott PostgreSQL-próbák kimaradnak. A tesztekhez ne használj éles adatbázist. A böngészős ellenőrzés `node scripts/browser-check.mjs` paranccsal fut, headless Chrome-ban. A `TEST_LANGUAGE=hu|en` és `TEST_DEVICE=mobile|desktop` választja ki a nyelvet és a kezelőfelületet.
 
 A tesztek a teljes adagot, a receptszámítást, a tápértékforrások kezelését, a Google-belépési határokat, a felhasználók elkülönítését, az adatmegőrzést, a profil statisztikáit és a mobilos/asztali működést ellenőrzik. Részletes bizonyítékok és a nem ellenőrzött területek: [VERIFICATION.md](docs/VERIFICATION.md).
 
@@ -115,3 +119,11 @@ A fotók védett képtári tárolást és munkamenethez kötött kiszolgálást 
 ## Ételnevek és ételenkénti tápértékek
 
 Az elemzés minden felismert ételt, italt, köretet és szószt külön névvel sorol fel. Többféle étel ugyanazon a képen közös étkezéshez tartozhat; a két nézetben ismétlődő elemeket egyszer számoljuk. Az étkezés részleteiben a megadott adagra számított energia, fehérje, szénhidrát, zsír, rost, cukor, nátrium és telített zsír ételenként és összesítve is látható. A táblázat a mennyiség vagy a tápérték javításakor frissül, a régebbi mentett bejegyzésekből is elkészül, és az adminban is megtekinthető. Az ismeretlen adat „—” marad; a grammos tömeget és a milliliteres térfogatot külön mutatjuk. Saját receptnél az adagra jutó alapanyagok szerepelnek, a kész étel újbóli hozzáadása nélkül. A fotós felismerés továbbra is becslés, ezért az eredményt mentés előtt ellenőrizni kell.
+
+## Rövid súgók a felületen
+
+A kérdőjeles gombok a második fotóhoz, a lemért mennyiségekhez, az adagra számított tápértékekhez, a szerkesztéshez, a kalóriatartományhoz és az AI saját bizonyossági jelzéséhez adnak magyarázatot. Az admin költségkártyáján külön súgó tisztázza a becslés és a hiányzó adatok jelentését. A lényeges kitöltési útmutatók a súgó megnyitása nélkül is olvashatók.
+
+A súgó érintéssel, kattintással, illetve a gombra lépve Enterrel vagy szóközzel nyitható meg; Escape-pel, a gomb újbóli megnyomásával vagy a buborékon kívülre kattintva bezárható. A buborék a képernyőn belül marad, görgetéskor bezárul. A napló súgói követik a magyar vagy angol nyelvválasztást; az admin magyar marad. Megnyitásuk nem módosítja a kitöltött mezőket és nem indít AI-kérést.
+
+A forrástár két README-je: ez az alkalmazásleírás és a [GeoIP-adatbázis dokumentációja](lib/geoip/README.md). A korábbi vizsgálatok dátumozott dokumentumai a saját ellenőrzésük eredményét őrzik; az aktuális állapotot a [VERIFICATION.md](docs/VERIFICATION.md) legfrissebb bejegyzése írja le.

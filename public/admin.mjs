@@ -1,4 +1,5 @@
 import { dailySeries, lineChart, distributionChart } from '/admin-charts.mjs';
+import { helpMarkup } from '/context-help.mjs';
 const $ = selector => document.querySelector(selector);
 const escape = value => String(value ?? '—').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
 const number = value => value == null ? '—' : new Intl.NumberFormat('hu-HU', { maximumFractionDigits: 1 }).format(Number(value));
@@ -24,7 +25,7 @@ async function request(path, options={}) {
 }
 const money = value => value == null ? 'Nem ismert' : Number(value)>0 && Number(value)<.000001 ? '<0,000001 USD' : new Intl.NumberFormat('hu-HU',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:6}).format(Number(value));
 const periodFilter = (id,days,extra='') => `<form class="admin-toolbar" id="${id}"><label>Időszak<select name="days">${[['7','Elmúlt 7 nap'],['30','Elmúlt 30 nap'],['365','Elmúlt 365 nap']].map(([v,l])=>option(v,l,String(days))).join('')}</select></label>${extra}</form>`;
-const costMetric = (cost,requests,priced) => `<article class="admin-card cost-card"><span>Becsült AI-költség</span><strong>${escape(money(Number(requests)===0?0:cost))}</strong><span>${number(priced || 0)} / ${number(requests || 0)} hívás költségét tudjuk kiszámítani</span></article>`;
+const costMetric = (cost,requests,priced) => `<article class="admin-card cost-card"><span class="help-heading">Becsült AI-költség ${helpMarkup('ai-cost-help','AI-költség','Az összeg a rögzített használatból és díjszabásból számított becslés, USD-ben. A sikertelen hívás is lehet fizetős. A hiányzó költségadat nem nulla költség; az összegből az ilyen hívások kimaradnak. Az adókat és az átváltás költségét nem tartalmazza.')}</span><strong>${escape(money(Number(requests)===0?0:cost))}</strong><span>${number(priced || 0)} / ${number(requests || 0)} hívás költségét tudjuk kiszámítani</span></article>`;
 async function overview(params) {
   const days=Number(params.get('days')||30),data=await request('/overview?days='+days),{counts:c,activity:a,cost}=data;
   return `${periodFilter('period-filter',days)}<p class="admin-note period-caption">${escape(data.start.slice(0,10))} – ${escape(data.today)} · A napi bontáshoz UTC-időt használunk.</p>

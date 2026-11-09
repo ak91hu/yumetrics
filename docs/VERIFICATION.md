@@ -1,5 +1,13 @@
 # Ellenőrzés
 
+## README-k és felületi súgók, 2026-11-09
+
+A forrástár mindkét README-je frissült: az alkalmazásleírás az aktuális AI-módszert, a mérés korlátait, a védett fotóelérést és a két külön PostgreSQL-tesztadatbázist ismerteti; a GeoIP-leírás a kizárólag Magyarországra vonatkozó magyar alapnyelvet, a választási sorrendet és a kézi adatbázis-frissítést rögzíti. A helyi hivatkozások érvényesek, a csomagolt országadatbázis ellenőrzőösszege megegyezik a dokumentálttal. A feltöltőablak elavult, nyilvános fotóelérésre utaló szövegét is javítottuk.
+
+Hét rövid, megnyitható súgó segíti a fotózást, a mért mennyiségek megadását, az adagra és 100 g/100 ml-re megadott értékek megkülönböztetését, a kalóriatartomány és az AI-bizonyosság értelmezését, valamint az admin költségeinek áttekintését. A naplóban mindkét nyelven, az adminban magyarul jelennek meg. A lényeges kitöltési tanácsok a buborékok megnyitása nélkül is olvashatók.
+
+A teljes Node-tesztsor **114/114 sikeres**, valódi helyi PostgreSQL-lel, kihagyás nélkül; a build is sikeres. A magyar/mobil és angol/asztali teljes Chrome-folyamat az új súgókat öt szélességen ellenőrzi: Enter, szóköz, Escape, érintés, buborékon kívüli kattintás, átméretezéskor történő bezárás, képernyőn belüli elhelyezés, fókuszmegőrzés, változatlan űrlapadatok és új AI-hívás hiánya. A magyar és angol mobilos súgóképeket vizuálisan is átnéztük. Új fizetős AI-hívás, Firefox-, Safari- és képernyőolvasós próba nem történt. A súgók a böngésző beépített Popover API-jára támaszkodnak, új függőség nélkül.
+
 ## Valódi AI-ellenőrzés és javítások, 2026-11-09
 
 Húsz tényleges, számlázott Gemini-hívás történt: négy Nutrition5k-étkezés a régi és az új prompttal, tömeg nélkül és ismert össztömeggel, valamint négy külön ellenőrző próba. A módszer, az előtte–utána eredmények, a fennmaradó félreismerés, az összetevőarány hibája és a 0,59052 USD szolgáltatói költség: [mérési jelentés](AI-VALIDATION-2026-11-09.md). Ez kis diagnosztikai minta, nincs belőle általános pontossági százalék vagy magyar ételekre igazolt eredmény.

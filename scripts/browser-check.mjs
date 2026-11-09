@@ -114,6 +114,41 @@ try {
     writeFileSync(resolve(out, name), Buffer.from(result.data, 'base64'));
   }
   async function viewport(width, height, mobile) { await send('Emulation.setDeviceMetricsOverride', { width, height, screenWidth: width, screenHeight: height, deviceScaleFactor: 1, mobile }); await send('Emulation.setTouchEmulationEnabled', { enabled: mobile }); }
+  async function checkHelp(id, english = language === 'en') {
+    const aiBefore = aiRequests, values = "JSON.stringify([...document.querySelectorAll('input,textarea,select')].map(input=>[input.name,input.id,input.value,input.checked]))";
+    const before = await evaluate(values);
+    for (const width of [320,390,768,1024,1440]) {
+      await viewport(width,1000,width<768);
+      await evaluate(`{ const button=document.querySelector('[popovertarget="${id}"]'); button.scrollIntoView({block:'center'}); button.focus(); }`);
+      await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
+      await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',text:'\r',unmodifiedText:'\r',windowsVirtualKeyCode:13});
+      await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
+      await waitFor(`document.querySelector('#${id}').matches(':popover-open')`);
+      assert.ok(await evaluate(`{const help=document.querySelector('#${id}'),r=help.getBoundingClientRect();r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight}`), 'Help fits '+width);
+      assert.ok(await evaluate(`document.querySelector('[popovertarget="${id}"]').getAttribute('aria-label').startsWith(${JSON.stringify(english?'Help:':'Súgó:')})`));
+      if(width===390&&['weight-help','energy-range-help','ai-cost-help'].includes(id))await screenshot(`context-${id}-mobile.png`,false);
+      await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+      await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+      assert.ok(await evaluate(`!document.querySelector('#${id}').matches(':popover-open')`));
+      assert.ok(await evaluate(`document.activeElement.matches('[popovertarget="${id}"]')`),'Escape keeps keyboard focus on help');
+    }
+    await viewport(390,844,true);
+    await evaluate(`document.querySelector('[popovertarget="${id}"]').scrollIntoView({block:'center'})`);
+    await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
+    await evaluate(`document.querySelector('[popovertarget="${id}"]').focus()`);
+    await send('Input.dispatchKeyEvent',{type:'keyDown',key:' ',code:'Space',text:' ',windowsVirtualKeyCode:32});
+    await send('Input.dispatchKeyEvent',{type:'keyUp',key:' ',code:'Space',windowsVirtualKeyCode:32});
+    await waitFor(`document.querySelector('#${id}').matches(':popover-open')`);
+    await viewport(391,844,true);
+    await waitFor(`!document.querySelector('#${id}').matches(':popover-open')`);
+    await viewport(390,844,true);
+    const point=await evaluate(`{const r=document.querySelector('[popovertarget="${id}"]').getBoundingClientRect();({x:r.x+r.width/2,y:r.y+r.height/2})}`);
+    await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]});await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    await waitFor(`document.querySelector('#${id}').matches(':popover-open')`);
+    await send('Input.dispatchMouseEvent',{type:'mousePressed',x:1,y:1,button:'left',clickCount:1});await send('Input.dispatchMouseEvent',{type:'mouseReleased',x:1,y:1,button:'left',clickCount:1});
+    assert.ok(await evaluate(`!document.querySelector('#${id}').matches(':popover-open')`),'Click outside dismisses help');
+    assert.equal(await evaluate(values),before,'Help keeps entered values');assert.equal(aiRequests,aiBefore,'Help makes no AI request');
+  }
   async function switchLanguage(next, scope = '') {
     await evaluate(`{ const select = document.querySelector(${JSON.stringify(scope + ' [data-language-switch]')}); select.value = ${JSON.stringify(next)}; select.dispatchEvent(new Event('change',{bubbles:true})); }`);
     assert.equal(await evaluate('document.documentElement.lang'),next);
@@ -232,6 +267,7 @@ try {
   await switchLanguage(language === 'en' ? 'hu' : 'en','#upload-dialog'); await switchLanguage(language,'#upload-dialog');
   assert.equal(await evaluate("JSON.stringify({photo:document.querySelector('#photo-preview').src,second:document.querySelector('#second-photo-preview').src,weight:document.querySelector('#context-weight').value,notes:document.querySelector('#preparation-notes').value,profile:document.querySelector('#dish-profile').value,type:document.querySelector('#upload-type').value})"),uploadBefore);
   await auditEnglish();
+  await checkHelp('photo-help');await checkHelp('weight-help');
   await evaluate("document.querySelector('#upload-form').requestSubmit()");
   await waitFor("!!document.querySelector('#retry-meal')");
   assert.equal(aiRequests, 1, 'A failed analysis sends exactly one AI request');
@@ -241,6 +277,7 @@ try {
   assert.equal(aiRequests, 2, 'The explicit retry sends one further AI request');
   assert.equal(await evaluate("document.querySelector('#detail-calories').textContent"), '160');
   assert.ok(await evaluate("document.querySelector('.analysis-report') && document.querySelector('.additional-view')"));
+  for(const id of ['confidence-help','edit-nutrients-help','portion-values-help','energy-range-help'])await checkHelp(id);
   assert.ok(await evaluate("![...document.querySelectorAll('.report-disclosure')].some(element => element.open) && !document.querySelector('[name=notes]').closest('details').open"), 'Optional review questions and notes start collapsed');
   await evaluate("document.querySelector('#add-ingredient').click()");
   assert.equal(await evaluate("document.querySelectorAll('[data-ingredient]').length"),2);
@@ -514,6 +551,7 @@ try {
       await evaluate("document.querySelector('#close-detail').click()");
     }
     if(tab==='costs'){
+      await checkHelp('ai-cost-help',false);
       assert.ok(await evaluate("document.querySelector('#admin-view').textContent.includes('Becsült AI-költség') && document.querySelectorAll('.admin-chart svg').length === 1"));
       await evaluate("document.querySelector('#cost-period [name=days]').value='7';document.querySelector('#cost-period [name=days]').dispatchEvent(new Event('change',{bubbles:true}))");
       await waitFor("location.hash.includes('days=7') && document.querySelector('#admin-view').getAttribute('aria-busy') === 'false'");
@@ -565,6 +603,8 @@ try {
   result.checks.push('first-visit IP language defaults for Hungarian IPv4/IPv6 and foreign IPv4 override browser language; explicit language survives navigation and sign-out');
   result.checks.push('protected photos load through the application in the diary and admin; browser never requests provider photo URLs');
   result.checks.push('four named foods with separate portion nutrients and total; mixed g/ml and missing values; live edits, scroll retention, escaped names, save/reload and untruncated diary names');
+  result.checks.push('contextual help in both languages, keyboard Enter/Escape and touch; viewport bounds at five widths, outside dismissal, input preservation and no AI calls');
+  result.screenshots.push('context-weight-help-mobile.png','context-energy-range-help-mobile.png','context-ai-cost-help-mobile.png');
   result.screenshots.push('food-breakdown-desktop.png','food-breakdown-mobile.png');
   result.screenshots.push('admin-costs-desktop.png','admin-costs-mobile.png','admin-logs-desktop.png','admin-logs-mobile.png');
   result.screenshots.push('badges-mobile.png','admin-overview-desktop.png','admin-overview-mobile.png','admin-settings-desktop.png','admin-settings-mobile.png','admin-audit-desktop.png');
