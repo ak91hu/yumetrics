@@ -1,5 +1,11 @@
 # Ellenőrzés
 
+## Többféle étel neve és adagra számított tápértéke, 2026-11-09
+
+A teljes Node-tesztsor **113/113 sikeres**, valódi helyi PostgreSQL-lel, kihagyás nélkül. A négy új próba négy külön étel és ital nevét, egyedi tápértékét és összegét, a g/ml egységek elkülönítését, a hiányzó nátrium megőrzését, a receptből számolt alapanyagmennyiségeket, valamint a név és a mennyiség módosításának mentését és visszaolvasását ellenőrzi SQLite-on és PostgreSQL-en. Az eredeti AI-válasz külön megmarad. Az egyetlen kétképes kérés változatlan; a `food-v12-every-food` utasítás minden étel név szerinti felsorolását kéri, és külön rögzíti, hogy többféle étel egy képen nem jelent eltérő étkezéseket. A közös prompt 15 000 karakter alatt maradt, a referenciák és az elkészítési támpontok megőrzésével.
+
+A magyar/mobil és angol/asztali teljes Chrome-próba is sikeres, öt képernyőszélességen. Ellenőrzött a négy név megjelenítése, az ételenkénti és teljes tápérték, az ismeretlen adat jelölése, a mennyiség javításakor frissülő érték, a táblázat görgetési helyének megőrzése, a biztonságosan megjelenített név és a mentés/újratöltés utáni eredmény. A név, a mennyiség és az energia mobilon oldalirányú görgetés nélkül látható; a további tápanyagokhoz a táblázat görgethető. Képek: `food-breakdown-desktop.png`, `food-breakdown-mobile.png`, vizuálisan is ellenőrizve. Az admin részleteiben is látható a bontás és az összesítés. Új fizetős AI-próba és valódi, lemért többfogásos étkezés felismerési pontosságmérése nem történt; a szolgáltatói válaszokat a tesztek helyettesítik.
+
 ## Biztonsági javítások, 2026-11-09
 
 A teljes Node-tesztsor **109/109 sikeres**, valódi helyi PostgreSQL-lel, kihagyás nélkül. A magyar/mobil és angol/asztali Chrome-folyamat öt szélességen ellenőrzi a naplót és az admint; a védett képek az alkalmazáson keresztül betöltődnek, a böngésző közvetlen képtári kérést nem küld. A build sikeres. Valódi Cloudinary-próba igazolja az aláírás nélküli elutasítást, a szerveroldali képolvasást és a régi tárolási mód biztonságos áttérését; a tesztképet eltávolítottuk. Az ismert függőségi sérülékenységek száma az npm ellenőrzése szerint nulla. A javított hozzáférési és erőforrás-kezelési hibák, a tesztek és az audit korlátai: [biztonsági audit](SECURITY-AUDIT-2026-11-09.md).

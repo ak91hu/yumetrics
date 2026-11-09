@@ -5,7 +5,7 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import assert from 'node:assert/strict';
 import { createApp, openDatabase } from '../server.mjs';
-import { aiPayloadFor, visualInventory, testGoogleClient } from '../tests/fixtures.mjs';
+import { aiPayloadFor, visualInventory, testGoogleClient, multiFoodAnalysis } from '../tests/fixtures.mjs';
 import { startJobRunner } from '../lib/jobs.mjs';
 import { randomUUID } from 'node:crypto';
 import { validateAnalysis } from '../lib/domain.mjs';
@@ -428,6 +428,33 @@ try {
   Object.assign(rangeMeal.analysis.ingredients[0], { weightBasis: 'visual', gramsMin: 120, gramsMax: 200 });
   await evaluate(`(async()=>{const {ingredientMarkup,reportMarkup,refreshReport}=await import('/analysis-ui.mjs');const meal=${JSON.stringify(rangeMeal)};document.querySelector('#meal-detail').innerHTML=reportMarkup(meal)+'<div data-ingredient="0">'+ingredientMarkup(meal.analysis.ingredients[0],0)+'</div>';refreshReport(meal);const portion=document.querySelector('[data-portion-label="0"]');if(!portion.textContent.includes('ml'))throw Error('Liquid range lost its ml unit');const source=document.querySelector('.source-picker');source.open=true;refreshReport(meal);if(!source.isConnected||!source.open)throw Error('Source disclosure was replaced during refresh');meal.analysis.ingredients[0].weightBasis='measured_ingredient';refreshReport(meal);if(!portion.textContent.includes(${JSON.stringify(expected('térfogat', 'volume'))}))throw Error('Measured liquid is described as mass');})()`);
   await db.prepare('DELETE FROM meals WHERE id=?').bind(packagedId).run();
+  const multiId=randomUUID(),multi=validateAnalysis(multiFoodAnalysis(language)),multiTime=new Date().toISOString();
+  storedPhotos.set('yumetrics/'+multiId,'data:image/png;base64,'+readFileSync('public/badges/first.png').toString('base64'));
+  await db.prepare('INSERT INTO meals(id,user_id,day,time,type,status,analysis,original_analysis,photo,public_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').bind(multiId,owner,savedRecipe.day,'12:00','Ebéd','draft',JSON.stringify(multi),JSON.stringify(multi),JSON.stringify({publicId:'yumetrics/'+multiId,type:'authenticated',url:'https://res.cloudinary.com/test-cloud/image/authenticated/v1/yumetrics/'+multiId+'.jpg'}),'yumetrics/'+multiId,multiTime,multiTime).run();
+  await send('Page.reload');await waitFor("!!document.querySelector('#draft-list button') && document.querySelector('#loading').hidden");
+  await evaluate("document.querySelector('#draft-list button').click()");
+  assert.deepEqual(await evaluate("[...document.querySelectorAll('#food-breakdown tbody th')].map(node=>node.textContent.trim())"),multi.ingredients.map(item=>item.name));
+  assert.equal(await evaluate("document.querySelectorAll('#food-breakdown tbody tr').length"),4);
+  assert.equal(await evaluate("document.querySelector('#food-breakdown tbody tr [data-nutrient=calories]').textContent"),expected('247,5','247.5'));
+  assert.equal(await evaluate("document.querySelector('#food-breakdown tfoot [data-nutrient=calories]').textContent"),expected('642,5','642.5'));
+  assert.equal(await evaluate("document.querySelector('#food-breakdown tfoot [data-nutrient=sodium]').textContent"),'—');
+  assert.ok(await evaluate("document.querySelector('#food-breakdown tbody tr:last-child td').textContent.includes('250 ml')"));
+  for(const width of [320,390,768,1024,1440]){await viewport(width,900,width<768);assert.ok(await evaluate("document.querySelector('#meal-dialog').scrollWidth<=document.querySelector('#meal-dialog').clientWidth"),'Per-food table fits '+width);if(width<480)assert.ok(await evaluate("document.querySelector('#food-breakdown tbody tr [data-nutrient=calories]').getBoundingClientRect().right<=document.querySelector('#food-breakdown .food-table-scroll').getBoundingClientRect().right"),'Food calories visible without scrolling at '+width);}
+  await viewport(1440,1100,false);await evaluate("document.querySelector('#food-breakdown').scrollIntoView({block:'start'})");await screenshot('food-breakdown-desktop.png',false);
+  await viewport(390,844,true);await evaluate("document.querySelector('#food-breakdown').scrollIntoView({block:'start'})");await screenshot('food-breakdown-mobile.png',false);
+  await evaluate("document.querySelector('#food-breakdown .food-table-scroll').scrollLeft=200;document.querySelector('[name=i-0-grams]').value='200';document.querySelector('[name=i-0-grams]').dispatchEvent(new Event('input',{bubbles:true}))");
+  assert.equal(await evaluate("document.querySelector('#food-breakdown tbody tr [data-nutrient=calories]').textContent"),'330');
+  assert.equal(await evaluate("document.querySelector('#food-breakdown tfoot [data-nutrient=calories]').textContent"),'725');
+  assert.ok(await evaluate("document.querySelector('#food-breakdown .food-table-scroll').scrollLeft>0"));
+  const unsafeName='<img src=x onerror=alert(1)>';
+  await evaluate(`document.querySelector('[name=i-0-name]').value=${JSON.stringify(unsafeName)};document.querySelector('[name=i-0-name]').dispatchEvent(new Event('input',{bubbles:true}))`);
+  assert.equal(await evaluate("document.querySelector('#food-breakdown tbody th').textContent"),unsafeName);assert.equal(await evaluate("document.querySelectorAll('#food-breakdown img').length"),0);
+  await evaluate(`document.querySelector('[name=i-0-name]').value=${JSON.stringify(multi.ingredients[0].name)};document.querySelector('[name=i-0-name]').dispatchEvent(new Event('input',{bubbles:true}))`);
+  await auditEnglish();await evaluate("document.querySelector('#detail-form').requestSubmit()");await waitFor("!document.querySelector('#meal-dialog').open && document.querySelector('#meal-count').textContent==='1'");
+  assert.ok(await evaluate("getComputedStyle(document.querySelector('.meal-components')).whiteSpace==='normal'"));
+  await send('Page.reload');await waitFor("document.querySelector('#meal-count').textContent==='1'");await evaluate("document.querySelector('#meal-list [data-meal]').click()");
+  assert.equal(await evaluate("document.querySelector('#food-breakdown tfoot [data-nutrient=calories]').textContent"),'725');assert.equal(await evaluate("document.querySelectorAll('#food-breakdown tbody tr').length"),4);
+  await db.prepare('DELETE FROM meals WHERE id=?').bind(multiId).run();
   await send('Page.reload'); await waitFor("document.querySelector('#loading')?.hidden === true");
   await evaluate("document.querySelector('.mobile-nav [data-action=settings]').click()"); await waitFor("document.querySelector('#profile-summary').getAttribute('aria-busy') === 'false'");
   await evaluate("document.querySelector('#logout-button').click()");
@@ -483,6 +510,7 @@ try {
       await waitFor("document.querySelector('#admin-meal-detail img')?.naturalWidth > 0");
       assert.ok(await evaluate("document.querySelector('#admin-meal-detail img').getAttribute('src').startsWith('/api/meals/')"));
       assert.ok(await evaluate("document.querySelector('#admin-meal-detail').textContent.includes('160')"));
+      assert.equal(await evaluate("document.querySelectorAll('#admin-meal-detail table tbody tr').length"),2);
       await evaluate("document.querySelector('#close-detail').click()");
     }
     if(tab==='costs'){
@@ -536,6 +564,8 @@ try {
   result.checks.push('redesigned culinary badge names in both languages; line and distribution charts with accessible daily data; automatic period filters; AI cost breakdown with incomplete coverage; error-only operational log filtering');
   result.checks.push('first-visit IP language defaults for Hungarian IPv4/IPv6 and foreign IPv4 override browser language; explicit language survives navigation and sign-out');
   result.checks.push('protected photos load through the application in the diary and admin; browser never requests provider photo URLs');
+  result.checks.push('four named foods with separate portion nutrients and total; mixed g/ml and missing values; live edits, scroll retention, escaped names, save/reload and untruncated diary names');
+  result.screenshots.push('food-breakdown-desktop.png','food-breakdown-mobile.png');
   result.screenshots.push('admin-costs-desktop.png','admin-costs-mobile.png','admin-logs-desktop.png','admin-logs-mobile.png');
   result.screenshots.push('badges-mobile.png','admin-overview-desktop.png','admin-overview-mobile.png','admin-settings-desktop.png','admin-settings-mobile.png','admin-audit-desktop.png');
   writeFileSync(resolve(out, 'browser-check.json'), JSON.stringify(result, null, 2)); console.log(JSON.stringify(result, null, 2));

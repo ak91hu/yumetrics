@@ -24,3 +24,16 @@ export function testGoogleClient(overrides = {}) {
     async verifyIdToken(options) { if (options.idToken !== 'test-id-token') throw new Error('Invalid test token'); return { getPayload: () => ({ iss: 'https://accounts.google.com', aud: 'test-client', email_verified: true, sub: 'google-user-1', email: 'teszt@example.test', name: 'Teszt Elek', nonce, ...overrides }) }; },
   };
 }
+export function multiFoodAnalysis(language='hu') {
+  const analysis = {name:'Csirkemell rizzsel, salátával és narancslével',confidence:'medium',assumptions:'Tesztadat, nem valódi fotós becslés.',ingredients:[
+    {name:'Sült csirkemell',grams:150,quantityUnit:'g',calories:165,protein:31,carbs:0,fat:3.6,fiber:0,sugar:0,sodium:70,saturatedFat:1},
+    {name:'Főtt rizs',grams:200,quantityUnit:'g',calories:130,protein:2.7,carbs:28,fat:.3,fiber:.4,sugar:.1,sodium:1,saturatedFat:.1},
+    {name:'Paradicsomsaláta',grams:100,quantityUnit:'g',calories:30,protein:1,carbs:4,fat:1,fiber:1.5,sugar:3,sodium:null,saturatedFat:.2},
+    {name:'Narancslé',grams:250,quantityUnit:'ml',calories:42,protein:.7,carbs:9,fat:.2,fiber:.2,sugar:8.4,sodium:2,saturatedFat:0},
+  ]};
+  if(language==='en'){
+    analysis.name='Chicken with rice, salad and orange juice';analysis.assumptions='Test data, not a real photo estimate.';
+    analysis.ingredients.forEach((item,index)=>item.name=['Roast chicken breast','Cooked rice','Tomato salad','Orange juice'][index]);
+  }
+  return analysis;
+}
