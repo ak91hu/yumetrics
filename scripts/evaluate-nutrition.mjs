@@ -16,8 +16,10 @@ export function loadCases(filename) {
   return manifest.cases.map(item => {
     check(typeof item.id === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(item.id) && !seen.has(item.id), 'Az esetazonosító hiányzik vagy ismétlődik.'); seen.add(item.id);
     check(typeof item.group === 'string' && Object.hasOwn(HUNGARIAN_DISHES,item.group), 'Hiányzó magyar ételcsoport.');
-    check(item.reference?.measured === true && ['weighed_recipe','laboratory'].includes(item.reference.method), 'A referencia lemért receptből vagy laborból származzon, ne AI-becslésből.');
+    check(item.reference?.measured === true && ['weighed_recipe','weighed_components','laboratory'].includes(item.reference.method), 'A referencia lemért receptből, lemért összetevőkből vagy laborból származzon, ne AI-becslésből.');
     const provenance = text(item.reference.provenance,2000);
+    const carbohydrateBasis = item.reference.carbohydrateBasis || 'available';
+    check(['available','total_including_fiber'].includes(carbohydrateBasis), 'A szénhidrát vonatkoztatási alapja nem támogatott.');
     check(Number.isFinite(item.reference.edibleWeightG) && item.reference.edibleWeightG > 0 && item.reference.edibleWeightG <= 5000, 'Hiányzó ehető referenciatömeg.');
     for (const key of metrics) check(Number.isFinite(item.reference[key]) && item.reference[key] >= 0 || !['calories','protein','carbs','fat'].includes(key) && item.reference[key] == null, `Hibás referencia: ${key}.`);
     const paths = [item.image, item.secondImage].map(file => {
@@ -26,7 +28,7 @@ export function loadCases(filename) {
       return path;
     });
     validateImagePair(imageData(paths[0]), imageData(paths[1]));
-    return { id:item.id,group:item.group,paths,notes:text(item.notes || '',2000,true),context:analysisContext(item.context),reference:{...Object.fromEntries(metrics.map(key=>[key,item.reference[key]??null])),edibleWeightG:item.reference.edibleWeightG,method:item.reference.method,provenance} };
+    return { id:item.id,group:item.group,paths,notes:text(item.notes || '',2000,true),context:analysisContext(item.context),reference:{...Object.fromEntries(metrics.map(key=>[key,item.reference[key]??null])),edibleWeightG:item.reference.edibleWeightG,method:item.reference.method,carbohydrateBasis,provenance} };
   });
 }
 function imageData(path) {
@@ -49,6 +51,11 @@ export function evaluationSummary(rows) {
   };
   return Object.fromEntries([...new Set(rows.map(row=>row.mode))].map(mode=>[mode,{...summarise(rows.filter(row=>row.mode===mode)),groups:Object.fromEntries([...groups].filter(key=>key.startsWith(mode+'/')).map(key=>[key.slice(mode.length+1),summarise(rows.filter(row=>`${row.mode}/${row.group}`===key))]))}]));
 }
+export function evaluationPrediction(analysis, reference) {
+  const report = analysisReport(analysis), predicted = { ...report.total, edibleWeightG: report.weight };
+  if (reference.carbohydrateBasis === 'total_including_fiber') predicted.carbs = report.total.carbs == null || report.total.fiber == null ? null : Math.round((report.total.carbs + report.total.fiber) * 10) / 10;
+  return predicted;
+}
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   try {
     const args=process.argv.slice(2), filename=args.find(arg=>!arg.startsWith('--'));
@@ -67,7 +74,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
       };
       for(const item of cases.slice(0,limit))for(const mode of ['photo_only','with_context']){
         const row={id:item.id,group:item.group,mode,reference:item.reference};
-        try{const result=await analyze(imageData(item.paths[0]),mode==='with_context'?item.notes:'',env,fetch,{context:mode==='with_context'?item.context:{},secondImage:imageData(item.paths[1])});const report=analysisReport(result.analysis);Object.assign(row,{predicted:{...report.total,edibleWeightG:report.weight},analysis:result.analysis,usage:result.usage,latencyMs:result.latencyMs});}
+        try{const result=await analyze(imageData(item.paths[0]),mode==='with_context'?item.notes:'',env,fetch,{context:mode==='with_context'?item.context:{},secondImage:imageData(item.paths[1]),onResponse:data=>{row.providerResponse=data;}});Object.assign(row,{predicted:evaluationPrediction(result.analysis,item.reference),analysis:result.analysis,usage:result.usage,latencyMs:result.latencyMs});}
         catch(error){row.error=error.status?error.message:'A szolgáltatói hívás nem sikerült.';}
         rows.push(row);save();console.log(`${item.id} / ${mode}: ${row.predicted?'eredmény rögzítve':'elutasítás rögzítve'}`);
       }

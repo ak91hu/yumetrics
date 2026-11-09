@@ -1,6 +1,6 @@
 # Hitelesebb kalóriaszámítás: kutatási döntések
 
-Frissítve: 2026-11-07. A cél ellenőrizhető számítás és látható bizonytalanság. Saját, lemért magyar étkezéseken végzett modellbenchmark még nincs; ezért nem állítunk mért pontossági százalékot vagy bizonyítottan legpontosabb modellt.
+Frissítve: 2026-11-09. A cél ellenőrizhető számítás és látható bizonytalanság. Saját, lemért magyar étkezéseken végzett modellbenchmark még nincs; ezért nem állítunk mért pontossági százalékot vagy bizonyítottan legpontosabb modellt. Négy valódi Nutrition5k-tányéron és négy külön ellenőrző bemeneten már történt szolgáltatói próba: [módszer, eredmények és fennmaradó hibák](AI-VALIDATION-2026-11-09.md).
 
 A v4 magyar ételcsoportos megkülönböztetése, a piaci összevetés és a Nébih-források: [HUNGARIAN-POSITIONING.md](HUNGARIAN-POSITIONING.md). Az új receptszámítás és a nyers/főtt referenciavédelem működik; a tényleges fotós hibaméréshez készült külön eszköz és adatszerződés: [BENCHMARK.md](BENCHMARK.md). A szükséges hozzáférések beszerzése: [API-KEYS.md](API-KEYS.md).
 

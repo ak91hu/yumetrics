@@ -1,0 +1,3121 @@
+{
+  "date": "2026-11-09",
+  "source": "https://github.com/google-research-datasets/Nutrition5k",
+  "license": "CC BY 4.0; Google Research / Nutrition5k authors",
+  "limitations": "Four diagnostic test-split plates selected before baseline. Candidate prompt informed by baseline failures; no untouched holdout or repeated runs. USDA-calculated nutrient references, not laboratory assays. Not representative of Hungarian meals or phone photography. Controls use public images and generated label/blank fixtures.",
+  "cases": [
+    {
+      "id": "dish_1558641164",
+      "camera": "B",
+      "reference": {
+        "measured": true,
+        "method": "weighed_components",
+        "provenance": "Nutrition5k official dish_metadata CSV: measured component masses; USDA-derived energy/macros; dish_1558641164",
+        "edibleWeightG": 154,
+        "calories": 80.079994,
+        "protein": 0.462,
+        "carbs": 21.559999,
+        "fat": 0.308,
+        "carbohydrateBasis": "total_including_fiber"
+      },
+      "expectedFoods": [
+        {
+          "name": "apple",
+          "grams": 154,
+          "calories": 80.08
+        }
+      ]
+    },
+    {
+      "id": "dish_1565811061",
+      "camera": "A",
+      "reference": {
+        "measured": true,
+        "method": "weighed_components",
+        "provenance": "Nutrition5k official dish_metadata CSV: measured component masses; USDA-derived energy/macros; dish_1565811061",
+        "edibleWeightG": 324,
+        "calories": 380.320007,
+        "protein": 65.801003,
+        "carbs": 9.06,
+        "fat": 7.762,
+        "carbohydrateBasis": "total_including_fiber"
+      },
+      "expectedFoods": [
+        {
+          "name": "chicken",
+          "grams": 205,
+          "calories": 338.25
+        },
+        {
+          "name": "carrot",
+          "grams": 47,
+          "calories": 19.27
+        },
+        {
+          "name": "spinach (raw)",
+          "grams": 20,
+          "calories": 4.6
+        },
+        {
+          "name": "broccoli",
+          "grams": 52,
+          "calories": 18.2
+        }
+      ]
+    },
+    {
+      "id": "dish_1566328805",
+      "camera": "A",
+      "reference": {
+        "measured": true,
+        "method": "weighed_components",
+        "provenance": "Nutrition5k official dish_metadata CSV: measured component masses; USDA-derived energy/macros; dish_1566328805",
+        "edibleWeightG": 488,
+        "calories": 927.809998,
+        "protein": 77.984001,
+        "carbs": 85.054001,
+        "fat": 28.737,
+        "carbohydrateBasis": "total_including_fiber"
+      },
+      "expectedFoods": [
+        {
+          "name": "cherry tomatoes",
+          "grams": 36,
+          "calories": 6.48
+        },
+        {
+          "name": "pizza",
+          "grams": 233,
+          "calories": 619.78
+        },
+        {
+          "name": "chicken",
+          "grams": 167,
+          "calories": 275.55
+        },
+        {
+          "name": "pineapple",
+          "grams": 52,
+          "calories": 26
+        }
+      ]
+    },
+    {
+      "id": "dish_1561739238",
+      "camera": "A",
+      "reference": {
+        "measured": true,
+        "method": "weighed_components",
+        "provenance": "Nutrition5k official dish_metadata CSV: measured component masses; USDA-derived energy/macros; dish_1561739238",
+        "edibleWeightG": 257,
+        "calories": 274.190002,
+        "protein": 9.465,
+        "carbs": 37.556999,
+        "fat": 9.785,
+        "carbohydrateBasis": "total_including_fiber"
+      },
+      "expectedFoods": [
+        {
+          "name": "egg whites",
+          "grams": 71,
+          "calories": 36.92
+        },
+        {
+          "name": "hash browns",
+          "grams": 43,
+          "calories": 140.18
+        },
+        {
+          "name": "berries",
+          "grams": 61,
+          "calories": 34.77
+        },
+        {
+          "name": "sweet potato",
+          "grams": 82,
+          "calories": 62.32
+        }
+      ]
+    }
+  ],
+  "runs": [
+    {
+      "promptVersion": "food-v12-every-food",
+      "model": "gemini-4-argon",
+      "referenceCatalogSha256": "a3638ea008f0223c3b1e662f1dab0ee4b30a5b99dc4019941cdd547aaa7a3bf7",
+      "summary": {
+        "photo_only": {
+          "attempted": 4,
+          "successful": 2,
+          "rejected": 2,
+          "errors": {
+            "calories": {
+              "n": 2,
+              "mae": 72.6700065,
+              "bias": -66.95000049999999,
+              "rmse": 98.80907049284515
+            },
+            "protein": {
+              "n": 2,
+              "mae": 14.069501499999996,
+              "bias": -14.031501499999997,
+              "rmse": 19.870427947153132
+            },
+            "carbs": {
+              "n": 2,
+              "mae": 2.2400005,
+              "bias": 2.2400005,
+              "rmse": 2.453079949777524
+            },
+            "fat": {
+              "n": 2,
+              "mae": 1.6349999999999998,
+              "bias": -1.6349999999999998,
+              "rmse": 2.306589256889921
+            },
+            "fiber": {
+              "n": 0,
+              "mae": null,
+              "bias": null,
+              "rmse": null
+            },
+            "sugar": {
+              "n": 0,
+              "mae": null,
+              "bias": null,
+              "rmse": null
+            },
+            "sodium": {
+              "n": 0,
+              "mae": null,
+              "bias": null,
+              "rmse": null
+            },
+            "saturatedFat": {
+              "n": 0,
+              "mae": null,
+              "bias": null,
+              "rmse": null
+            },
+            "edibleWeightG": {
+              "n": 2,
+              "mae": 25,
+              "bias": -14,
+              "rmse": 28.653097563788805
+            }
+          },
+          "groups": {
+            "generic": {
+              "attempted": 4,
+              "successful": 2,
+              "rejected": 2,
+              "errors": {
+                "calories": {
+                  "n": 2,
+                  "mae": 72.6700065,
+                  "bias": -66.95000049999999,
+                  "rmse": 98.80907049284515
+                },
+                "protein": {
+                  "n": 2,
+                  "mae": 14.069501499999996,
+                  "bias": -14.031501499999997,
+                  "rmse": 19.870427947153132
+                },
+                "carbs": {
+                  "n": 2,
+                  "mae": 2.2400005,
+                  "bias": 2.2400005,
+                  "rmse": 2.453079949777524
+                },
+                "fat": {
+                  "n": 2,
+                  "mae": 1.6349999999999998,
+                  "bias": -1.6349999999999998,
+                  "rmse": 2.306589256889921
+                },
+                "fiber": {
+                  "n": 0,
+                  "mae": null,
+                  "bias": null,
+                  "rmse": null
+                },
+                "sugar": {
+                  "n": 0,
+                  "mae": null,
+                  "bias": null,
+                  "rmse": null
+                },
+                "sodium": {
+                  "n": 0,
+                  "mae": null,
+                  "bias": null,
+                  "rmse": null
+                },
+                "saturatedFat": {
+                  "n": 0,
+                  "mae": null,
+                  "bias": null,
+                  "rmse": null
+                },
+                "edibleWeightG": {
+                  "n": 2,
+                  "mae": 25,
+                  "bias": -14,
+                  "rmse": 28.653097563788805
+                }
+              }
+            }
+          }
+        },
+        "with_context": {
+          "attempted": 4,
+          "successful": 4,
+          "rejected": 0,
+          "errors": {
+            "calories": {
+              "n": 4,
+              "mae": 86.08500325,
+              "bias": -86.07500025000002,
+              "rmse": 100.28014057434315
+            },
+            "protein": {
+              "n": 4,
+              "mae": 8.039501000000001,
+              "bias": -6.353001000000001,
+              "rmse": 11.9039665109367
+            },
+            "carbs": {
+              "n": 4,
+              "mae": 7.82774975,
+              "bias": -5.657749750000001,
+              "rmse": 9.721992595065105
+            },
+            "fat": {
+              "n": 4,
+              "mae": 3.5229999999999997,
+              "bias": -3.5229999999999997,
+              "rmse": 4.276450104935166
+            },
+            "fiber": {
+              "n": 0,
+              "mae": null,
+              "bias": null,
+              "rmse": null
+            },
+            "sugar": {
+              "n": 0,
+              "mae": null,
+              "bias": null,
+              "rmse": null
+            },
+            "sodium": {
+              "n": 0,
+              "mae": null,
+              "bias": null,
+              "rmse": null
+            },
+            "saturatedFat": {
+              "n": 0,
+              "mae": null,
+              "bias": null,
+              "rmse": null
+            },
+            "edibleWeightG": {
+              "n": 4,
+              "mae": 0,
+              "bias": 0,
+              "rmse": 0
+            }
+          },
+          "groups": {
+            "generic": {
+              "attempted": 4,
+              "successful": 4,
+              "rejected": 0,
+              "errors": {
+                "calories": {
+                  "n": 4,
+                  "mae": 86.08500325,
+                  "bias": -86.07500025000002,
+                  "rmse": 100.28014057434315
+                },
+                "protein": {
+                  "n": 4,
+                  "mae": 8.039501000000001,
+                  "bias": -6.353001000000001,
+                  "rmse": 11.9039665109367
+                },
+                "carbs": {
+                  "n": 4,
+                  "mae": 7.82774975,
+                  "bias": -5.657749750000001,
+                  "rmse": 9.721992595065105
+                },
+                "fat": {
+                  "n": 4,
+                  "mae": 3.5229999999999997,
+                  "bias": -3.5229999999999997,
+                  "rmse": 4.276450104935166
+                },
+                "fiber": {
+                  "n": 0,
+                  "mae": null,
+                  "bias": null,
+                  "rmse": null
+                },
+                "sugar": {
+                  "n": 0,
+                  "mae": null,
+                  "bias": null,
+                  "rmse": null
+                },
+                "sodium": {
+                  "n": 0,
+                  "mae": null,
+                  "bias": null,
+                  "rmse": null
+                },
+                "saturatedFat": {
+                  "n": 0,
+                  "mae": null,
+                  "bias": null,
+                  "rmse": null
+                },
+                "edibleWeightG": {
+                  "n": 4,
+                  "mae": 0,
+                  "bias": 0,
+                  "rmse": 0
+                }
+              }
+            }
+          }
+        }
+      },
+      "sharedPhotoOnlySummary": {
+        "photo_only": {
+          "attempted": 2,
+          "successful": 2,
+          "rejected": 0,
+          "errors": {
+            "calories": {
+              "n": 2,
+              "mae": 72.6700065,
+              "bias": -66.95000049999999,
+              "rmse": 98.80907049284515
+            },
+            "protein": {
+              "n": 2,
+              "mae": 14.069501499999996,
+              "bias": -14.031501499999997,
+              "rmse": 19.870427947153132
+            },
+            "carbs": {
+              "n": 2,
+              "mae": 2.2400005,
+              "bias": 2.2400005,
+              "rmse": 2.453079949777524
+            },
+            "fat": {
+              "n": 2,
+              "mae": 1.6349999999999998,
+              "bias": -1.6349999999999998,
+              "rmse": 2.306589256889921
+            },
+            "fiber": {
+              "n": 0,
+              "mae": null,
+              "bias": null,
+              "rmse": null
+            },
+            "sugar": {
+              "n": 0,
+              "mae": null,
+              "bias": null,
+              "rmse": null
+            },
+            "sodium": {
+              "n": 0,
+              "mae": null,
+              "bias": null,
+              "rmse": null
+            },
+            "saturatedFat": {
+              "n": 0,
+              "mae": null,
+              "bias": null,
+              "rmse": null
+            },
+            "edibleWeightG": {
+              "n": 2,
+              "mae": 25,
+              "bias": -14,
+              "rmse": 28.653097563788805
+            }
+          },
+          "groups": {
+            "generic": {
+              "attempted": 2,
+              "successful": 2,
+              "rejected": 0,
+              "errors": {
+                "calories": {
+                  "n": 2,
+                  "mae": 72.6700065,
+                  "bias": -66.95000049999999,
+                  "rmse": 98.80907049284515
+                },
+                "protein": {
+                  "n": 2,
+                  "mae": 14.069501499999996,
+                  "bias": -14.031501499999997,
+                  "rmse": 19.870427947153132
+                },
+                "carbs": {
+                  "n": 2,
+                  "mae": 2.2400005,
+                  "bias": 2.2400005,
+                  "rmse": 2.453079949777524
+                },
+                "fat": {
+                  "n": 2,
+                  "mae": 1.6349999999999998,
+                  "bias": -1.6349999999999998,
+                  "rmse": 2.306589256889921
+                },
+                "fiber": {
+                  "n": 0,
+                  "mae": null,
+                  "bias": null,
+                  "rmse": null
+                },
+                "sugar": {
+                  "n": 0,
+                  "mae": null,
+                  "bias": null,
+                  "rmse": null
+                },
+                "sodium": {
+                  "n": 0,
+                  "mae": null,
+                  "bias": null,
+                  "rmse": null
+                },
+                "saturatedFat": {
+                  "n": 0,
+                  "mae": null,
+                  "bias": null,
+                  "rmse": null
+                },
+                "edibleWeightG": {
+                  "n": 2,
+                  "mae": 25,
+                  "bias": -14,
+                  "rmse": 28.653097563788805
+                }
+              }
+            }
+          }
+        }
+      },
+      "costUsd": 0.24686,
+      "rows": [
+        {
+          "id": "dish_1558641164",
+          "group": "generic",
+          "mode": "photo_only",
+          "reference": {
+            "calories": 80.079994,
+            "protein": 0.462,
+            "carbs": 21.559999,
+            "fat": 0.308,
+            "fiber": null,
+            "sugar": null,
+            "sodium": null,
+            "saturatedFat": null,
+            "edibleWeightG": 154,
+            "method": "weighed_components",
+            "provenance": "Nutrition5k official dish_metadata CSV: measured component masses; USDA-derived energy/macros; dish_1558641164",
+            "carbohydrateBasis": "total_including_fiber"
+          },
+          "predicted": {
+            "calories": 85.8,
+            "protein": 0.5,
+            "carbs": 22.8,
+            "fat": 0.3,
+            "fiber": 4,
+            "sugar": 17.2,
+            "sodium": 1.7,
+            "saturatedFat": 0,
+            "edibleWeightG": 165
+          },
+          "analysis": {
+            "name": "Alma",
+            "confidence": "medium",
+            "ingredients": [
+              {
+                "name": "Alma (nyers, héjával, magház nélkül counted ehető rész Using standard apple values as referenceKey is null) -> Alma",
+                "grams": 165,
+                "quantityUnit": "g",
+                "foodState": "raw",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              }
+            ]
+          },
+          "latencyMs": 13753,
+          "providerResponse": {
+            "usage": {
+              "candidatesTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 484
+                }
+              ],
+              "promptTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 7795
+                },
+                {
+                  "modality": "IMAGE",
+                  "tokenCount": 2164
+                }
+              ],
+              "candidatesTokenCount": 484,
+              "promptTokenCount": 9959,
+              "totalTokenCount": 10443,
+              "cost": 0.024758,
+              "opencode": {
+                "billing_source": "balance",
+                "list_cost": 0.024758,
+                "tokens": {
+                  "input": 9959,
+                  "output": 484,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write_5m": 0,
+                  "cache_write_1h": 0
+                }
+              }
+            },
+            "httpStatus": 200,
+            "latencyMs": 13725
+          },
+          "images": [
+            {
+              "mime": "image/png",
+              "base64Sha256": "d6a23985c139b76ddd58bdb156744fd8232cbc276146540a88b606da9e7450ca",
+              "fileSha256": "ec424b70a6b210f51ccc253c573be0405fdd011c9f1b996e9b5abd1c9bd889a0"
+            },
+            {
+              "mime": "image/jpeg",
+              "base64Sha256": "75c027ee33d1b7082196b75817da7769a72c6f7f0c9b5852953d091c737cad59",
+              "fileSha256": "3e9d7901769bc7df926dff9ecdc7563f007ba025fb3f3737b23623865f258b94"
+            }
+          ],
+          "systemPromptHash": "2c57609ad1ff818878cffcb3faee8eca07aa18a08d88fe8ab94b4d4d66daf000",
+          "viewCheck": {
+            "sameMeal": true,
+            "differentAngles": true,
+            "bothUsable": true,
+            "issues": []
+          }
+        },
+        {
+          "id": "dish_1558641164",
+          "group": "generic",
+          "mode": "with_context",
+          "reference": {
+            "calories": 80.079994,
+            "protein": 0.462,
+            "carbs": 21.559999,
+            "fat": 0.308,
+            "fiber": null,
+            "sugar": null,
+            "sodium": null,
+            "saturatedFat": null,
+            "edibleWeightG": 154,
+            "method": "weighed_components",
+            "provenance": "Nutrition5k official dish_metadata CSV: measured component masses; USDA-derived energy/macros; dish_1558641164",
+            "carbohydrateBasis": "total_including_fiber"
+          },
+          "predicted": {
+            "calories": 80.1,
+            "protein": 0.5,
+            "carbs": 21.3,
+            "fat": 0.3,
+            "fiber": 3.7,
+            "sugar": 16,
+            "sodium": 1.5,
+            "saturatedFat": 0,
+            "edibleWeightG": 154
+          },
+          "analysis": {
+            "name": "Alma",
+            "confidence": "medium",
+            "ingredients": [
+              {
+                "name": "Alma (nyers, héjjal Data/USDA alapú becslés)",
+                "grams": 154,
+                "quantityUnit": "g",
+                "foodState": "raw",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              }
+            ]
+          },
+          "latencyMs": 12597,
+          "providerResponse": {
+            "usage": {
+              "candidatesTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 506
+                }
+              ],
+              "promptTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 7797
+                },
+                {
+                  "modality": "IMAGE",
+                  "tokenCount": 2164
+                }
+              ],
+              "candidatesTokenCount": 506,
+              "promptTokenCount": 9961,
+              "totalTokenCount": 10467,
+              "cost": 0.024982,
+              "opencode": {
+                "billing_source": "balance",
+                "list_cost": 0.024982,
+                "tokens": {
+                  "input": 9961,
+                  "output": 506,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write_5m": 0,
+                  "cache_write_1h": 0
+                }
+              }
+            },
+            "httpStatus": 200,
+            "latencyMs": 12563
+          },
+          "images": [
+            {
+              "mime": "image/png",
+              "base64Sha256": "d6a23985c139b76ddd58bdb156744fd8232cbc276146540a88b606da9e7450ca",
+              "fileSha256": "ec424b70a6b210f51ccc253c573be0405fdd011c9f1b996e9b5abd1c9bd889a0"
+            },
+            {
+              "mime": "image/jpeg",
+              "base64Sha256": "75c027ee33d1b7082196b75817da7769a72c6f7f0c9b5852953d091c737cad59",
+              "fileSha256": "3e9d7901769bc7df926dff9ecdc7563f007ba025fb3f3737b23623865f258b94"
+            }
+          ],
+          "systemPromptHash": "2c57609ad1ff818878cffcb3faee8eca07aa18a08d88fe8ab94b4d4d66daf000",
+          "viewCheck": {
+            "sameMeal": true,
+            "differentAngles": true,
+            "bothUsable": true,
+            "issues": []
+          }
+        },
+        {
+          "id": "dish_1565811061",
+          "group": "generic",
+          "mode": "photo_only",
+          "reference": {
+            "calories": 380.320007,
+            "protein": 65.801003,
+            "carbs": 9.06,
+            "fat": 7.762,
+            "fiber": null,
+            "sugar": null,
+            "sodium": null,
+            "saturatedFat": null,
+            "edibleWeightG": 324,
+            "method": "weighed_components",
+            "provenance": "Nutrition5k official dish_metadata CSV: measured component masses; USDA-derived energy/macros; dish_1565811061",
+            "carbohydrateBasis": "total_including_fiber"
+          },
+          "predicted": {
+            "calories": 240.7,
+            "protein": 37.7,
+            "carbs": 12.3,
+            "fat": 4.5,
+            "fiber": 5,
+            "sugar": 3.8,
+            "sodium": 185.7,
+            "saturatedFat": 1.2,
+            "edibleWeightG": 285
+          },
+          "analysis": {
+            "name": "Csirkés-zöldséges salátatál spenóttal, brokkolival és sárgarépával",
+            "confidence": "medium",
+            "ingredients": [
+              {
+                "name": "Sült csirkemellkocka",
+                "grams": 110,
+                "quantityUnit": "g",
+                "foodState": "prepared",
+                "referenceKey": "fdc-171477",
+                "visibility": "visible",
+                "sourceType": "reference"
+              },
+              {
+                "name": "Párolt brokkoli",
+                "grams": 75,
+                "quantityUnit": "g",
+                "foodState": "prepared",
+                "referenceKey": "fdc-169967",
+                "visibility": "visible",
+                "sourceType": "reference"
+              },
+              {
+                "name": "Sárgarépa",
+                "grams": 55,
+                "quantityUnit": "g",
+                "foodState": "raw",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              },
+              {
+                "name": "Spenótlevél",
+                "grams": 45,
+                "quantityUnit": "g",
+                "foodState": "raw",
+                "referenceKey": "fdc-168462",
+                "visibility": "visible",
+                "sourceType": "reference"
+              }
+            ]
+          },
+          "latencyMs": 18127,
+          "providerResponse": {
+            "usage": {
+              "candidatesTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 1102
+                }
+              ],
+              "promptTokensDetails": [
+                {
+                  "modality": "IMAGE",
+                  "tokenCount": 2164
+                },
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 7795
+                }
+              ],
+              "candidatesTokenCount": 1102,
+              "promptTokenCount": 9959,
+              "totalTokenCount": 11061,
+              "cost": 0.030938,
+              "opencode": {
+                "billing_source": "balance",
+                "list_cost": 0.030938,
+                "tokens": {
+                  "input": 9959,
+                  "output": 1102,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write_5m": 0,
+                  "cache_write_1h": 0
+                }
+              }
+            },
+            "httpStatus": 200,
+            "latencyMs": 18109
+          },
+          "images": [
+            {
+              "mime": "image/png",
+              "base64Sha256": "bd8876d95a65a16d0d7c9284eb8b5b6d53db33b003e7a5a865c55a55e2576881",
+              "fileSha256": "c351a10db228441ab065694afd85176cee45f251c3bb66330de7b1eb865bb2b4"
+            },
+            {
+              "mime": "image/jpeg",
+              "base64Sha256": "cb849f278c4c0ddcc501dca9c85aa83ff878c0c86e9321d5697b1cf5c6867bbb",
+              "fileSha256": "0c835d91df700561b911b6cfbf7ddfa7077e2df6d8da3111210ff869f8dab8d7"
+            }
+          ],
+          "systemPromptHash": "2c57609ad1ff818878cffcb3faee8eca07aa18a08d88fe8ab94b4d4d66daf000",
+          "viewCheck": {
+            "sameMeal": true,
+            "differentAngles": true,
+            "bothUsable": true,
+            "issues": []
+          }
+        },
+        {
+          "id": "dish_1565811061",
+          "group": "generic",
+          "mode": "with_context",
+          "reference": {
+            "calories": 380.320007,
+            "protein": 65.801003,
+            "carbs": 9.06,
+            "fat": 7.762,
+            "fiber": null,
+            "sugar": null,
+            "sodium": null,
+            "saturatedFat": null,
+            "edibleWeightG": 324,
+            "method": "weighed_components",
+            "provenance": "Nutrition5k official dish_metadata CSV: measured component masses; USDA-derived energy/macros; dish_1565811061",
+            "carbohydrateBasis": "total_including_fiber"
+          },
+          "predicted": {
+            "calories": 271.9,
+            "protein": 43,
+            "carbs": 13.4,
+            "fat": 5.2,
+            "fiber": 5.6,
+            "sugar": 4,
+            "sodium": 212,
+            "saturatedFat": 1.4,
+            "edibleWeightG": 324
+          },
+          "analysis": {
+            "name": "Csirkemelles-brokkolis spenótsaláta sárgarépával",
+            "confidence": "medium",
+            "ingredients": [
+              {
+                "name": "Sült csirkemell, kockázva",
+                "grams": 125,
+                "quantityUnit": "g",
+                "foodState": "prepared",
+                "referenceKey": "fdc-171477",
+                "visibility": "visible",
+                "sourceType": "reference"
+              },
+              {
+                "name": "Brokkoli",
+                "grams": 85,
+                "quantityUnit": "g",
+                "foodState": "prepared",
+                "referenceKey": "fdc-169967",
+                "visibility": "visible",
+                "sourceType": "reference"
+              },
+              {
+                "name": "Sárgarépa, csíkozva",
+                "grams": 54,
+                "quantityUnit": "g",
+                "foodState": "raw",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              },
+              {
+                "name": "Spenótlevél",
+                "grams": 60,
+                "quantityUnit": "g",
+                "foodState": "raw",
+                "referenceKey": "fdc-168462",
+                "visibility": "visible",
+                "sourceType": "reference"
+              }
+            ]
+          },
+          "latencyMs": 48591,
+          "providerResponse": {
+            "usage": {
+              "candidatesTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 1145
+                }
+              ],
+              "promptTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 7797
+                },
+                {
+                  "modality": "IMAGE",
+                  "tokenCount": 2164
+                }
+              ],
+              "candidatesTokenCount": 1145,
+              "promptTokenCount": 9961,
+              "totalTokenCount": 11106,
+              "cost": 0.031372,
+              "opencode": {
+                "billing_source": "balance",
+                "list_cost": 0.031372,
+                "tokens": {
+                  "input": 9961,
+                  "output": 1145,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write_5m": 0,
+                  "cache_write_1h": 0
+                }
+              }
+            },
+            "httpStatus": 200,
+            "latencyMs": 48576
+          },
+          "images": [
+            {
+              "mime": "image/png",
+              "base64Sha256": "bd8876d95a65a16d0d7c9284eb8b5b6d53db33b003e7a5a865c55a55e2576881",
+              "fileSha256": "c351a10db228441ab065694afd85176cee45f251c3bb66330de7b1eb865bb2b4"
+            },
+            {
+              "mime": "image/jpeg",
+              "base64Sha256": "cb849f278c4c0ddcc501dca9c85aa83ff878c0c86e9321d5697b1cf5c6867bbb",
+              "fileSha256": "0c835d91df700561b911b6cfbf7ddfa7077e2df6d8da3111210ff869f8dab8d7"
+            }
+          ],
+          "systemPromptHash": "2c57609ad1ff818878cffcb3faee8eca07aa18a08d88fe8ab94b4d4d66daf000",
+          "viewCheck": {
+            "sameMeal": true,
+            "differentAngles": true,
+            "bothUsable": true,
+            "issues": []
+          }
+        },
+        {
+          "id": "dish_1566328805",
+          "group": "generic",
+          "mode": "photo_only",
+          "reference": {
+            "calories": 927.809998,
+            "protein": 77.984001,
+            "carbs": 85.054001,
+            "fat": 28.737,
+            "fiber": null,
+            "sugar": null,
+            "sodium": null,
+            "saturatedFat": null,
+            "edibleWeightG": 488,
+            "method": "weighed_components",
+            "provenance": "Nutrition5k official dish_metadata CSV: measured component masses; USDA-derived energy/macros; dish_1566328805",
+            "carbohydrateBasis": "total_including_fiber"
+          },
+          "error": "A második fotó nem ad elég új információt. Ételnél változtass a szögön, csomagolt terméknél fotózd le az olvasható tápértéktáblát.",
+          "providerResponse": {
+            "usage": {
+              "candidatesTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 1245
+                }
+              ],
+              "promptTokensDetails": [
+                {
+                  "modality": "IMAGE",
+                  "tokenCount": 2164
+                },
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 7795
+                }
+              ],
+              "candidatesTokenCount": 1245,
+              "promptTokenCount": 9959,
+              "totalTokenCount": 11204,
+              "cost": 0.032368,
+              "opencode": {
+                "billing_source": "balance",
+                "list_cost": 0.032368,
+                "tokens": {
+                  "input": 9959,
+                  "output": 1245,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write_5m": 0,
+                  "cache_write_1h": 0
+                }
+              }
+            },
+            "httpStatus": 200,
+            "latencyMs": 26897
+          },
+          "images": [
+            {
+              "mime": "image/png",
+              "base64Sha256": "85c18397a425890b6b408c2292df3a0925c7eda01f855470351cc0fac55f153f",
+              "fileSha256": "e8a65e64e76e0bfa08a1630a929ce259702beda1dcf99a5e5a178773a9502e31"
+            },
+            {
+              "mime": "image/jpeg",
+              "base64Sha256": "c67db218d0e5e8636661d0ae217be12dc7d866e3a60a7ce6e95544c326f2e44d",
+              "fileSha256": "b8b64f13e3b6107c2ce6a9781b1a5da7568571e60bba1bb72e2644a35c3510bb"
+            }
+          ],
+          "systemPromptHash": "2c57609ad1ff818878cffcb3faee8eca07aa18a08d88fe8ab94b4d4d66daf000",
+          "viewCheck": {
+            "sameMeal": true,
+            "differentAngles": false,
+            "bothUsable": true,
+            "issues": [
+              "A második fotó csupán közelebbi és elforgatott felülnézet, így nem ad érdemi oldalirányú térbeli többletet a vastagság megítéléséhez, valamint a tányér szélei is lemaradtak róla."
+            ]
+          }
+        },
+        {
+          "id": "dish_1566328805",
+          "group": "generic",
+          "mode": "with_context",
+          "reference": {
+            "calories": 927.809998,
+            "protein": 77.984001,
+            "carbs": 85.054001,
+            "fat": 28.737,
+            "fiber": null,
+            "sugar": null,
+            "sodium": null,
+            "saturatedFat": null,
+            "edibleWeightG": 488,
+            "method": "weighed_components",
+            "provenance": "Nutrition5k official dish_metadata CSV: measured component masses; USDA-derived energy/macros; dish_1566328805",
+            "carbohydrateBasis": "total_including_fiber"
+          },
+          "predicted": {
+            "calories": 791.9,
+            "protein": 72,
+            "carbs": 72.8,
+            "fat": 23.3,
+            "fiber": 5.3,
+            "sugar": 16.5,
+            "sodium": 1228.6,
+            "saturatedFat": 9.4,
+            "edibleWeightG": 488
+          },
+          "analysis": {
+            "name": "Hawaii jellegű pizzaszeletek, kockázott sült csirkemell, ananász és koktélparadicsom",
+            "confidence": "medium",
+            "ingredients": [
+              {
+                "name": "Sonkás-ananászos-hagymás pizza",
+                "grams": 205,
+                "quantityUnit": "g",
+                "foodState": "prepared",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              },
+              {
+                "name": "Csirkemell, bőr nélkül, sütve",
+                "grams": 160,
+                "quantityUnit": "g",
+                "foodState": "prepared",
+                "referenceKey": "fdc-171477",
+                "visibility": "visible",
+                "sourceType": "reference"
+              },
+              {
+                "name": "Ananász, nyers",
+                "grams": 75,
+                "quantityUnit": "g",
+                "foodState": "raw",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              },
+              {
+                "name": "Koktélparadicsom, nyers",
+                "grams": 48,
+                "quantityUnit": "g",
+                "foodState": "raw",
+                "referenceKey": "fdc-170457",
+                "visibility": "visible",
+                "sourceType": "reference"
+              }
+            ]
+          },
+          "latencyMs": 25246,
+          "providerResponse": {
+            "usage": {
+              "candidatesTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 1268
+                }
+              ],
+              "promptTokensDetails": [
+                {
+                  "modality": "IMAGE",
+                  "tokenCount": 2164
+                },
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 7797
+                }
+              ],
+              "candidatesTokenCount": 1268,
+              "promptTokenCount": 9961,
+              "totalTokenCount": 11229,
+              "cost": 0.032602,
+              "opencode": {
+                "billing_source": "balance",
+                "list_cost": 0.032602,
+                "tokens": {
+                  "input": 9961,
+                  "output": 1268,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write_5m": 0,
+                  "cache_write_1h": 0
+                }
+              }
+            },
+            "httpStatus": 200,
+            "latencyMs": 25232
+          },
+          "images": [
+            {
+              "mime": "image/png",
+              "base64Sha256": "85c18397a425890b6b408c2292df3a0925c7eda01f855470351cc0fac55f153f",
+              "fileSha256": "e8a65e64e76e0bfa08a1630a929ce259702beda1dcf99a5e5a178773a9502e31"
+            },
+            {
+              "mime": "image/jpeg",
+              "base64Sha256": "c67db218d0e5e8636661d0ae217be12dc7d866e3a60a7ce6e95544c326f2e44d",
+              "fileSha256": "b8b64f13e3b6107c2ce6a9781b1a5da7568571e60bba1bb72e2644a35c3510bb"
+            }
+          ],
+          "systemPromptHash": "2c57609ad1ff818878cffcb3faee8eca07aa18a08d88fe8ab94b4d4d66daf000",
+          "viewCheck": {
+            "sameMeal": true,
+            "differentAngles": true,
+            "bothUsable": true,
+            "issues": []
+          }
+        },
+        {
+          "id": "dish_1561739238",
+          "group": "generic",
+          "mode": "photo_only",
+          "reference": {
+            "calories": 274.190002,
+            "protein": 9.465,
+            "carbs": 37.556999,
+            "fat": 9.785,
+            "fiber": null,
+            "sugar": null,
+            "sodium": null,
+            "saturatedFat": null,
+            "edibleWeightG": 257,
+            "method": "weighed_components",
+            "provenance": "Nutrition5k official dish_metadata CSV: measured component masses; USDA-derived energy/macros; dish_1561739238",
+            "carbohydrateBasis": "total_including_fiber"
+          },
+          "error": "A második fotó nem ad elég új információt. Ételnél változtass a szögön, csomagolt terméknél fotózd le az olvasható tápértéktáblát.",
+          "providerResponse": {
+            "usage": {
+              "candidatesTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 1637
+                }
+              ],
+              "promptTokensDetails": [
+                {
+                  "modality": "IMAGE",
+                  "tokenCount": 2164
+                },
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 7795
+                }
+              ],
+              "candidatesTokenCount": 1637,
+              "promptTokenCount": 9959,
+              "totalTokenCount": 11596,
+              "cost": 0.036288,
+              "opencode": {
+                "billing_source": "balance",
+                "list_cost": 0.036288,
+                "tokens": {
+                  "input": 9959,
+                  "output": 1637,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write_5m": 0,
+                  "cache_write_1h": 0
+                }
+              }
+            },
+            "httpStatus": 200,
+            "latencyMs": 28908
+          },
+          "images": [
+            {
+              "mime": "image/png",
+              "base64Sha256": "af1359151af108e230194cf1f77b96f48fd598a12b73a54c2726e90c3b0aae89",
+              "fileSha256": "01a3f22ea7c045147ceb5ab15c1ed9fc33618835cf5bd295cec8c98d0161df92"
+            },
+            {
+              "mime": "image/jpeg",
+              "base64Sha256": "907a13a6eb38db89836f1ad2e52b56b31fc070635d553fc81ed57cd6f8472360",
+              "fileSha256": "61ce370105ba3887f421421f66e4851ea498f61be10dcc6c2438cfcb3d16c049"
+            }
+          ],
+          "systemPromptHash": "2c57609ad1ff818878cffcb3faee8eca07aa18a08d88fe8ab94b4d4d66daf000",
+          "viewCheck": {
+            "sameMeal": true,
+            "differentAngles": false,
+            "bothUsable": true,
+            "issues": [
+              "A második fotó ugyanannak a tányérnak a 90 fokkal elforgatott, közelebbi felülnézete, így nem ad valódi oldalnézeti támpontot a magassághoz."
+            ]
+          }
+        },
+        {
+          "id": "dish_1561739238",
+          "group": "generic",
+          "mode": "with_context",
+          "reference": {
+            "calories": 274.190002,
+            "protein": 9.465,
+            "carbs": 37.556999,
+            "fat": 9.785,
+            "fiber": null,
+            "sugar": null,
+            "sodium": null,
+            "saturatedFat": null,
+            "edibleWeightG": 257,
+            "method": "weighed_components",
+            "provenance": "Nutrition5k official dish_metadata CSV: measured component masses; USDA-derived energy/macros; dish_1561739238",
+            "carbohydrateBasis": "total_including_fiber"
+          },
+          "predicted": {
+            "calories": 174.2,
+            "protein": 12.8,
+            "carbs": 23.1,
+            "fat": 3.7,
+            "fiber": 5.9,
+            "sugar": 8.1,
+            "sodium": 483.8,
+            "saturatedFat": 0.3,
+            "edibleWeightG": 257
+          },
+          "analysis": {
+            "name": "Főtt tojásfehérje, sült édesburgonya, pirított káposzta és bogyós gyümölcsök",
+            "confidence": "medium",
+            "ingredients": [
+              {
+                "name": "Főtt tojásfehérje",
+                "grams": 95,
+                "quantityUnit": "g",
+                "foodState": "prepared",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              },
+              {
+                "name": "Sült édesburgonya",
+                "grams": 80,
+                "quantityUnit": "g",
+                "foodState": "prepared",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              },
+              {
+                "name": "Pirított savanyú káposzta",
+                "grams": 45,
+                "quantityUnit": "g",
+                "foodState": "prepared",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              },
+              {
+                "name": "Málna",
+                "grams": 20,
+                "quantityUnit": "g",
+                "foodState": "raw",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              },
+              {
+                "name": "Szeder",
+                "grams": 14,
+                "quantityUnit": "g",
+                "foodState": "raw",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              },
+              {
+                "name": "Sütéshez használt olaj",
+                "grams": 3,
+                "quantityUnit": "g",
+                "foodState": "as_sold",
+                "referenceKey": "fdc-171025",
+                "visibility": "inferred",
+                "sourceType": "reference"
+              }
+            ]
+          },
+          "latencyMs": 27809,
+          "providerResponse": {
+            "usage": {
+              "candidatesTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 1363
+                }
+              ],
+              "promptTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 7797
+                },
+                {
+                  "modality": "IMAGE",
+                  "tokenCount": 2164
+                }
+              ],
+              "candidatesTokenCount": 1363,
+              "promptTokenCount": 9961,
+              "totalTokenCount": 11324,
+              "cost": 0.033552,
+              "opencode": {
+                "billing_source": "balance",
+                "list_cost": 0.033552,
+                "tokens": {
+                  "input": 9961,
+                  "output": 1363,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write_5m": 0,
+                  "cache_write_1h": 0
+                }
+              }
+            },
+            "httpStatus": 200,
+            "latencyMs": 27796
+          },
+          "images": [
+            {
+              "mime": "image/png",
+              "base64Sha256": "af1359151af108e230194cf1f77b96f48fd598a12b73a54c2726e90c3b0aae89",
+              "fileSha256": "01a3f22ea7c045147ceb5ab15c1ed9fc33618835cf5bd295cec8c98d0161df92"
+            },
+            {
+              "mime": "image/jpeg",
+              "base64Sha256": "907a13a6eb38db89836f1ad2e52b56b31fc070635d553fc81ed57cd6f8472360",
+              "fileSha256": "61ce370105ba3887f421421f66e4851ea498f61be10dcc6c2438cfcb3d16c049"
+            }
+          ],
+          "systemPromptHash": "2c57609ad1ff818878cffcb3faee8eca07aa18a08d88fe8ab94b4d4d66daf000",
+          "viewCheck": {
+            "sameMeal": true,
+            "differentAngles": true,
+            "bothUsable": true,
+            "issues": []
+          }
+        }
+      ]
+    },
+    {
+      "promptVersion": "food-v13-verified-views",
+      "model": "gemini-4-argon",
+      "referenceCatalogSha256": "a3638ea008f0223c3b1e662f1dab0ee4b30a5b99dc4019941cdd547aaa7a3bf7",
+      "summary": {
+        "photo_only": {
+          "attempted": 4,
+          "successful": 4,
+          "rejected": 0,
+          "errors": {
+            "calories": {
+              "n": 4,
+              "mae": 98.21000324999997,
+              "bias": -96.65000024999998,
+              "rmse": 112.75956394341908
+            },
+            "protein": {
+              "n": 4,
+              "mae": 8.778001,
+              "bias": -8.778001,
+              "rmse": 14.349027022537186
+            },
+            "carbs": {
+              "n": 4,
+              "mae": 7.322750249999999,
+              "bias": -5.432749749999998,
+              "rmse": 9.615603850955004
+            },
+            "fat": {
+              "n": 4,
+              "mae": 3.6729999999999996,
+              "bias": -3.6729999999999996,
+              "rmse": 4.368097469150613
+            },
+            "fiber": {
+              "n": 0,
+              "mae": null,
+              "bias": null,
+              "rmse": null
+            },
+            "sugar": {
+              "n": 0,
+              "mae": null,
+              "bias": null,
+              "rmse": null
+            },
+            "sodium": {
+              "n": 0,
+              "mae": null,
+              "bias": null,
+              "rmse": null
+            },
+            "saturatedFat": {
+              "n": 0,
+              "mae": null,
+              "bias": null,
+              "rmse": null
+            },
+            "edibleWeightG": {
+              "n": 4,
+              "mae": 30.25,
+              "bias": -13.75,
+              "rmse": 34.230834053525484
+            }
+          },
+          "groups": {
+            "generic": {
+              "attempted": 4,
+              "successful": 4,
+              "rejected": 0,
+              "errors": {
+                "calories": {
+                  "n": 4,
+                  "mae": 98.21000324999997,
+                  "bias": -96.65000024999998,
+                  "rmse": 112.75956394341908
+                },
+                "protein": {
+                  "n": 4,
+                  "mae": 8.778001,
+                  "bias": -8.778001,
+                  "rmse": 14.349027022537186
+                },
+                "carbs": {
+                  "n": 4,
+                  "mae": 7.322750249999999,
+                  "bias": -5.432749749999998,
+                  "rmse": 9.615603850955004
+                },
+                "fat": {
+                  "n": 4,
+                  "mae": 3.6729999999999996,
+                  "bias": -3.6729999999999996,
+                  "rmse": 4.368097469150613
+                },
+                "fiber": {
+                  "n": 0,
+                  "mae": null,
+                  "bias": null,
+                  "rmse": null
+                },
+                "sugar": {
+                  "n": 0,
+                  "mae": null,
+                  "bias": null,
+                  "rmse": null
+                },
+                "sodium": {
+                  "n": 0,
+                  "mae": null,
+                  "bias": null,
+                  "rmse": null
+                },
+                "saturatedFat": {
+                  "n": 0,
+                  "mae": null,
+                  "bias": null,
+                  "rmse": null
+                },
+                "edibleWeightG": {
+                  "n": 4,
+                  "mae": 30.25,
+                  "bias": -13.75,
+                  "rmse": 34.230834053525484
+                }
+              }
+            }
+          }
+        },
+        "with_context": {
+          "attempted": 4,
+          "successful": 4,
+          "rejected": 0,
+          "errors": {
+            "calories": {
+              "n": 4,
+              "mae": 76.53500324999997,
+              "bias": -76.52500024999995,
+              "rmse": 90.34873018122622
+            },
+            "protein": {
+              "n": 4,
+              "mae": 7.639500999999999,
+              "bias": -5.903001,
+              "rmse": 11.274731333539723
+            },
+            "carbs": {
+              "n": 4,
+              "mae": 5.602749749999998,
+              "bias": -3.1827497499999993,
+              "rmse": 7.221208023488917
+            },
+            "fat": {
+              "n": 4,
+              "mae": 3.7729999999999997,
+              "bias": -3.7729999999999992,
+              "rmse": 4.761142247402402
+            },
+            "fiber": {
+              "n": 0,
+              "mae": null,
+              "bias": null,
+              "rmse": null
+            },
+            "sugar": {
+              "n": 0,
+              "mae": null,
+              "bias": null,
+              "rmse": null
+            },
+            "sodium": {
+              "n": 0,
+              "mae": null,
+              "bias": null,
+              "rmse": null
+            },
+            "saturatedFat": {
+              "n": 0,
+              "mae": null,
+              "bias": null,
+              "rmse": null
+            },
+            "edibleWeightG": {
+              "n": 4,
+              "mae": 0,
+              "bias": 0,
+              "rmse": 0
+            }
+          },
+          "groups": {
+            "generic": {
+              "attempted": 4,
+              "successful": 4,
+              "rejected": 0,
+              "errors": {
+                "calories": {
+                  "n": 4,
+                  "mae": 76.53500324999997,
+                  "bias": -76.52500024999995,
+                  "rmse": 90.34873018122622
+                },
+                "protein": {
+                  "n": 4,
+                  "mae": 7.639500999999999,
+                  "bias": -5.903001,
+                  "rmse": 11.274731333539723
+                },
+                "carbs": {
+                  "n": 4,
+                  "mae": 5.602749749999998,
+                  "bias": -3.1827497499999993,
+                  "rmse": 7.221208023488917
+                },
+                "fat": {
+                  "n": 4,
+                  "mae": 3.7729999999999997,
+                  "bias": -3.7729999999999992,
+                  "rmse": 4.761142247402402
+                },
+                "fiber": {
+                  "n": 0,
+                  "mae": null,
+                  "bias": null,
+                  "rmse": null
+                },
+                "sugar": {
+                  "n": 0,
+                  "mae": null,
+                  "bias": null,
+                  "rmse": null
+                },
+                "sodium": {
+                  "n": 0,
+                  "mae": null,
+                  "bias": null,
+                  "rmse": null
+                },
+                "saturatedFat": {
+                  "n": 0,
+                  "mae": null,
+                  "bias": null,
+                  "rmse": null
+                },
+                "edibleWeightG": {
+                  "n": 4,
+                  "mae": 0,
+                  "bias": 0,
+                  "rmse": 0
+                }
+              }
+            }
+          }
+        }
+      },
+      "sharedPhotoOnlySummary": {
+        "photo_only": {
+          "attempted": 2,
+          "successful": 2,
+          "rejected": 0,
+          "errors": {
+            "calories": {
+              "n": 2,
+              "mae": 71.37000649999999,
+              "bias": -68.2500005,
+              "rmse": 98.75090073543653
+            },
+            "protein": {
+              "n": 2,
+              "mae": 14.081501499999996,
+              "bias": -14.081501499999995,
+              "rmse": 19.87045814275565
+            },
+            "carbs": {
+              "n": 2,
+              "mae": 1.8900005000000002,
+              "bias": 1.8900005000000002,
+              "rmse": 2.3226279383492527
+            },
+            "fat": {
+              "n": 2,
+              "mae": 1.6349999999999998,
+              "bias": -1.6349999999999998,
+              "rmse": 2.306589256889921
+            },
+            "fiber": {
+              "n": 0,
+              "mae": null,
+              "bias": null,
+              "rmse": null
+            },
+            "sugar": {
+              "n": 0,
+              "mae": null,
+              "bias": null,
+              "rmse": null
+            },
+            "sodium": {
+              "n": 0,
+              "mae": null,
+              "bias": null,
+              "rmse": null
+            },
+            "saturatedFat": {
+              "n": 0,
+              "mae": null,
+              "bias": null,
+              "rmse": null
+            },
+            "edibleWeightG": {
+              "n": 2,
+              "mae": 22.5,
+              "bias": -16.5,
+              "rmse": 27.90161285660741
+            }
+          },
+          "groups": {
+            "generic": {
+              "attempted": 2,
+              "successful": 2,
+              "rejected": 0,
+              "errors": {
+                "calories": {
+                  "n": 2,
+                  "mae": 71.37000649999999,
+                  "bias": -68.2500005,
+                  "rmse": 98.75090073543653
+                },
+                "protein": {
+                  "n": 2,
+                  "mae": 14.081501499999996,
+                  "bias": -14.081501499999995,
+                  "rmse": 19.87045814275565
+                },
+                "carbs": {
+                  "n": 2,
+                  "mae": 1.8900005000000002,
+                  "bias": 1.8900005000000002,
+                  "rmse": 2.3226279383492527
+                },
+                "fat": {
+                  "n": 2,
+                  "mae": 1.6349999999999998,
+                  "bias": -1.6349999999999998,
+                  "rmse": 2.306589256889921
+                },
+                "fiber": {
+                  "n": 0,
+                  "mae": null,
+                  "bias": null,
+                  "rmse": null
+                },
+                "sugar": {
+                  "n": 0,
+                  "mae": null,
+                  "bias": null,
+                  "rmse": null
+                },
+                "sodium": {
+                  "n": 0,
+                  "mae": null,
+                  "bias": null,
+                  "rmse": null
+                },
+                "saturatedFat": {
+                  "n": 0,
+                  "mae": null,
+                  "bias": null,
+                  "rmse": null
+                },
+                "edibleWeightG": {
+                  "n": 2,
+                  "mae": 22.5,
+                  "bias": -16.5,
+                  "rmse": 27.90161285660741
+                }
+              }
+            }
+          }
+        }
+      },
+      "costUsd": 0.24382,
+      "rows": [
+        {
+          "id": "dish_1558641164",
+          "group": "generic",
+          "mode": "photo_only",
+          "reference": {
+            "calories": 80.079994,
+            "protein": 0.462,
+            "carbs": 21.559999,
+            "fat": 0.308,
+            "fiber": null,
+            "sugar": null,
+            "sodium": null,
+            "saturatedFat": null,
+            "edibleWeightG": 154,
+            "method": "weighed_components",
+            "carbohydrateBasis": "total_including_fiber",
+            "provenance": "Nutrition5k official dish_metadata CSV: measured component masses; USDA-derived energy/macros; dish_1558641164"
+          },
+          "predicted": {
+            "calories": 83.2,
+            "protein": 0.4,
+            "carbs": 22.1,
+            "fat": 0.3,
+            "fiber": 3.8,
+            "sugar": 16.6,
+            "sodium": 1.6,
+            "saturatedFat": 0,
+            "edibleWeightG": 160
+          },
+          "analysis": {
+            "name": "Alma",
+            "confidence": "medium",
+            "ingredients": [
+              {
+                "name": "Alma",
+                "grams": 160,
+                "quantityUnit": "g",
+                "foodState": "raw",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              }
+            ]
+          },
+          "latencyMs": 9447,
+          "providerResponse": {
+            "usage": {
+              "candidatesTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 434
+                }
+              ],
+              "promptTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 7955
+                },
+                {
+                  "modality": "IMAGE",
+                  "tokenCount": 2164
+                }
+              ],
+              "candidatesTokenCount": 434,
+              "promptTokenCount": 10119,
+              "totalTokenCount": 10553,
+              "cost": 0.024578,
+              "opencode": {
+                "billing_source": "balance",
+                "list_cost": 0.024578,
+                "tokens": {
+                  "input": 10119,
+                  "output": 434,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write_5m": 0,
+                  "cache_write_1h": 0
+                }
+              }
+            },
+            "httpStatus": 200,
+            "latencyMs": 9432
+          },
+          "images": [
+            {
+              "mime": "image/png",
+              "base64Sha256": "d6a23985c139b76ddd58bdb156744fd8232cbc276146540a88b606da9e7450ca",
+              "fileSha256": "ec424b70a6b210f51ccc253c573be0405fdd011c9f1b996e9b5abd1c9bd889a0"
+            },
+            {
+              "mime": "image/jpeg",
+              "base64Sha256": "75c027ee33d1b7082196b75817da7769a72c6f7f0c9b5852953d091c737cad59",
+              "fileSha256": "3e9d7901769bc7df926dff9ecdc7563f007ba025fb3f3737b23623865f258b94"
+            }
+          ],
+          "systemPromptHash": "a9cd02f2df73afc37662b0ada20dc28ac5126b035c5b1e1e6fd721e21cea2c9e",
+          "viewCheck": {
+            "sameMeal": true,
+            "differentAngles": true,
+            "bothUsable": true,
+            "issues": []
+          }
+        },
+        {
+          "id": "dish_1558641164",
+          "group": "generic",
+          "mode": "with_context",
+          "reference": {
+            "calories": 80.079994,
+            "protein": 0.462,
+            "carbs": 21.559999,
+            "fat": 0.308,
+            "fiber": null,
+            "sugar": null,
+            "sodium": null,
+            "saturatedFat": null,
+            "edibleWeightG": 154,
+            "method": "weighed_components",
+            "carbohydrateBasis": "total_including_fiber",
+            "provenance": "Nutrition5k official dish_metadata CSV: measured component masses; USDA-derived energy/macros; dish_1558641164"
+          },
+          "predicted": {
+            "calories": 80.1,
+            "protein": 0.5,
+            "carbs": 21.3,
+            "fat": 0.3,
+            "fiber": 3.7,
+            "sugar": 16,
+            "sodium": 1.5,
+            "saturatedFat": 0,
+            "edibleWeightG": 154
+          },
+          "analysis": {
+            "name": "Nyers alma",
+            "confidence": "medium",
+            "ingredients": [
+              {
+                "name": "Alma héjjal",
+                "grams": 154,
+                "quantityUnit": "g",
+                "foodState": "raw",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              }
+            ]
+          },
+          "latencyMs": 13326,
+          "providerResponse": {
+            "usage": {
+              "candidatesTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 464
+                }
+              ],
+              "promptTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 7957
+                },
+                {
+                  "modality": "IMAGE",
+                  "tokenCount": 2164
+                }
+              ],
+              "candidatesTokenCount": 464,
+              "promptTokenCount": 10121,
+              "totalTokenCount": 10585,
+              "cost": 0.024882,
+              "opencode": {
+                "billing_source": "balance",
+                "list_cost": 0.024882,
+                "tokens": {
+                  "input": 10121,
+                  "output": 464,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write_5m": 0,
+                  "cache_write_1h": 0
+                }
+              }
+            },
+            "httpStatus": 200,
+            "latencyMs": 13287
+          },
+          "images": [
+            {
+              "mime": "image/png",
+              "base64Sha256": "d6a23985c139b76ddd58bdb156744fd8232cbc276146540a88b606da9e7450ca",
+              "fileSha256": "ec424b70a6b210f51ccc253c573be0405fdd011c9f1b996e9b5abd1c9bd889a0"
+            },
+            {
+              "mime": "image/jpeg",
+              "base64Sha256": "75c027ee33d1b7082196b75817da7769a72c6f7f0c9b5852953d091c737cad59",
+              "fileSha256": "3e9d7901769bc7df926dff9ecdc7563f007ba025fb3f3737b23623865f258b94"
+            }
+          ],
+          "systemPromptHash": "a9cd02f2df73afc37662b0ada20dc28ac5126b035c5b1e1e6fd721e21cea2c9e",
+          "viewCheck": {
+            "sameMeal": true,
+            "differentAngles": true,
+            "bothUsable": true,
+            "issues": []
+          }
+        },
+        {
+          "id": "dish_1565811061",
+          "group": "generic",
+          "mode": "photo_only",
+          "reference": {
+            "calories": 380.320007,
+            "protein": 65.801003,
+            "carbs": 9.06,
+            "fat": 7.762,
+            "fiber": null,
+            "sugar": null,
+            "sodium": null,
+            "saturatedFat": null,
+            "edibleWeightG": 324,
+            "method": "weighed_components",
+            "carbohydrateBasis": "total_including_fiber",
+            "provenance": "Nutrition5k official dish_metadata CSV: measured component masses; USDA-derived energy/macros; dish_1565811061"
+          },
+          "predicted": {
+            "calories": 240.7,
+            "protein": 37.7,
+            "carbs": 12.3,
+            "fat": 4.5,
+            "fiber": 5,
+            "sugar": 3.8,
+            "sodium": 185.7,
+            "saturatedFat": 1.2,
+            "edibleWeightG": 285
+          },
+          "analysis": {
+            "name": "Csirkemelles saláta spenóttal, brokkolival és sárgarépával",
+            "confidence": "medium",
+            "ingredients": [
+              {
+                "name": "Csirkemell",
+                "grams": 110,
+                "quantityUnit": "g",
+                "foodState": "prepared",
+                "referenceKey": "fdc-171477",
+                "visibility": "visible",
+                "sourceType": "reference"
+              },
+              {
+                "name": "Brokkoli",
+                "grams": 75,
+                "quantityUnit": "g",
+                "foodState": "prepared",
+                "referenceKey": "fdc-169967",
+                "visibility": "visible",
+                "sourceType": "reference"
+              },
+              {
+                "name": "Sárgarépa",
+                "grams": 55,
+                "quantityUnit": "g",
+                "foodState": "raw",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              },
+              {
+                "name": "Spenót",
+                "grams": 45,
+                "quantityUnit": "g",
+                "foodState": "raw",
+                "referenceKey": "fdc-168462",
+                "visibility": "visible",
+                "sourceType": "reference"
+              }
+            ]
+          },
+          "latencyMs": 19890,
+          "providerResponse": {
+            "usage": {
+              "candidatesTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 1125
+                }
+              ],
+              "promptTokensDetails": [
+                {
+                  "modality": "IMAGE",
+                  "tokenCount": 2164
+                },
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 7955
+                }
+              ],
+              "candidatesTokenCount": 1125,
+              "promptTokenCount": 10119,
+              "totalTokenCount": 11244,
+              "cost": 0.031488,
+              "opencode": {
+                "billing_source": "balance",
+                "list_cost": 0.031488,
+                "tokens": {
+                  "input": 10119,
+                  "output": 1125,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write_5m": 0,
+                  "cache_write_1h": 0
+                }
+              }
+            },
+            "httpStatus": 200,
+            "latencyMs": 19874
+          },
+          "images": [
+            {
+              "mime": "image/png",
+              "base64Sha256": "bd8876d95a65a16d0d7c9284eb8b5b6d53db33b003e7a5a865c55a55e2576881",
+              "fileSha256": "c351a10db228441ab065694afd85176cee45f251c3bb66330de7b1eb865bb2b4"
+            },
+            {
+              "mime": "image/jpeg",
+              "base64Sha256": "cb849f278c4c0ddcc501dca9c85aa83ff878c0c86e9321d5697b1cf5c6867bbb",
+              "fileSha256": "0c835d91df700561b911b6cfbf7ddfa7077e2df6d8da3111210ff869f8dab8d7"
+            }
+          ],
+          "systemPromptHash": "a9cd02f2df73afc37662b0ada20dc28ac5126b035c5b1e1e6fd721e21cea2c9e",
+          "viewCheck": {
+            "sameMeal": true,
+            "differentAngles": true,
+            "bothUsable": true,
+            "issues": []
+          }
+        },
+        {
+          "id": "dish_1565811061",
+          "group": "generic",
+          "mode": "with_context",
+          "reference": {
+            "calories": 380.320007,
+            "protein": 65.801003,
+            "carbs": 9.06,
+            "fat": 7.762,
+            "fiber": null,
+            "sugar": null,
+            "sodium": null,
+            "saturatedFat": null,
+            "edibleWeightG": 324,
+            "method": "weighed_components",
+            "carbohydrateBasis": "total_including_fiber",
+            "provenance": "Nutrition5k official dish_metadata CSV: measured component masses; USDA-derived energy/macros; dish_1565811061"
+          },
+          "predicted": {
+            "calories": 280.8,
+            "protein": 44.2,
+            "carbs": 13.9,
+            "fat": 5.3,
+            "fiber": 5.6,
+            "sugar": 4.4,
+            "sodium": 210.8,
+            "saturatedFat": 1.4,
+            "edibleWeightG": 324
+          },
+          "analysis": {
+            "name": "Csirkemelles zöldségsaláta brokkolival, sárgarépával és spenóttal",
+            "confidence": "medium",
+            "ingredients": [
+              {
+                "name": "Csirkemell",
+                "grams": 130,
+                "quantityUnit": "g",
+                "foodState": "prepared",
+                "referenceKey": "fdc-171477",
+                "visibility": "visible",
+                "sourceType": "reference"
+              },
+              {
+                "name": "Brokkoli",
+                "grams": 85,
+                "quantityUnit": "g",
+                "foodState": "prepared",
+                "referenceKey": "fdc-169967",
+                "visibility": "visible",
+                "sourceType": "reference"
+              },
+              {
+                "name": "Sárgarépa",
+                "grams": 64,
+                "quantityUnit": "g",
+                "foodState": "raw",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              },
+              {
+                "name": "Spenót",
+                "grams": 45,
+                "quantityUnit": "g",
+                "foodState": "raw",
+                "referenceKey": "fdc-168462",
+                "visibility": "visible",
+                "sourceType": "reference"
+              }
+            ]
+          },
+          "latencyMs": 23341,
+          "providerResponse": {
+            "usage": {
+              "candidatesTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 1213
+                }
+              ],
+              "promptTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 7957
+                },
+                {
+                  "modality": "IMAGE",
+                  "tokenCount": 2164
+                }
+              ],
+              "candidatesTokenCount": 1213,
+              "promptTokenCount": 10121,
+              "totalTokenCount": 11334,
+              "cost": 0.032372,
+              "opencode": {
+                "billing_source": "balance",
+                "list_cost": 0.032372,
+                "tokens": {
+                  "input": 10121,
+                  "output": 1213,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write_5m": 0,
+                  "cache_write_1h": 0
+                }
+              }
+            },
+            "httpStatus": 200,
+            "latencyMs": 23327
+          },
+          "images": [
+            {
+              "mime": "image/png",
+              "base64Sha256": "bd8876d95a65a16d0d7c9284eb8b5b6d53db33b003e7a5a865c55a55e2576881",
+              "fileSha256": "c351a10db228441ab065694afd85176cee45f251c3bb66330de7b1eb865bb2b4"
+            },
+            {
+              "mime": "image/jpeg",
+              "base64Sha256": "cb849f278c4c0ddcc501dca9c85aa83ff878c0c86e9321d5697b1cf5c6867bbb",
+              "fileSha256": "0c835d91df700561b911b6cfbf7ddfa7077e2df6d8da3111210ff869f8dab8d7"
+            }
+          ],
+          "systemPromptHash": "a9cd02f2df73afc37662b0ada20dc28ac5126b035c5b1e1e6fd721e21cea2c9e",
+          "viewCheck": {
+            "sameMeal": true,
+            "differentAngles": true,
+            "bothUsable": true,
+            "issues": []
+          }
+        },
+        {
+          "id": "dish_1566328805",
+          "group": "generic",
+          "mode": "photo_only",
+          "reference": {
+            "calories": 927.809998,
+            "protein": 77.984001,
+            "carbs": 85.054001,
+            "fat": 28.737,
+            "fiber": null,
+            "sugar": null,
+            "sodium": null,
+            "saturatedFat": null,
+            "edibleWeightG": 488,
+            "method": "weighed_components",
+            "carbohydrateBasis": "total_including_fiber",
+            "provenance": "Nutrition5k official dish_metadata CSV: measured component masses; USDA-derived energy/macros; dish_1566328805"
+          },
+          "predicted": {
+            "calories": 809.1,
+            "protein": 72.3,
+            "carbs": 76.4,
+            "fat": 23.5,
+            "fiber": 5.6,
+            "sugar": 17.9,
+            "sodium": 1202.8,
+            "saturatedFat": 9.4,
+            "edibleWeightG": 515
+          },
+          "analysis": {
+            "name": "Sonkás-ananászos pizza, sült csirkemellkockák, ananász és koktélparadicsom",
+            "confidence": "medium",
+            "ingredients": [
+              {
+                "name": "Sonkás-ananászos pizza",
+                "grams": 200,
+                "quantityUnit": "g",
+                "foodState": "prepared",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              },
+              {
+                "name": "Csirkemell",
+                "grams": 160,
+                "quantityUnit": "g",
+                "foodState": "prepared",
+                "referenceKey": "fdc-171477",
+                "visibility": "visible",
+                "sourceType": "reference"
+              },
+              {
+                "name": "Ananász",
+                "grams": 85,
+                "quantityUnit": "g",
+                "foodState": "raw",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              },
+              {
+                "name": "Koktélparadicsom",
+                "grams": 70,
+                "quantityUnit": "g",
+                "foodState": "raw",
+                "referenceKey": "fdc-170457",
+                "visibility": "visible",
+                "sourceType": "reference"
+              }
+            ]
+          },
+          "latencyMs": 22096,
+          "providerResponse": {
+            "usage": {
+              "candidatesTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 1083
+                }
+              ],
+              "promptTokensDetails": [
+                {
+                  "modality": "IMAGE",
+                  "tokenCount": 2164
+                },
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 7955
+                }
+              ],
+              "candidatesTokenCount": 1083,
+              "promptTokenCount": 10119,
+              "totalTokenCount": 11202,
+              "cost": 0.031068,
+              "opencode": {
+                "billing_source": "balance",
+                "list_cost": 0.031068,
+                "tokens": {
+                  "input": 10119,
+                  "output": 1083,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write_5m": 0,
+                  "cache_write_1h": 0
+                }
+              }
+            },
+            "httpStatus": 200,
+            "latencyMs": 22078
+          },
+          "images": [
+            {
+              "mime": "image/png",
+              "base64Sha256": "85c18397a425890b6b408c2292df3a0925c7eda01f855470351cc0fac55f153f",
+              "fileSha256": "e8a65e64e76e0bfa08a1630a929ce259702beda1dcf99a5e5a178773a9502e31"
+            },
+            {
+              "mime": "image/jpeg",
+              "base64Sha256": "c67db218d0e5e8636661d0ae217be12dc7d866e3a60a7ce6e95544c326f2e44d",
+              "fileSha256": "b8b64f13e3b6107c2ce6a9781b1a5da7568571e60bba1bb72e2644a35c3510bb"
+            }
+          ],
+          "systemPromptHash": "a9cd02f2df73afc37662b0ada20dc28ac5126b035c5b1e1e6fd721e21cea2c9e",
+          "viewCheck": {
+            "sameMeal": true,
+            "differentAngles": true,
+            "bothUsable": true,
+            "issues": []
+          }
+        },
+        {
+          "id": "dish_1566328805",
+          "group": "generic",
+          "mode": "with_context",
+          "reference": {
+            "calories": 927.809998,
+            "protein": 77.984001,
+            "carbs": 85.054001,
+            "fat": 28.737,
+            "fiber": null,
+            "sugar": null,
+            "sodium": null,
+            "saturatedFat": null,
+            "edibleWeightG": 488,
+            "method": "weighed_components",
+            "carbohydrateBasis": "total_including_fiber",
+            "provenance": "Nutrition5k official dish_metadata CSV: measured component masses; USDA-derived energy/macros; dish_1566328805"
+          },
+          "predicted": {
+            "calories": 798,
+            "protein": 72.5,
+            "carbs": 72.2,
+            "fat": 24,
+            "fiber": 5.2,
+            "sugar": 16.4,
+            "sodium": 1178.4,
+            "saturatedFat": 9.7,
+            "edibleWeightG": 488
+          },
+          "analysis": {
+            "name": "Sonkás-ananászos pizza, sült csirkemellkockák, ananász és koktélparadicsom",
+            "confidence": "medium",
+            "ingredients": [
+              {
+                "name": "Sonkás-ananászos pizza",
+                "grams": 195,
+                "quantityUnit": "g",
+                "foodState": "prepared",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              },
+              {
+                "name": "Sült csirkemell",
+                "grams": 165,
+                "quantityUnit": "g",
+                "foodState": "prepared",
+                "referenceKey": "fdc-171477",
+                "visibility": "visible",
+                "sourceType": "reference"
+              },
+              {
+                "name": "Ananász",
+                "grams": 78,
+                "quantityUnit": "g",
+                "foodState": "raw",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              },
+              {
+                "name": "Koktélparadicsom",
+                "grams": 50,
+                "quantityUnit": "g",
+                "foodState": "raw",
+                "referenceKey": "fdc-170457",
+                "visibility": "visible",
+                "sourceType": "reference"
+              }
+            ]
+          },
+          "latencyMs": 17178,
+          "providerResponse": {
+            "usage": {
+              "candidatesTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 1120
+                }
+              ],
+              "promptTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 7957
+                },
+                {
+                  "modality": "IMAGE",
+                  "tokenCount": 2164
+                }
+              ],
+              "candidatesTokenCount": 1120,
+              "promptTokenCount": 10121,
+              "totalTokenCount": 11241,
+              "cost": 0.031442,
+              "opencode": {
+                "billing_source": "balance",
+                "list_cost": 0.031442,
+                "tokens": {
+                  "input": 10121,
+                  "output": 1120,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write_5m": 0,
+                  "cache_write_1h": 0
+                }
+              }
+            },
+            "httpStatus": 200,
+            "latencyMs": 17165
+          },
+          "images": [
+            {
+              "mime": "image/png",
+              "base64Sha256": "85c18397a425890b6b408c2292df3a0925c7eda01f855470351cc0fac55f153f",
+              "fileSha256": "e8a65e64e76e0bfa08a1630a929ce259702beda1dcf99a5e5a178773a9502e31"
+            },
+            {
+              "mime": "image/jpeg",
+              "base64Sha256": "c67db218d0e5e8636661d0ae217be12dc7d866e3a60a7ce6e95544c326f2e44d",
+              "fileSha256": "b8b64f13e3b6107c2ce6a9781b1a5da7568571e60bba1bb72e2644a35c3510bb"
+            }
+          ],
+          "systemPromptHash": "a9cd02f2df73afc37662b0ada20dc28ac5126b035c5b1e1e6fd721e21cea2c9e",
+          "viewCheck": {
+            "sameMeal": true,
+            "differentAngles": true,
+            "bothUsable": true,
+            "issues": []
+          }
+        },
+        {
+          "id": "dish_1561739238",
+          "group": "generic",
+          "mode": "photo_only",
+          "reference": {
+            "calories": 274.190002,
+            "protein": 9.465,
+            "carbs": 37.556999,
+            "fat": 9.785,
+            "fiber": null,
+            "sugar": null,
+            "sodium": null,
+            "saturatedFat": null,
+            "edibleWeightG": 257,
+            "method": "weighed_components",
+            "carbohydrateBasis": "total_including_fiber",
+            "provenance": "Nutrition5k official dish_metadata CSV: measured component masses; USDA-derived energy/macros; dish_1561739238"
+          },
+          "predicted": {
+            "calories": 142.8,
+            "protein": 8.2,
+            "carbs": 20.7,
+            "fat": 3.6,
+            "fiber": 6,
+            "sugar": 7.3,
+            "sodium": 379.5,
+            "saturatedFat": 0.3,
+            "edibleWeightG": 208
+          },
+          "analysis": {
+            "name": "Sült édesburgonya, főtt tojásfehérje, savanyú káposzta és bogyós gyümölcsök",
+            "confidence": "medium",
+            "ingredients": [
+              {
+                "name": "Sült édesburgonya",
+                "grams": 65,
+                "quantityUnit": "g",
+                "foodState": "prepared",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              },
+              {
+                "name": "Főtt tojásfehérje",
+                "grams": 55,
+                "quantityUnit": "g",
+                "foodState": "prepared",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              },
+              {
+                "name": "Savanyú káposzta",
+                "grams": 40,
+                "quantityUnit": "g",
+                "foodState": "prepared",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              },
+              {
+                "name": "Málna",
+                "grams": 25,
+                "quantityUnit": "g",
+                "foodState": "raw",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              },
+              {
+                "name": "Szeder",
+                "grams": 20,
+                "quantityUnit": "g",
+                "foodState": "raw",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              },
+              {
+                "name": "Sütéshez használt zsiradék",
+                "grams": 3,
+                "quantityUnit": "g",
+                "foodState": "as_sold",
+                "referenceKey": "fdc-171025",
+                "visibility": "inferred",
+                "sourceType": "reference"
+              }
+            ]
+          },
+          "latencyMs": 28929,
+          "providerResponse": {
+            "usage": {
+              "candidatesTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 1487
+                }
+              ],
+              "promptTokensDetails": [
+                {
+                  "modality": "IMAGE",
+                  "tokenCount": 2164
+                },
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 7955
+                }
+              ],
+              "candidatesTokenCount": 1487,
+              "promptTokenCount": 10119,
+              "totalTokenCount": 11606,
+              "cost": 0.035108,
+              "opencode": {
+                "billing_source": "balance",
+                "list_cost": 0.035108,
+                "tokens": {
+                  "input": 10119,
+                  "output": 1487,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write_5m": 0,
+                  "cache_write_1h": 0
+                }
+              }
+            },
+            "httpStatus": 200,
+            "latencyMs": 28916
+          },
+          "images": [
+            {
+              "mime": "image/png",
+              "base64Sha256": "af1359151af108e230194cf1f77b96f48fd598a12b73a54c2726e90c3b0aae89",
+              "fileSha256": "01a3f22ea7c045147ceb5ab15c1ed9fc33618835cf5bd295cec8c98d0161df92"
+            },
+            {
+              "mime": "image/jpeg",
+              "base64Sha256": "907a13a6eb38db89836f1ad2e52b56b31fc070635d553fc81ed57cd6f8472360",
+              "fileSha256": "61ce370105ba3887f421421f66e4851ea498f61be10dcc6c2438cfcb3d16c049"
+            }
+          ],
+          "systemPromptHash": "a9cd02f2df73afc37662b0ada20dc28ac5126b035c5b1e1e6fd721e21cea2c9e",
+          "viewCheck": {
+            "sameMeal": true,
+            "differentAngles": true,
+            "bothUsable": true,
+            "issues": []
+          }
+        },
+        {
+          "id": "dish_1561739238",
+          "group": "generic",
+          "mode": "with_context",
+          "reference": {
+            "calories": 274.190002,
+            "protein": 9.465,
+            "carbs": 37.556999,
+            "fat": 9.785,
+            "fiber": null,
+            "sugar": null,
+            "sodium": null,
+            "saturatedFat": null,
+            "edibleWeightG": 257,
+            "method": "weighed_components",
+            "carbohydrateBasis": "total_including_fiber",
+            "provenance": "Nutrition5k official dish_metadata CSV: measured component masses; USDA-derived energy/macros; dish_1561739238"
+          },
+          "predicted": {
+            "calories": 197.4,
+            "protein": 12.9,
+            "carbs": 33.1,
+            "fat": 1.9,
+            "fiber": 5.7,
+            "sugar": 7.7,
+            "sodium": 261,
+            "saturatedFat": 0.2,
+            "edibleWeightG": 257
+          },
+          "analysis": {
+            "name": "Főtt tojásfehérje, sült édesburgonya, pirított reszelt burgonya és bogyós gyümölcsök",
+            "confidence": "medium",
+            "ingredients": [
+              {
+                "name": "Főtt tojásfehérje",
+                "grams": 90,
+                "quantityUnit": "g",
+                "foodState": "prepared",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              },
+              {
+                "name": "Sült édesburgonya",
+                "grams": 80,
+                "quantityUnit": "g",
+                "foodState": "prepared",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              },
+              {
+                "name": "Pirított reszelt burgonya",
+                "grams": 55,
+                "quantityUnit": "g",
+                "foodState": "prepared",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              },
+              {
+                "name": "Málna",
+                "grams": 18,
+                "quantityUnit": "g",
+                "foodState": "raw",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              },
+              {
+                "name": "Szeder",
+                "grams": 14,
+                "quantityUnit": "g",
+                "foodState": "raw",
+                "referenceKey": null,
+                "visibility": "visible",
+                "sourceType": "ai"
+              }
+            ]
+          },
+          "latencyMs": 53385,
+          "providerResponse": {
+            "usage": {
+              "candidatesTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 1264
+                }
+              ],
+              "promptTokensDetails": [
+                {
+                  "modality": "IMAGE",
+                  "tokenCount": 2164
+                },
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 7957
+                }
+              ],
+              "candidatesTokenCount": 1264,
+              "promptTokenCount": 10121,
+              "totalTokenCount": 11385,
+              "cost": 0.032882,
+              "opencode": {
+                "billing_source": "balance",
+                "list_cost": 0.032882,
+                "tokens": {
+                  "input": 10121,
+                  "output": 1264,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write_5m": 0,
+                  "cache_write_1h": 0
+                }
+              }
+            },
+            "httpStatus": 200,
+            "latencyMs": 53372
+          },
+          "images": [
+            {
+              "mime": "image/png",
+              "base64Sha256": "af1359151af108e230194cf1f77b96f48fd598a12b73a54c2726e90c3b0aae89",
+              "fileSha256": "01a3f22ea7c045147ceb5ab15c1ed9fc33618835cf5bd295cec8c98d0161df92"
+            },
+            {
+              "mime": "image/jpeg",
+              "base64Sha256": "907a13a6eb38db89836f1ad2e52b56b31fc070635d553fc81ed57cd6f8472360",
+              "fileSha256": "61ce370105ba3887f421421f66e4851ea498f61be10dcc6c2438cfcb3d16c049"
+            }
+          ],
+          "systemPromptHash": "a9cd02f2df73afc37662b0ada20dc28ac5126b035c5b1e1e6fd721e21cea2c9e",
+          "viewCheck": {
+            "sameMeal": true,
+            "differentAngles": true,
+            "bothUsable": true,
+            "issues": []
+          }
+        }
+      ]
+    }
+  ],
+  "controls": [
+    {
+      "id": "different-meals",
+      "expectedRejection": true,
+      "passed": true,
+      "error": "Nem sikerült igazolni, hogy a két képen ugyanaz az adag vagy csomagolt termék látható. Készíts új képpárt.",
+      "status": 422,
+      "images": [
+        {
+          "mime": "image/png",
+          "base64Sha256": "d6a23985c139b76ddd58bdb156744fd8232cbc276146540a88b606da9e7450ca",
+          "fileSha256": "ec424b70a6b210f51ccc253c573be0405fdd011c9f1b996e9b5abd1c9bd889a0"
+        },
+        {
+          "mime": "image/png",
+          "base64Sha256": "85c18397a425890b6b408c2292df3a0925c7eda01f855470351cc0fac55f153f",
+          "fileSha256": "e8a65e64e76e0bfa08a1630a929ce259702beda1dcf99a5e5a178773a9502e31"
+        }
+      ],
+      "usage": {
+        "candidatesTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 402
+          }
+        ],
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 2128
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 7955
+          }
+        ],
+        "candidatesTokenCount": 402,
+        "promptTokenCount": 10083,
+        "totalTokenCount": 10485,
+        "cost": 0.024186,
+        "opencode": {
+          "billing_source": "balance",
+          "list_cost": 0.024186,
+          "tokens": {
+            "input": 10083,
+            "output": 402,
+            "reasoning": 0,
+            "cache_read": 0,
+            "cache_write_5m": 0,
+            "cache_write_1h": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "same-view-reencoded",
+      "expectedRejection": true,
+      "passed": true,
+      "error": "A második fotó nem ad elég új információt. Ételnél változtass a szögön, csomagolt terméknél fotózd le az olvasható tápértéktáblát.",
+      "status": 422,
+      "images": [
+        {
+          "mime": "image/png",
+          "base64Sha256": "d6a23985c139b76ddd58bdb156744fd8232cbc276146540a88b606da9e7450ca",
+          "fileSha256": "ec424b70a6b210f51ccc253c573be0405fdd011c9f1b996e9b5abd1c9bd889a0"
+        },
+        {
+          "mime": "image/jpeg",
+          "base64Sha256": "b4b98d861d3c4ea437c99f6b38a20b48a4347cb68b5d6078b3bfe8ccc1bd8a7c",
+          "fileSha256": "b4865bfb5cbaadc8f2d1aa601abd4fafde57d77ac976863a1775563575dde2d1"
+        }
+      ],
+      "usage": {
+        "candidatesTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 493
+          }
+        ],
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 7955
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 2128
+          }
+        ],
+        "candidatesTokenCount": 493,
+        "promptTokenCount": 10083,
+        "totalTokenCount": 10576,
+        "cost": 0.025096,
+        "opencode": {
+          "billing_source": "balance",
+          "list_cost": 0.025096,
+          "tokens": {
+            "input": 10083,
+            "output": 493,
+            "reasoning": 0,
+            "cache_read": 0,
+            "cache_write_5m": 0,
+            "cache_write_1h": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "empty-frames",
+      "expectedRejection": true,
+      "passed": true,
+      "error": "Nem sikerült ételt, italt vagy csomagolt élelmiszert felismerni. Készíts világos, éles képpárt.",
+      "status": 422,
+      "images": [
+        {
+          "mime": "image/jpeg",
+          "base64Sha256": "54dfe93da2a11cbc79505e8c5165effa7fbec35e67036d48272b85aa2ddf2b45",
+          "fileSha256": "43c13e73f66c329cd775ab50c1ca18aa4f2c9db7d84f58ff7279b9fb6183e427"
+        },
+        {
+          "mime": "image/jpeg",
+          "base64Sha256": "7b46bf67e8009a3d33d00aac68973953a5f23a2a653fd0ee874cfc246adf6f53",
+          "fileSha256": "56d8286de43d587d56f1f1a9192090f256450d41f4069fc04bbde912b97a36f3"
+        }
+      ],
+      "usage": {
+        "candidatesTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 324
+          }
+        ],
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 7955
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 2128
+          }
+        ],
+        "candidatesTokenCount": 324,
+        "promptTokenCount": 10083,
+        "totalTokenCount": 10407,
+        "cost": 0.023406,
+        "opencode": {
+          "billing_source": "balance",
+          "list_cost": 0.023406,
+          "tokens": {
+            "input": 10083,
+            "output": 324,
+            "reasoning": 0,
+            "cache_read": 0,
+            "cache_write_5m": 0,
+            "cache_write_1h": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "controlled-package-label",
+      "expectedRejection": false,
+      "passed": true,
+      "images": [
+        {
+          "mime": "image/png",
+          "base64Sha256": "a374bd885d214087b6e271374e1caa221b0ad99414ecd162fcfbcc7a8f805dc5",
+          "fileSha256": "10d9cdd8549a8543856f549beb9821f16495fca65fbe7b2bdc45fdef04fd01fd"
+        },
+        {
+          "mime": "image/png",
+          "base64Sha256": "92f5707efaada8f2babd3fb0703a55689c97cc7fc0961cb9b56ca41a6784053b",
+          "fileSha256": "0b7501c15c6fe33ac7e02d3fa51475451b0253b5b250152b8bf2f37705572f3c"
+        }
+      ],
+      "usage": {
+        "candidatesTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 695
+          }
+        ],
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 7955
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 2146
+          }
+        ],
+        "candidatesTokenCount": 695,
+        "promptTokenCount": 10101,
+        "totalTokenCount": 10796,
+        "cost": 0.027152,
+        "opencode": {
+          "billing_source": "balance",
+          "list_cost": 0.027152,
+          "tokens": {
+            "input": 10101,
+            "output": 695,
+            "reasoning": 0,
+            "cache_read": 0,
+            "cache_write_5m": 0,
+            "cache_write_1h": 0
+          }
+        }
+      },
+      "analysis": {
+        "name": "Citromos tesztital",
+        "confidence": "high",
+        "assumptions": "A tápértéktáblázat nem tüntet fel élelmi rostot; az összetevők (víz, cukor, 2% citromlé, szén-dioxid) alapján a rosttartalom elhanyagolható (0 g). A nátriumtartalmat a címkén szereplő 0,0125 g sóból számoltuk (1 g só = 400 mg nátrium alapján 5 mg / 100 ml).",
+        "ingredients": [
+          {
+            "name": "Citromos tesztital",
+            "grams": 330,
+            "quantityUnit": "ml",
+            "calories": 40,
+            "protein": 0,
+            "carbs": 10,
+            "fat": 0,
+            "fiber": null,
+            "sugar": 10,
+            "sodium": 5,
+            "saturatedFat": 0,
+            "gramsMin": 330,
+            "gramsMax": 330,
+            "preparation": "bontatlan csomagolt szénsavas üdítőital",
+            "visibility": "visible",
+            "portionNote": "1 bontatlan doboz, a címkén feltüntetett 330 ml nettó térfogat alapján.",
+            "alternatives": [],
+            "sourceType": "label",
+            "referenceKey": null,
+            "referenceRecord": null,
+            "sourceConfirmed": null,
+            "weightBasis": "label",
+            "foodState": "as_sold",
+            "productLabel": {
+              "productName": "Citromos tesztital",
+              "brand": "YUMETRICS TEST",
+              "barcode": null,
+              "barcodeValid": false,
+              "netAmount": 330,
+              "netUnit": "ml",
+              "packageCount": 1,
+              "basisAmount": 100,
+              "basisUnit": "ml",
+              "prepared": false,
+              "carbsIncludeFiber": false,
+              "nutrients": {
+                "calories": 40,
+                "protein": 0,
+                "carbs": 10,
+                "fat": 0,
+                "fiber": null,
+                "sugar": 10,
+                "sodium": null,
+                "saturatedFat": 0,
+                "energyKj": 168,
+                "saltG": 0.0125
+              },
+              "ingredientsText": "víz, cukor, citromlé 2%, szén-dioxid.",
+              "allergensText": null,
+              "issues": [
+                "A címkén nem szerepel külön rostérték, nátriumérték, allergénjelölés és vonalkód."
+              ]
+            }
+          }
+        ],
+        "portionScope": "full_image",
+        "dishProfile": "generic",
+        "reportVersion": 2,
+        "summary": "Egy 330 ml-es kiszerelésű, bontatlan YUMETRICS TEST citromos szénsavas üdítőital csomagolása látható elöl- és hátulnézetből, jól olvasható tápértéktáblázattal.",
+        "observations": [
+          "Az első képen a 330 ml-es bontatlan italcsomagolás elülső oldala és rövidített tápértékadatai láthatók.",
+          "A második képen ugyanezen termék hátoldali részletes tápértéktáblázata és összetevőlistája olvasható.",
+          "A számítás a teljes, 330 ml-es bontatlan csomagra vonatkozik, ezért mentés előtt érdemes ellenőrizni a ténylegesen elfogyasztott mennyiséget."
+        ],
+        "questions": [],
+        "imageQuality": {
+          "level": "good",
+          "issues": []
+        },
+        "viewCheck": {
+          "sameMeal": true,
+          "differentAngles": true,
+          "bothUsable": true,
+          "issues": []
+        }
+      }
+    }
+  ],
+  "costUsd": 0.59052
+}

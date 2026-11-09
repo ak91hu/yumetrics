@@ -1,6 +1,6 @@
 # Valódi pontosságmérés magyar étkezéseken
 
-A `scripts/evaluate-nutrition.mjs` az aktuális felismerést egy független, lemért referencia ellen futtatja. **Ehhez a verzióhoz nincs mért pontossági eredmény:** nincs megadott, függetlenül lemért magyar fotós tesztkészlet. A generált csülök-dekoráció és a szoftverteszt képei nem ilyen referenciák.
+A `scripts/evaluate-nutrition.mjs` az aktuális felismerést egy független, lemért referencia ellen futtatja. A négy valódi Nutrition5k-étkezésen végzett első diagnosztikai összehasonlítás: [2026. november 9-i mérés](AI-VALIDATION-2026-11-09.md). Függetlenül lemért magyar fotós tesztkészlet továbbra sincs. A generált csülök-dekoráció és a szoftverteszt képei nem ilyen referenciák.
 
 ## Adatkészlet
 
@@ -31,6 +31,8 @@ A `work/` alatt hozz létre például `nutrition-benchmark/cases.json` fájlt, �
 
 Csak valódi mérés után állítsd a `measured` értékét `true`-ra és írd át a példaszámokat. Kötelező a referencia eredete. A kód ezt nyilatkozatként ellenőrzi; nem képes bizonyítani a fizikai mérés megtörténtét.
 
+A `method` lehet `weighed_recipe` (lemért recept), `weighed_components` (külön lemért összetevők) vagy `laboratory`. A `carbohydrateBasis` alapértéke `available`, vagyis rost nélküli szénhidrát. USDA/Nutrition5k teljes szénhidrát esetén adj meg `total_including_fiber` értéket: ekkor az összehasonlítás az alkalmazás szénhidrát- és rostértékének összegét használja. Hiányzó rostnál ez a becslés is ismeretlen; nem helyettesítjük nullával. Az alkalmazás eredeti adata nem változik.
+
 ## Futtatás
 
 ```powershell
@@ -41,6 +43,8 @@ node scripts/evaluate-nutrition.mjs work/nutrition-benchmark/cases.json --run --
 Az első parancs csak a formátumot/képfájlokat ellenőrzi, nem hív AI-t. A másodiknak `OPENCODE_API_KEY` kell a `.env` fájlban; fizetős modellhívásokat végez. Esetenként két menet: `photo_only` a két kötelező kép, kiegészítő kontextus nélkül; `with_context` ugyanaz a két kép a megadott információval. Mindkét módhoz kötelező két külön képtartalom; az azonos képeket a futtató elutasítja. Egy menet pontosan egy részletes AI-hívásból áll, amely megkapja a képpárt; a válasz tartalmazza a képi ellenőrzéseket és a tápértékeket is. A referencia tápértékeket nem küldjük a modellnek. Az eredmény minden menet után az `outputs/nutrition-evaluation-*.json` fájlba kerül, tehát megszakításnál a már elkészült mérések megmaradnak.
 
 Az összegzés módszerenként és ételcsoportonként közli az esetszámot, elutasításokat, abszolút átlaghibát (MAE), átlagos előjeles hibát (bias) és RMSE-t, külön kcal-ra, ehető tömegre és tápanyagokra. Hiányzó referencia/predikció nem nulla hiba; az adott metrikánál külön `n` van. A sikertelen esetek nem tűnnek el az összes esetszámból. A nulla célértékeket is kezeli; nincs félrevezető, nullával osztott százalékhiba.
+
+A `providerResponse` megőrzi a szolgáltatói használati adatokat, HTTP-állapotot és késleltetést akkor is, ha az alkalmazás a kapott elemzést elutasította. Az ilyen hívás is kerülhet pénzbe; a hiányzó költségadat nem nulla költség.
 
 Az étel/összetevő azonosságát külön emberi értékelésben vizsgáld az eltárolt `analysis` alapján: hibás nyers/főtt párosítás, hiányzó köret/szósz, dupla számolás, helytelen készétel-bontás. Az automatikus kcal-hiba nem bizonyítja a helyes felismerést, mert egymást kioltó hibák is adhatnak közeli összértéket. Külön értékeld a saját receptből számolt, ismert alapanyagú eseteket; ne keverd őket a fotó-only felismerés mért pontosságával.
 

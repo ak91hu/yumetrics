@@ -1,5 +1,11 @@
 # Ellenőrzés
 
+## Valódi AI-ellenőrzés és javítások, 2026-11-09
+
+Húsz tényleges, számlázott Gemini-hívás történt: négy Nutrition5k-étkezés a régi és az új prompttal, tömeg nélkül és ismert össztömeggel, valamint négy külön ellenőrző próba. A módszer, az előtte–utána eredmények, a fennmaradó félreismerés, az összetevőarány hibája és a 0,59052 USD szolgáltatói költség: [mérési jelentés](AI-VALIDATION-2026-11-09.md). Ez kis diagnosztikai minta, nincs belőle általános pontossági százalék vagy magyar ételekre igazolt eredmény.
+
+A teljes Node-tesztsor **114/114 sikeres**, helyi PostgreSQL-lel, kihagyás nélkül. A képek sorrendjét és indexelését, a teljes referenciakatalógus megőrzését, az egységes szénhidrátalapot, az ismeretlen rost kezelését és az elutasított válasz költségének megőrzését regressziós próbák ellenőrzik. A build és a magyar/mobil, angol/asztali teljes Chrome-folyamat öt szélességen sikeres; ezekben a külső szolgáltatókat továbbra is tesztválaszok helyettesítik. A húsz külön szolgáltatói hívás közvetlenül az alkalmazás valódi elemzőfüggvényét használta.
+
 ## Többféle étel neve és adagra számított tápértéke, 2026-11-09
 
 A teljes Node-tesztsor **113/113 sikeres**, valódi helyi PostgreSQL-lel, kihagyás nélkül. A négy új próba négy külön étel és ital nevét, egyedi tápértékét és összegét, a g/ml egységek elkülönítését, a hiányzó nátrium megőrzését, a receptből számolt alapanyagmennyiségeket, valamint a név és a mennyiség módosításának mentését és visszaolvasását ellenőrzi SQLite-on és PostgreSQL-en. Az eredeti AI-válasz külön megmarad. Az egyetlen kétképes kérés változatlan; a `food-v12-every-food` utasítás minden étel név szerinti felsorolását kéri, és külön rögzíti, hogy többféle étel egy képen nem jelent eltérő étkezéseket. A közös prompt 15 000 karakter alatt maradt, a referenciák és az elkészítési támpontok megőrzésével.

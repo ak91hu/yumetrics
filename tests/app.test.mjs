@@ -91,6 +91,7 @@ test('one detailed AI request includes both photos and returns the whole validat
   assert.deepEqual(result.usage.passes.map(pass => pass.stage), ['meal_analysis']);
   const call = calls[0], prompt = call.systemInstruction.parts[0].text;
   assert.deepEqual(call.contents[0].parts.filter(part => part.inlineData).map(part => part.inlineData.data), [image, secondImage].map(value => value.split(',')[1]));
+  assert.deepEqual(call.contents[0].parts.slice(1).map(part => part.text || part.inlineData.mimeType), ['IMAGE 1', 'image/jpeg', 'IMAGE 2', 'image/jpeg']);
   assert.equal(JSON.parse(call.contents[0].parts.find(part => part.text).text).notes, 'Ismert elkészítés');
   for (const section of ['KÉPPÁR-ELLENŐRZÉS', 'ADAGELLENŐRZÉS', 'TÁPÉRTÉKEK UGYANEBBEN A VÁLASZBAN', 'VÉGSŐ ELLENŐRZÉS UGYANEBBEN A KÉRÉSBEN', '1 g só = 400 mg nátrium']) assert.ok(prompt.includes(section));
   assert.ok(prompt.length < 15000, 'Keep the shared prompt below the previous 15,784-character request');
@@ -152,7 +153,7 @@ test('OpenCode uses the native Gemini route, server-side bearer token and schema
   assert.equal(mock.calls[0].url, 'https://opencode.ai/inference/google/v1beta/models/gemini-4-argon:generateContent');
   assert.equal(mock.calls[0].options.headers.Authorization, `Bearer ${env.OPENCODE_API_KEY}`);
   const body = JSON.parse(mock.calls[0].options.body);
-  assert.equal(body.contents[0].parts[0].inlineData.mimeType, 'image/jpeg');
+  assert.equal(body.contents[0].parts.find(part => part.inlineData).inlineData.mimeType, 'image/jpeg');
   assert.equal(body.generationConfig.responseMimeType, 'application/json');
   assert.equal(Object.hasOwn(body.generationConfig, 'temperature'), false, 'Gemini 4 does not support sampling parameters');
   assert.ok(body.generationConfig.responseJsonSchema.properties.ingredients);

@@ -47,7 +47,7 @@ A saját recept pontosabb rögzítéséhez ismert alapanyagok és tényleges ké
 
 A szoftvertesztek a képleteket, csontlevonást, forrásellenőrzést, mértékegységeket és a folyamatot bizonyítják. A tényleges fotós kalóriahiba méréséhez a [kutatási terv](RESEARCH.md) szerinti külön vakteszt szükséges. A generált csülökkép dekoráció; nem tesztelési etalon és nem mért étkezés.
 
-A futtatható mérési eszköz: [BENCHMARK.md](BENCHMARK.md). Nem keveri a sikeres eredmények hibáját az elutasított esetekkel, és ismeretlen adatnál külön darabszámot ad. Jelenleg nincs éles mért pontossági eredmény.
+A futtatható mérési eszköz: [BENCHMARK.md](BENCHMARK.md). Nem keveri a sikeres eredmények hibáját az elutasított esetekkel, és ismeretlen adatnál külön darabszámot ad. A v12–v13 első valódi, négy Nutrition5k-étkezésre korlátozott összehasonlítása: [mérési jelentés](AI-VALIDATION-2026-11-09.md). Ez nem magyar étkezésekre igazolt pontossági eredmény.
 
 ## Kompatibilitás
 
