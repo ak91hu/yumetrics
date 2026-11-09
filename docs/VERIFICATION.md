@@ -2,7 +2,7 @@
 
 ## Szövegpontosítás és code review, 2026-11-09
 
-A [részletes review](REVIEW-2026-11-09.md) hét javított találatcsoportot dokumentál. A címkeadatok következetességét azonos 100 g/ml-es alapon ellenőrizzük, a tizedes csomagmennyiség megőrzi a jelölését és pontosságát. A folyadékok tartomány- és mérési szövege, a dinamikus mezők fordítása, a jelvényértesítés nyelvváltása és a forrásrészletek nyitva maradása külön regressziós ellenőrzést kapott. A README, a bejelentkezőoldal, a főoldal, a feltöltés, a módszertani ablak és a nyilvános útmutató szövegei a kétfotós/címkés folyamathoz igazodnak. Teljes Node-futás: 78/78 sikeres, helyi PostgreSQL-lel, kihagyás nélkül. A magyar/mobil és angol/asztali böngészős ellenőrzés öt szélességet fed le; a build is sikeres. Új fizetős AI-hívás nem történt. A korábbi pontossági korlátok továbbra is érvényesek.
+A [részletes review](REVIEW-2026-11-09.md) hét javított találatcsoportot dokumentál. A címkeadatok következetességét azonos 100 g/ml-es alapon ellenőrizzük, a tizedes csomagmennyiség megőrzi a jelölését és pontosságát. A folyadékok tartomány- és mérési szövege, a dinamikus mezők fordítása, a jelvényértesítés nyelvváltása és a forrásrészletek nyitva maradása külön regressziós ellenőrzést kapott. A README, a bejelentkezőoldal, a főoldal, a feltöltés, a módszertani ablak és a nyilvános útmutató szövegei a kétfotós/címkés folyamathoz igazodnak. Teljes Node-futás: 79/79 sikeres, helyi PostgreSQL-lel, kihagyás nélkül. A magyar/mobil és angol/asztali böngészős ellenőrzés öt szélességet fed le; a build is sikeres. Új fizetős AI-hívás nem történt. A korábbi pontossági korlátok továbbra is érvényesek.
 
 ## Ételek, italok és csomagolási címkék, 2026-11-09
 

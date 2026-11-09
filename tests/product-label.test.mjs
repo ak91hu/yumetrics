@@ -76,6 +76,15 @@ test('label consistency tolerances use the normalized basis, including very smal
   assert.equal(labelNutrients(normalizeLabel(base)).calories, 0);
 });
 
+test('manual corrections remain saveable while a contradictory historical label is retained as evidence', () => {
+  const label = productLabelFixture({ basisAmount: 1, nutrients: { ...productLabelFixture().nutrients, calories: 0, energyKj: 20, protein: 0, carbs: 0, fat: 0, sugar: 0 } });
+  const corrected = { name: label.productName, grams: 100, quantityUnit: 'ml', foodState: 'as_sold', sourceType: 'user', productLabel: label, calories: 478, protein: 0, carbs: 100, fat: 0, fiber: null, sugar: 0, sodium: null, saturatedFat: 0 };
+  const analysis = validateAnalysis({ name: label.productName, confidence: 'medium', ingredients: [corrected] });
+  assert.equal(analysis.ingredients[0].sourceType, 'user'); assert.equal(analysis.ingredients[0].calories, 478);
+  assert.equal(analysis.ingredients[0].productLabel.nutrients.calories, 0);
+  assert.throws(() => validateAnalysis({ ...analysis, ingredients: [{ ...corrected, sourceType: 'label' }] }), /kcal/);
+});
+
 test('open packages retain the visible amount; incomplete or mismatched prepared labels never claim label-derived nutrition', async () => {
   const open = await recognize(productLabelFixture({ packageCount: null }));
   assert.equal(open.analysis.ingredients[0].grams, 150); assert.equal(open.analysis.ingredients[0].weightBasis, 'visual'); assert.equal(open.analysis.confidence, 'medium');
