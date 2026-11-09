@@ -20,5 +20,6 @@ test('daily graphs retain empty days, missing costs, exact date boundaries and a
   const series=dailySeries([{day:'2026-11-08',cost:null},{day:'2026-11-09',cost:.003}], 'cost',3,'2026-11-09');
   assert.deepEqual(series,[{day:'2026-11-07',value:0},{day:'2026-11-08',value:null},{day:'2026-11-09',value:.003}]);
   const html=lineChart('cost','<unsafe>',series,'USD');assert.ok(html.includes('role="img"'));assert.ok(html.includes('Nincs költségadat'));assert.ok(!html.includes('<unsafe>'));assert.equal((html.match(/<polyline /g)||[]).length,2);
+  const visits=lineChart('visits','Oldalmegnyitások',[{day:'2026-11-09',value:null}]);assert.ok(visits.includes('Nincs adat'));assert.ok(!visits.includes('Nincs költségadat'));
   assert.ok(!distributionChart('statuses','<x>',[{label:'<img onerror=alert(1)>',value:2}]).includes('<img'));
 });

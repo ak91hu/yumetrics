@@ -1,5 +1,13 @@
 # Ellenőrzés
 
+## Beépített látogatottságmérés, 2026-11-09
+
+Az admin új **Látogatottság** nézete a saját szerveren összesített oldalmegnyitásokat mutatja: 7/30/365 nap, napi és óránkénti grafikon, ország, érkezési forrás, megnyitott oldal, eszköz, böngésző, operációs rendszer és alapnyelv. Nincs új analitikai szolgáltatás, külső mérőkód, látogatói azonosító vagy mérési süti. A mérés a Beállításokból kikapcsolható. A nyilvános magyar és angol útmutató, mindkét README, az admin- és telepítési dokumentáció is követi az új adatáramlást. Módszer és korlátok: [ADMIN.md](ADMIN.md#a-beépített-látogatottságmérés).
+
+A teljes Node-tesztsor **120/120 sikeres**, helyi PostgreSQL-lel, kihagyás nélkül. Ellenőrzött az új migráció, az anonim és bejelentkezett oldalmegnyitás, a tulajdonos és a nem mérendő kérések kihagyása, DNT/GPC, az ismeretlen ország és forrás, a titkos URL-paraméterek elhagyása, a párhuzamos számlálás, a lekérdezésen belül egyező bontások, a 400 napos ablak takarítása, a kikapcsolás és a 401/403-as védelem. Szándékosan hibás statisztikai tárolás mellett a belépőoldal 200-as választ ad, új süti nélkül.
+
+A build, a magyar/mobil és angol/asztali teljes Chrome-folyamat is sikeres. Üres és tesztadatokkal feltöltött nézetet, 7 napra szűrést, kilenc grafikont, a magyarázó súgót és öt képernyőszélességet vizsgál. A headless böngésző saját navigációja nem növeli a látogatottságot; a képeken látható adatok kizárólag a helyi tesztadatbázisba kerültek. Az asztali és mobilos képernyőképeket vizuálisan is ellenőriztük. Egyedi látogatók, munkamenetek, időtartam, városok és korábbi forgalom mérését nem állítjuk. Firefox-, Safari- és képernyőolvasós próba nem történt.
+
 ## README-k és felületi súgók, 2026-11-09
 
 A forrástár mindkét README-je frissült: az alkalmazásleírás az aktuális AI-módszert, a mérés korlátait, a védett fotóelérést és a két külön PostgreSQL-tesztadatbázist ismerteti; a GeoIP-leírás a kizárólag Magyarországra vonatkozó magyar alapnyelvet, a választási sorrendet és a kézi adatbázis-frissítést rögzíti. A helyi hivatkozások érvényesek, a csomagolt országadatbázis ellenőrzőösszege megegyezik a dokumentálttal. A feltöltőablak elavult, nyilvános fotóelérésre utaló szövegét is javítottuk.

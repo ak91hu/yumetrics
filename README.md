@@ -56,6 +56,14 @@ Bontatlan csomagnál a látható teljes csomagok nettó mennyisége az alapérte
 
 ## Használat és profil
 
+### Látogatottság, külön analitikai előfizetés nélkül
+
+Az [admin Látogatottság nézete](https://yumetrics.app/admin#visitors) a tényleges oldalmegnyitásokból készít napi és óránkénti grafikonokat, ország-, érkezési forrás-, oldal-, eszköz-, böngésző-, operációsrendszer- és alapnyelvi bontást. A 7, 30 vagy 365 napos nézetben a részletes darabszámok és arányok táblázatban is megnyithatók. Csak a tulajdonosi Google-fiók fér hozzá. Umami-fiók, külső mérőkód vagy új szolgáltatás nem kell hozzá; a meglévő szerver és adatbázis erőforrásait használja.
+
+Ez **oldalmegnyitás-számlálás, nem egyedilátogató-mérés**. Nem használunk új sütit, látogatói azonosítót vagy böngésző-ujjlenyomatot; az IP-cím, teljes hivatkozó, URL-paraméter és étkezési adat nem kerül a statisztikába. A bejelentkezett tulajdonos forgalmát, az ismert robotokat, előtöltéseket és az adatvédelmi tiltást jelző kéréseket kihagyjuk. A mérés az admin Beállítások nézetében szüneteltethető. A napi adat nélküli pont nem bizonyított nulla forgalom; a bekötés előtti időszakról nincs látogatottsági adat. Részletes működés, megőrzés és korlátok: [ADMIN.md](docs/ADMIN.md#a-beépített-látogatottságmérés).
+
+### Naplózás, jelvények és fiók
+
 A naplózást ötszintű növényes fejlődés, hat jelvény és egy gördülő hétnapos cél ösztönzi. A fejlődés különböző mentett napokra épül, a régebbi napok is számítanak; az étkezések energiatartalma nem befolyásolja a jutalmat. A kihagyás nem von le fejlődési napot, a törlés vagy dátummódosítás viszont újraszámítja a jelvényeket. A főoldali kártya és a mentés utáni visszajelzés a meglévő profiladatokból működik, új AI-kérés nélkül.
 
 Google-belépés után tölts fel két fotót ugyanarról az egész adagról (felülről és ferdén oldalról), csomagolt terméknél a teljes csomagról és az olvasható címkéről, majd nézd át és mentsd a piszkozatot. A kiegészítő adatokat csak akkor add meg, ha ismered őket. A feldolgozás a fotó tartós feltöltése után a háttérben folytatódik. Az eredmény később is javítható.
@@ -122,7 +130,7 @@ Az elemzés minden felismert ételt, italt, köretet és szószt külön névvel
 
 ## Rövid súgók a felületen
 
-A kérdőjeles gombok a második fotóhoz, a lemért mennyiségekhez, az adagra számított tápértékekhez, a szerkesztéshez, a kalóriatartományhoz és az AI saját bizonyossági jelzéséhez adnak magyarázatot. Az admin költségkártyáján külön súgó tisztázza a becslés és a hiányzó adatok jelentését. A lényeges kitöltési útmutatók a súgó megnyitása nélkül is olvashatók.
+A kérdőjeles gombok a második fotóhoz, a lemért mennyiségekhez, az adagra számított tápértékekhez, a szerkesztéshez, a kalóriatartományhoz és az AI saját bizonyossági jelzéséhez adnak magyarázatot. Az admin költségkártyáján külön súgó tisztázza a becslés és a hiányzó adatok jelentését; a látogatottságnál egy másik buborék magyarázza a számlálás korlátait. A lényeges kitöltési útmutatók a súgó megnyitása nélkül is olvashatók.
 
 A súgó érintéssel, kattintással, illetve a gombra lépve Enterrel vagy szóközzel nyitható meg; Escape-pel, a gomb újbóli megnyomásával vagy a buborékon kívülre kattintva bezárható. A buborék a képernyőn belül marad, görgetéskor bezárul. A napló súgói követik a magyar vagy angol nyelvválasztást; az admin magyar marad. Megnyitásuk nem módosítja a kitöltött mezőket és nem indít AI-kérést.
 

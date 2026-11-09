@@ -1,6 +1,6 @@
 # Az alapnyelvhez használt országadatok
 
-Frissítve: 2026. november 9. Ez az adatbázis kizárólag az első megnyitás alapnyelvéhez ad országkódot; nem érinti az ételfelismerést vagy a tápértékszámítást.
+Frissítve: 2026. november 9. Ez az adatbázis az első megnyitás alapnyelvéhez és a látogatottság ország szerinti összesítéséhez ad országkódot; nem érinti az ételfelismerést vagy a tápértékszámítást.
 
 Forrás: [DB-IP IP to Country Lite](https://db-ip.com/db/download/ip-to-country-lite), 2026. novemberi kiadás. A `country.mmdb.gz` az eredeti, tömörített MMDB-adatbázis; az adatokat nem módosítottuk.
 
@@ -39,3 +39,5 @@ npm run build
 Az IPv4-, IPv6-, IPv4-be ágyazott, helyi és hibás címeket, a megbízható fejléc kezelését, a kézi választás elsőbbségét és a magyar/angol válaszokat külön tesztek ellenőrzik. Telepítés után az alkalmazás újraindításával töltődik be az új adatbázis; a fájl helyi cseréje önmagában nem frissíti az éles szolgáltatást.
 
 Kapcsolódó források: [országfelismerés](../geoip.mjs), [nyelvi elsőbbség](../i18n.mjs), [nyelvi elvek](../../docs/LANGUAGE.md), [alkalmazás és telepítés](../../README.md). A mostani dokumentációfrissítés nem cserélte le az országadatbázist.
+
+A látogatottságmérés csak országonkénti napi számlálót őriz meg, IP-címet vagy látogatói profilt nem. Az eredményt a tulajdonosi admin mutatja; a mérés ott kikapcsolható. A nyelvválasztás ettől függetlenül működik. A mérés módja, szűrései és korlátai: [ADMIN.md](../../docs/ADMIN.md#a-beépített-látogatottságmérés).

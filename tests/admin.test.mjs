@@ -36,7 +36,7 @@ for (const dialect of ['sqlite','postgres']) {
     await fn({db,env,owner,other,cookies,call,settings,save,login,googleClient,calls,fetcher});
   });
   run('protects every private route and hides provider configuration from ordinary users',async f=>{
-    for(const path of ['/admin','/admin.html','/api/admin/settings','/api/admin/overview','/api/admin/users','/api/admin/meals','/api/admin/jobs','/api/admin/audit','/api/admin/logs','/api/admin/costs']){
+    for(const path of ['/admin','/admin.html','/api/admin/settings','/api/admin/overview','/api/admin/visitors','/api/admin/users','/api/admin/meals','/api/admin/jobs','/api/admin/audit','/api/admin/logs','/api/admin/costs']){
       assert.equal((await f.call(path,{id:null})).status,401,path);
       assert.equal((await f.call(path,{id:f.other})).status,403,path);
       assert.equal((await f.call(path)).status,200,path);
@@ -73,6 +73,30 @@ for (const dialect of ['sqlite','postgres']) {
     }
     for(let i=0;i<2;i++){const costs=await(await f.call('/api/admin/costs')).json();assert.equal(Number(costs.summary.requests),3);assert.equal(Number(costs.summary.priced_requests),1);assert.ok(Math.abs(costs.summary.estimated_usd-.003)<1e-12);assert.equal(costs.items.length,3);}
     const known=await f.db.prepare('SELECT * FROM ai_requests WHERE cost_usd IS NOT NULL AND user_id=?').bind(f.other).first();assert.equal(JSON.parse(known.pricing).input,2);
+  });
+  run('counts only eligible page views and returns private aggregate visitor reports with a working pause switch',async f=>{
+    await f.db.prepare('DELETE FROM visitor_stats').bind().run();
+    try {
+      f.env.NODE_ENV='production';
+      const headers={'Sec-Fetch-Dest':'document','User-Agent':'Mozilla/5.0 (Windows NT 10.0) Chrome/142.0 Safari/537.36','X-Envoy-External-Address':'84.2.44.1',Referer:'https://www.google.com/?q=private-meal-name&code=secret-code'};
+      assert.equal((await f.call('/',{id:null,headers})).status,200);
+      assert.equal((await f.call('/',{id:f.other,headers})).status,200);
+      assert.equal((await f.call('/guide',{id:null,headers})).status,200);
+      for(const [path,id,extra,method]of[['/',f.owner,{},'GET'],['/',null,{DNT:'1'},'GET'],['/',null,{'Sec-GPC':'1'},'GET'],['/',null,{'User-Agent':'Googlebot'},'GET'],['/',null,{},'HEAD'],['/styles.css',null,{},'GET'],['/admin',f.other,{},'GET']])await f.call(path,{id,headers:{...headers,...extra},method});
+      const report=await(await f.call('/api/admin/visitors?days=7')).json();
+      assert.equal(report.total,3);assert.equal(report.todayViews,3);assert.equal(report.enabled,true);assert.equal(report.breakdowns.country[0].value,'HU');assert.equal(report.breakdowns.country[0].views,3);assert.equal(report.breakdowns.page.length,3);
+      const raw=JSON.stringify(report);for(const secret of ['84.2.44.1','private-meal-name','secret-code',f.other,'other@example.test'])assert.ok(!raw.includes(secret));
+      assert.equal((await f.call('/api/admin/visitors?days=99999')).status,400);
+      assert.equal((await f.save({visitorStatsEnabled:'false'})).status,400);
+      assert.equal((await f.save({visitorStatsEnabled:false})).status,200);
+      await f.call('/',{id:null,headers});
+      const paused=await(await f.call('/api/admin/visitors')).json();assert.equal(paused.enabled,false);assert.equal(paused.total,3);
+      await f.save({visitorStatsEnabled:true});await f.call('/',{id:null,headers});
+      assert.equal((await(await f.call('/api/admin/visitors')).json()).total,4);
+      const [during,...responses]=await Promise.all([f.call('/api/admin/visitors'),...Array.from({length:12},()=>f.call('/',{id:null,headers}))]);
+      assert.ok(responses.every(response=>response.status===200));const snapshot=await during.json();for(const rows of Object.values(snapshot.breakdowns))assert.equal(rows.reduce((sum,row)=>sum+row.views,0),snapshot.total);
+      const concurrent=await(await f.call('/api/admin/visitors')).json();assert.equal(concurrent.total,16);for(const rows of Object.values(concurrent.breakdowns))assert.equal(rows.reduce((sum,row)=>sum+row.views,0),16);
+    } finally { await f.db.prepare('DELETE FROM visitor_stats').bind().run(); }
   });
   run('validates persisted settings, rejects stale edits, and applies real analysis limits and AI parameters',async f=>{
     const initial=await f.settings();

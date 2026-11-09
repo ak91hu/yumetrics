@@ -8,13 +8,14 @@ A szerver minden adminisztrációs kérésnél a munkamenethez tartozó, adatbá
 
 | Nézet | Lehetőségek |
 | --- | --- |
+| Látogatottság | Oldalmegnyitások napi és óránkénti grafikonja; ország-, forrás-, oldal-, eszköz-, böngésző-, operációsrendszer- és alapnyelvi bontás. 7, 30 vagy 365 nap választható; a teljes bontások darabszámai és arányai táblázatban is megnyithatók. |
 | Áttekintés | 7, 30 vagy 365 nap adatai; felhasználók, aktív naplózók, mentett étkezések, becsült AI-költség és feldolgozások. A napi bejegyzések és regisztrációk alakulását vonalgrafikon, az állapotokat és étkezéstípusokat oszlopok szemléltetik. |
 | Felhasználók | Keresés, lapozás, a napi energiakeret módosítása, hozzáférés tiltása vagy visszaállítása, valamint kijelentkeztetés minden eszközről. A felhasználó bejegyzései innen külön is megnyithatók. |
 | Étkezések | Szűrés felhasználó és állapot szerint; fotók, összetevők, számított értékek, eredeti és javított elemzések, valamint használati adatok megtekintése. |
 | AI-használat és költségek | Napi költséggrafikon, modellenkénti és hívásonkénti bontás. A felület jelzi, hány hívás költsége számítható ki, és hol hiányzik adat. |
 | Feldolgozások | Elemzések és törlések állapota, próbálkozások száma, hibák és a futó feladat foglalásának lejárata. |
 | Működési napló | Indulások, belépések, kijelentkezések és feldolgozási események. Időszak, súlyosság és szöveg szerint szűrhető. |
-| Beállítások | Új elemzések és csatlakozások engedélyezése, elemzési korlátok, az új fiókok napi energiakerete, AI-modell, válaszhossz és várakozási idő. |
+| Beállítások | Látogatottságmérés be- és kikapcsolása, új elemzések és csatlakozások engedélyezése, elemzési korlátok, az új fiókok napi energiakerete, AI-modell, válaszhossz és várakozási idő. |
 | Módosítási előzmények | A beállítások és fiókok módosításai: végrehajtó, időpont, érintett adat, korábbi és új érték. A kijelentkeztetéseket is rögzítjük. |
 
 Mobilon a teljes menü több sorban látható. Az időszak- és állapotszűrő módosítása azonnal frissíti a nézetet. A széles táblázatokat oldalirányban görgetheted; a grafikonok napi értékeit táblázatként is megnyithatod.
@@ -31,7 +32,21 @@ Az óránkénti és napi korlátokat a feltöltésnél és a kézi újrapróbál
 
 Az API-kulcsokat, az OAuth-hitelesítési adatokat, az adatbázis-kapcsolatot és a domaineket továbbra is Northflanken kell kezelni. Az adminfelület hivatkozást ad hozzá; a titkos értékeket nem küldi a böngészőnek, és nem írja a változásnaplóba. A kapcsolati jelzések a szükséges beállítások meglétét mutatják, nem a kulcsok érvényességét vagy a szolgáltatói egyenleget. Ezeket az adatokat az átlagos felhasználó nem kapja meg.
 
-A statisztikák a bejegyzések UTC szerinti létrehozási napjára vonatkoznak, nem a felhasználó által módosítható étkezési dátumra. A költségbecslés részletes módszere, forrásai és korlátai az [AI-COSTS.md](AI-COSTS.md) dokumentumban olvashatók. Valódi látogatottsági adatokat nem gyűjtünk.
+A bejegyzésstatisztikák az UTC szerinti létrehozási napra vonatkoznak, nem a felhasználó által módosítható étkezési dátumra. A látogatottság a tényleges oldalmegnyitás UTC szerinti napját és óráját használja. A költségbecslés részletes módszere, forrásai és korlátai az [AI-COSTS.md](AI-COSTS.md) dokumentumban olvashatók.
+
+## A beépített látogatottságmérés
+
+Nincs külön analitikai szolgáltatás, előfizetés, külső mérőkód vagy eseményenkénti szolgáltatói díj. A mérés a meglévő Node-szerver és PostgreSQL erőforrásait használja; a meglévő tárhely költsége ettől nem szűnik meg. Az Umami vagy más mérőszolgáltatás elérhetőségétől nem függ.
+
+A sikeresen kiszolgált belépőoldalt, naplót és két nyelvű útmutatót számoljuk, ha a böngésző oldalnavigációnak jelzi a kérést. Az újratöltés új megnyitás. Az API-k, képek és más fájlok lekérése, a naplón belüli nézetváltás és a fotófeltöltés nem oldalmegnyitás. A tulajdonos bejelentkezett forgalma, az ismert robotok és előtöltések kimaradnak. `DNT: 1` vagy `Sec-GPC: 1` mellett nem rögzítünk látogatottsági számlálót. A hiányos vagy hamis böngészőfejlécek, a hálózati környezet és a nem felismert robotok torzíthatják a mérést.
+
+**Nem egyedilátogató-szám:** nincs látogatói azonosító, új mérési süti, böngésző-ujjlenyomat vagy munkamenetkövetés. Oldalon töltött időt és visszafordulási arányt sem állítunk elő belőle. A regisztrált felhasználók és aktív naplózók adatai a külön alkalmazásstatisztikában maradnak.
+
+Nap és bontási kategória szerint csak összesített számlálók kerülnek a `visitor_stats` táblába. Nyers IP-cím, teljes User-Agent, teljes hivatkozási cím, URL-paraméter, felhasználó- vagy munkamenetazonosító, fotó és étkezési tartalom nem szerepel benne. A bontások külön számlálók, nem kapcsolhatók össze látogatói profilokká. Az ország a helyi DB-IP-adatbázis becslése. A böngésző és az eszköz típusa a kérésből becsült kategória. A forrás ismert kereső vagy közösségi oldal, saját oldal, egyéb külső oldal, illetve közvetlen/nem ismert kategória lehet. A hiányzó hivatkozó nem bizonyít közvetlen érkezést.
+
+A **Beállítások → Látogatottság mérése** kapcsoló a következő oldalmegnyitástól hat. Kikapcsolása megőrzi a korábbi számlálókat, és a módosítás bekerül a változásnaplóba. Új megnyitás vagy a látogatottsági nézet betöltése törli a 400 napos megőrzési ablakon kívüli sorokat. Ha nincs megnyitás és az admin sem töltődik be, a takarítás a következő ilyen műveletkor fut le. A mérés bekötése előtti forgalom nem állítható elő utólag. A rögzített napi adat nélküli pontokat a grafikon hiányzó adatként mutatja, nem bizonyított nulla forgalomként.
+
+A számlálók egyetlen adatbázis-műveletben növekednek; az admin összesítése és bontásai közös lekérdezési pillanatképből készülnek, párhuzamos megnyitások mellett is. A mérés tárolási hibája nem alakítja hibaválasszá a sikeresen elkészült oldalt. Migrációk: PostgreSQL `0005_visitors`, SQLite `0007_visitors`.
 
 Az alkalmazásbeállítások az `app_settings`, a módosítási előzmények az `admin_audit`, az AI-hívások az `ai_requests`, a működési napló eseményei az `app_logs` táblába kerülnek. A szükséges PostgreSQL-migrációk: `0002_admin` és `0003_telemetry`; a SQLite-változatok: `0004_admin` és `0005_telemetry`. Induláskor a meglévő, zárolt migrációs folyamat futtatja őket, a mentett étkezések átírása nélkül.
 

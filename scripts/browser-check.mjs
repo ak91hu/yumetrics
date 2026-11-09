@@ -11,6 +11,7 @@ import { randomUUID } from 'node:crypto';
 import { validateAnalysis } from '../lib/domain.mjs';
 import { normalizeLabel, labelNutrients } from '../lib/product-label.mjs';
 import { productLabelFixture } from '../tests/fixtures.mjs';
+import { recordPageView } from '../lib/visitors.mjs';
 
 const chrome = process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const language = process.env.TEST_LANGUAGE === 'en' ? 'en' : 'hu';
@@ -531,11 +532,23 @@ try {
   storedPhotos.set('yumetrics/'+adminMeal,'data:image/png;base64,'+readFileSync('public/badges/first.png').toString('base64'));
   await db.prepare('INSERT INTO meals(id,user_id,day,time,type,status,analysis,original_analysis,photo,public_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').bind(adminMeal,adminId,adminTime.slice(0,10),'12:00','Ebéd','draft',JSON.stringify(adminAnalysis),JSON.stringify(adminAnalysis),JSON.stringify({publicId:'yumetrics/'+adminMeal,type:'authenticated',url:'https://res.cloudinary.com/test-cloud/image/authenticated/v1/yumetrics/'+adminMeal+'.jpg'}),adminMeal,adminTime,adminTime).run();
   await db.prepare("INSERT INTO analysis_jobs(meal_id,kind,state,input_hash,error,created_at,updated_at) VALUES(?,'analyze','failed','','Provider diagnostic visible only to the owner',?,?)").bind(adminMeal,adminTime,adminTime).run();
-  for(const tab of ['users','meals','jobs','costs','logs','settings','audit']){
+  for(const tab of ['visitors','users','meals','jobs','costs','logs','settings','audit']){
     await evaluate(`location.hash=${JSON.stringify(tab)}`);
-    await waitFor(`document.querySelector('#admin-title').textContent === ${JSON.stringify({users:'Felhasználók',meals:'Étkezések',jobs:'Feldolgozások',settings:'Beállítások',audit:'Módosítási előzmények',costs:'AI-használat és költségek',logs:'Működési napló'}[tab])} && document.querySelector('#admin-view').getAttribute('aria-busy') === 'false'`);
+    await waitFor(`document.querySelector('#admin-title').textContent === ${JSON.stringify({visitors:'Látogatottság',users:'Felhasználók',meals:'Étkezések',jobs:'Feldolgozások',settings:'Beállítások',audit:'Módosítási előzmények',costs:'AI-használat és költségek',logs:'Működési napló'}[tab])} && document.querySelector('#admin-view').getAttribute('aria-busy') === 'false'`);
     assert.ok(await evaluate("document.querySelector('#admin-message').hidden"),'Admin tab loads '+tab);
     for(const width of [320,390,768,1024,1440]){await viewport(width,1000,width<768);assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth'),'Admin '+tab+' fits '+width);}
+    if(tab==='visitors'){
+      assert.equal(await evaluate("document.querySelector('.admin-grid .admin-card strong').textContent"),'0','Headless test navigation is excluded');
+      for(const [index,daysAgo]of [0,0,0,0,1,1,8].entries())await recordPageView(db,new Request(origin,{headers:{'Sec-Fetch-Dest':'document','User-Agent':'Mozilla/5.0 (Windows NT 10.0) Chrome/142.0 Safari/537.36',Referer:index%2?'https://www.google.com/':'https://www.facebook.com/'}}),{page:index%2?'diary':'login',country:index%3?'HU':'US',language:index%2?'en':'hu'},Date.now()-daysAgo*86400000);
+      await evaluate("document.querySelector('#refresh').click()");await waitFor("document.querySelector('#admin-view').getAttribute('aria-busy')==='false' && document.querySelector('.admin-grid .admin-card strong').textContent==='7'");
+      assert.equal(await evaluate("document.querySelectorAll('.admin-chart svg[role=img]').length"),9);
+      await evaluate("document.querySelector('#visitor-period [name=days]').value='7';document.querySelector('#visitor-period [name=days]').dispatchEvent(new Event('change',{bubbles:true}))");
+      await waitFor("location.hash.includes('days=7') && document.querySelector('#admin-view').getAttribute('aria-busy')==='false' && document.querySelector('.admin-grid .admin-card strong').textContent==='6'");
+      assert.equal(await evaluate("document.querySelector('.chart-data tbody').children.length"),7);
+      await checkHelp('visitor-help',false);
+      await viewport(1440,1100,false);await screenshot('admin-visitors-desktop.png');await viewport(390,844,true);await screenshot('admin-visitors-mobile.png');
+      for(const width of [320,390,768,1024,1440]){await viewport(width,1000,width<768);assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth'),'Populated visitor report fits '+width);}
+    }
     if(tab==='users'){
       await evaluate("document.querySelector('#user-filter [name=q]').value='teszt@example.test';document.querySelector('#user-filter').requestSubmit()");
       await waitFor("document.querySelector('#admin-view').getAttribute('aria-busy') === 'false' && document.querySelectorAll('[data-user]').length === 1");
@@ -605,6 +618,8 @@ try {
   result.checks.push('four named foods with separate portion nutrients and total; mixed g/ml and missing values; live edits, scroll retention, escaped names, save/reload and untruncated diary names');
   result.checks.push('contextual help in both languages, keyboard Enter/Escape and touch; viewport bounds at five widths, outside dismissal, input preservation and no AI calls');
   result.screenshots.push('context-weight-help-mobile.png','context-energy-range-help-mobile.png','context-ai-cost-help-mobile.png');
+  result.checks.push('private visitor report: empty and populated states, filtered dates, nine charts, privacy explanation and responsive tables; headless navigation does not inflate totals');
+  result.screenshots.push('admin-visitors-desktop.png','admin-visitors-mobile.png');
   result.screenshots.push('food-breakdown-desktop.png','food-breakdown-mobile.png');
   result.screenshots.push('admin-costs-desktop.png','admin-costs-mobile.png','admin-logs-desktop.png','admin-logs-mobile.png');
   result.screenshots.push('badges-mobile.png','admin-overview-desktop.png','admin-overview-mobile.png','admin-settings-desktop.png','admin-settings-mobile.png','admin-audit-desktop.png');

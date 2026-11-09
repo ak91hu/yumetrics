@@ -14,7 +14,8 @@ import { requestCountry, requestAddress } from './lib/geoip.mjs';
 import { secureStoredPhotos } from './lib/photos.mjs';
 import { requestLimit } from './lib/request-limits.mjs';
 import { AppError } from './lib/domain.mjs';
-import { isAdmin } from './lib/settings.mjs';
+import { isAdmin, appSettings } from './lib/settings.mjs';
+import { recordPageView } from './lib/visitors.mjs';
 import { logEvent, importHistoricalUsage } from './lib/telemetry.mjs';
 export { openDatabase } from './lib/database.mjs';
 
@@ -36,7 +37,8 @@ export function createApp({ db, env = process.env, fetcher = fetch, publicOrigin
       }
       else {
         const request = new Request(url, { method: incoming.method, headers: incoming.headers, ...(incoming.method !== 'GET' && incoming.method !== 'HEAD' ? { body: Readable.toWeb(incoming), duplex: 'half' } : {}) });
-        language = requestLanguage(request, requestCountry(request, incoming.socket.remoteAddress, env.NODE_ENV === 'production'));
+        const country = requestCountry(request, incoming.socket.remoteAddress, env.NODE_ENV === 'production');
+        language = requestLanguage(request, country);
         if (db && request.method === 'GET' && ['/auth/google', '/auth/google/callback'].includes(url.pathname)) {
           await requestLimit(db, url.pathname, requestAddress(request, incoming.socket.remoteAddress, env.NODE_ENV === 'production') || 'unknown', url.pathname === '/auth/google' ? 20 : 60, 600);
         }
@@ -69,6 +71,12 @@ export function createApp({ db, env = process.env, fetcher = fetch, publicOrigin
             const localizedPage = ['index.html', 'login.html'].includes(filename);
             const content = isGuide ? guideMarkup(readFileSync(resolve(ROOT, 'public', filename), 'utf8'), guideLanguage) : localizedPage ? readFileSync(resolve(ROOT, 'public', filename), 'utf8').replace('<html lang="hu"', `<html lang="hu" data-default-language="${language}"`) : readFileSync(resolve(ROOT, 'public', filename));
             response = new Response(incoming.method === 'HEAD' ? null : content, { headers: { 'Content-Type': type, 'Cache-Control': 'no-store', ...(isGuide || localizedPage ? { 'Content-Language': isGuide ? guideLanguage : language, Vary: 'Cookie' } : {}) } });
+            if (db && !isAdmin(user) && (isGuide || localizedPage)) {
+              try {
+                const page = isGuide ? 'guide_'+guideLanguage : filename === 'login.html' ? 'login' : 'diary';
+                if ((await appSettings(db,env)).settings.visitorStatsEnabled) await recordPageView(db,request,{page,country,language:isGuide?guideLanguage:language});
+              } catch (error) { console.error('Visitor statistics could not be saved:', error.code || error.name); }
+            }
           } else response = json({ error: 'Nem található.' }, 404);
         }
       }

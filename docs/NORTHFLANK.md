@@ -41,6 +41,7 @@ A PostgreSQL addon az alkalmazástól külön erőforrás, tartós adatlemezzel.
 | Feldolgozási és törlési sor, állapot, lease | PostgreSQL `analysis_jobs` |
 | Óránkénti/napi elemzési próbálkozások | PostgreSQL `analysis_attempts` |
 | USDA-rekordok változatlan, kulccsal azonosított másolata | PostgreSQL `food_records` |
+| Összesített napi látogatottság, személyes látogatói rekord nélkül | PostgreSQL `visitor_stats` |
 | Feltöltött képbájtok, második nézet | Cloudinary |
 | Kép public ID, URL, verzió és méretek | PostgreSQL, a `photo` mezőben |
 
