@@ -1,5 +1,7 @@
 # A megvalósított ételértékelés
 
+A v17 az értékesített és az elkészítés utáni címkeadatokat külön kezeli. A száraz csomagtömeg nem helyettesíti a kész étel mennyiségét; az olvasható címketápérték olvashatatlan terméknév mellett is használható, a név bizonytalanságának jelzésével. A regressziós esetek és korlátok: [2026. november 10-i felülvizsgálat](CODE-REVIEW-2026-11-10.md).
+
 ## Aktuális működés: címkék és g/ml mennyiségek
 
 A jelenlegi folyamat egy AI-kéréssel, egy kötelező és egy opcionális fotóval működik. Ételeknél felül-/oldalnézet, csomagolt terméknél teljes termék + olvasható tápértéktábla az elfogadott képpár. A gramm és a milliliter külön mennyiség; ismeretlen sűrűséget nem feltételezünk. A konkrét termékhez illő, olvasható címke az elsődleges forrás, majd megfelelő USDA-adat vagy AI-becslés következik. A címke eredeti adatai megmaradnak, a szerver a vonatkoztatási alapot és egységeket kezeli. Kis adagalapnál is 100 g/ml-re átszámítva ellenőrzi a kcal/kJ és só/nátrium összhangját; a tizedes kiszerelést ismételt mentéskor is megőrzi. A mentendő mennyiség a piszkozatban kézzel pontosítható. Részletes, aktuális felhasználói leírás: [Használati útmutató](https://yumetrics.app/utmutato).

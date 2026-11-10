@@ -577,13 +577,14 @@ try {
   await evaluate("document.querySelector('#meal-list [data-meal]').click();document.querySelector('#delete-meal').click();document.querySelector('#confirm-delete').click()");
   await waitFor("document.querySelector('#meal-count').textContent==='0' && !document.querySelector('#meal-dialog').open");
   await waitFor("document.querySelector('#draft-list').children.length===0");
-  const label = normalizeLabel(productLabelFixture()), packagedId = randomUUID(), owner = (await db.prepare('SELECT id FROM users').bind().first()).id;
-  const packaged = validateAnalysis({ name: 'Test drink', confidence: 'high', ingredients: [{ name: label.productName, grams: 330, gramsMin: 330, gramsMax: 330, quantityUnit: 'ml', productLabel: label, sourceType: 'label', weightBasis: 'label', foodState: 'as_sold', ...labelNutrients(label) }] });
+  const label = normalizeLabel(productLabelFixture({productName:null})), packagedId = randomUUID(), owner = (await db.prepare('SELECT id FROM users').bind().first()).id;
+  const packaged = validateAnalysis({ name: 'Test drink', confidence: 'medium', ingredients: [{ name: 'Test drink', grams: 330, gramsMin: 330, gramsMax: 330, quantityUnit: 'ml', productLabel: label, sourceType: 'label', weightBasis: 'label', foodState: 'as_sold', ...labelNutrients(label) }] });
   storedPhotos.set('yumetrics/'+packagedId,'data:image/png;base64,'+readFileSync('public/badges/first.png').toString('base64'));
   await db.prepare('INSERT INTO meals(id,user_id,day,time,type,status,analysis,original_analysis,photo,public_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').bind(packagedId, owner, savedRecipe.day, '15:00', 'Kisétkezés', 'draft', JSON.stringify(packaged), JSON.stringify(packaged), JSON.stringify({publicId:'yumetrics/'+packagedId,type:'authenticated',url:'https://res.cloudinary.com/test-cloud/image/authenticated/v1/yumetrics/'+packagedId+'.jpg'}), packagedId, new Date().toISOString(), new Date().toISOString()).run();
   await send('Page.reload'); await waitFor("!!document.querySelector('#draft-list button') && document.querySelector('#loading').hidden");
   await evaluate("document.querySelector('#draft-list button').click()");
   assert.equal(await evaluate("document.querySelector('#report-weight').textContent.trim()"),'330 ml');
+  assert.ok(await evaluate(`document.querySelector('#report-warnings').textContent.includes(${JSON.stringify(expected('termék neve nem','product name is not'))})`),'Unreadable product identity is clearly distinguished from readable label nutrient data');
   assert.ok(await evaluate(`document.querySelector('[data-source-label="0"]').textContent.includes(${JSON.stringify(expected('Címkéről','label'))})`));
   assert.ok(await evaluate(`document.querySelector('[name=i-0-grams]').closest('label').textContent.includes('ml')`));
   assert.equal(await evaluate("document.querySelectorAll('[data-reference-index]').length"),0);

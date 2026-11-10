@@ -106,6 +106,37 @@ test('open packages retain the visible amount; incomplete or mismatched prepared
   assert.equal(totals(water.analysis.ingredients).calories, 0); assert.equal(water.analysis.ingredients[0].quantityUnit, 'ml');
 });
 
+test('as-sold package weight never replaces the quantity of prepared or reconstituted food', async () => {
+  for(const prepared of [true,false,null]){
+    const label=productLabelFixture({prepared,netAmount:100,netUnit:'g',basisUnit:'g'});
+    const {analysis}=await recognize(label,{item:{grams:300,quantityUnit:'g',foodState:'prepared'}});
+    assert.equal(analysis.ingredients[0].grams,300);
+    assert.equal(analysis.ingredients[0].weightBasis,'visual');
+    assert.equal(analysis.ingredients[0].sourceType,prepared===true?'label':'ai');
+    assert.equal(totals(analysis.ingredients).calories,prepared===true?126:150);
+    assert.equal(validateAnalysis(analysis).ingredients[0].weightBasis,'visual');
+  }
+});
+
+test('readable label nutrients remain usable when the printed name is unreadable, without inventing a product identity', async () => {
+  const {analysis}=await recognize(productLabelFixture({productName:null}),{omitNutrients:true});
+  const item=analysis.ingredients[0];
+  assert.equal(item.name,'Guess');assert.equal(item.productLabel.productName,null);
+  assert.equal(item.sourceType,'label');assert.equal(item.calories,42);
+  assert.equal(totals(analysis.ingredients).calories,138.6);assert.equal(analysis.confidence,'medium');
+  assert.ok(analysisReport(analysis).warnings.some(warning=>warning.includes('termék neve nem')));
+  assert.equal(validateAnalysis(analysis).ingredients[0].sourceType,'label');
+});
+
+test('a prepared-product ml table is not applied to dry powder in g or mistaken for a density conflict',async()=>{
+  const label=productLabelFixture({prepared:true,netAmount:100,netUnit:'g',basisUnit:'ml'});
+  const {analysis}=await recognize(label,{item:{grams:100,quantityUnit:'g',foodState:'as_sold'}});
+  const item=analysis.ingredients[0];
+  assert.equal(item.sourceType,'ai');assert.equal(item.quantityUnit,'g');assert.equal(item.grams,100);
+  assert.equal(item.calories,50);assert.equal(totals(analysis.ingredients).calories,50);
+  assert.equal(item.productLabel.basisUnit,'ml');assert.equal(item.productLabel.prepared,true);
+});
+
 test('ambiguous bases, impossible label values and g/ml conflicts fail after exactly one request', async () => {
   await assert.rejects(recognize(productLabelFixture({ packageCount: null }), { item: { quantityUnit: 'g' } }));
   await assert.rejects(recognize(productLabelFixture(), { context: { totalWeightG: 330 } }), /sűrűség/);

@@ -1,5 +1,13 @@
 # Ellenőrzés
 
+## Felismerési és címkeszámítási felülvizsgálat, v17, 2026-11-10
+
+**157/157 Node-teszt sikeres**, valódi helyi PostgreSQL-lel és külön admin-tesztadatbázissal, kihagyás nélkül. A három új regressziós eset a javítás előtt sikertelen volt: kész ételt felülíró száraz csomagtömeg, olvashatatlan terméknév miatt eldobott címketápérték és más elkészítési állapotú ml-es táblázat téves g/ml-ütközése. A név bizonytalanságát jelző figyelmeztetés után a címke- és fordítási tesztek külön is sikeresek, **21/21** eredménnyel. A build sikeres.
+
+A javítás és az elsődleges források: [részletes felülvizsgálat](CODE-REVIEW-2026-11-10.md). Új fizetős AI-hívás vagy új képfelismerési pontosságmérés nem történt. Az eredeti, korábbi étkezések automatikus átírása nem része a javításnak.
+
+A helyi Chrome-próba szimulált szolgáltatókkal is sikeres: az olvashatatlan címkenévhez tartozó figyelmeztetés megjelenik, a címkeadatok menthetők és visszatölthetők, kézi átíráskor a forrásjelölés megváltozik. A gramm/ml elkülönítés és a több étel külön, illetve összesített tápértéke is ellenőrzött.
+
 ## Egyszer használatos Modal-konténerek és feltöltési visszajelzés, 2026-11-10
 
 A GPU és a CPU-s gateway `single_use_containers=True` beállítással települt. A Modal vezérlősíkjából visszaolvasott konfiguráció mindkét értéket igazolta; az ellenőrzéskor mindkét konténerszám és a várakozó GPU-kérések száma nulla volt. Nem indult új GPU-s képelemzés vagy fizetős AI-hívás. A kérés utáni tényleges felhős leállást ehhez a módosításhoz külön, fizetős futással nem mértük újra.
