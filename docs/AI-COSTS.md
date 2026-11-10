@@ -1,5 +1,11 @@
 # AI-használat, becsült költségek és működési napló
 
+## Food-R1 segéd a Modalon, v16
+
+A Food-R1 8B és az OpenCode hívásai külön `ai_requests` rekordot kapnak, még a hálózati kérés előtt. A segédnél a rögzített L40S-, két CPU-magos és 16 GiB memóriás konfiguráció mért modellbetöltési és elemzési idejéből számolunk. Ez csak részösszeg: a gateway, az üresjárat, a tárhely és a platform indulási többlete nem szerepel benne. Hiányzó időadatnál a díj ismeretlen, nem nulla. Az ingyenes kredit nem változtatja nullává az erőforrás becsült díját; a fizetendő összeget a Modal számlázása mutatja.
+
+A belső havi keret alapértéke 15 USD. Az ismeretlen és függő hívásokra 90 másodpercnyi erőforrásdíjat tartunk fenn, közös adatbázis-tranzakcióval védve a párhuzamos foglalásokat. A keret nem szolgáltatói költési plafon, más Modal-alkalmazásokat és közvetlen SDK-próbákat nem tartalmaz. Túllépés vagy segédhiba esetén az OpenCode önállóan folytatja. A részletek a [Modal útmutatóban](MODAL.md), a kis páros próba költségkorlátai a [modellkutatásban](FOOD-MODELS-2026-11-10.md) olvashatók. Általános megtakarítást a két szolgáltatás együttműködése nem garantál.
+
 Az admin `/admin#costs` nézete 7/30/365 napra mutatja az AI-hívások számát, a kiszámítható költségrészt USD-ben, az ismert költségű hívások arányát, a napi grafikont, a modellenkénti és hívásonkénti bontást. A grafikon pontos értékei hozzáférhető táblázatban is megnyithatók. Az áttekintés vonalgrafikonon mutatja a bejegyzéseket és regisztrációkat, oszlopokon az állapot- és étkezéstípus-bontást.
 
 ## Ellenőrzött díjszabás

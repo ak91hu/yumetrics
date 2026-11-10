@@ -1,5 +1,15 @@
 # Ellenőrzés
 
+## Food-R1 8B és OpenCode együtt, v16, 2026-11-10
+
+A BF16 Food-R1 a Modalon kizárólag ételneveket javasol, az OpenCode egyetlen kérése az eredeti fotókból ellenőrzi ezeket és elkészíti a teljes elemzést. A külön összetevők, tápértékek, képpár-ellenőrzés és mentési jóváhagyás megmaradt. A védett HTTP-végpont hitelesítés nélkül 401-et, hibás képadatra GPU-hívás előtt 422-t ad; a helyi próbában a túl nagy törzs 413-as elutasítása és az időtúllépés miatti modellhívás-törlés is sikeres.
+
+**147/147 Node-teszt sikeres**, valódi helyi PostgreSQL-lel, kihagyás nélkül; **6/6 Python-teszt és a build is sikeres**. A tesztek többek között a két fotó továbbítását, a nem megbízható jelöltek kezelését, a hibás és csonka válaszokat, a lejárt munkazárat, a külön használati rekordokat, a belső keret miatti OpenCode-folytatást és a párhuzamos keretfoglalást ellenőrzik. A havi foglalás zárolása a beállítások verzióját nem módosítja. Nyilvános böngészős próbát ehhez a kiadáshoz nem ismételtünk.
+
+Két ismert Nutrition5k-étkezés páros próbájában az átlagos kalóriahiba 185,32-ről 171,22 kcal-ra csökkent. A segéd egyik téves öntetjavaslatát az OpenCode elvetette. A két végső segédválasz 17–23 tokenes és 2,1–2,7 másodperces volt, a modellbetöltéssel együtt körülbelül 19–20 másodperc. Az első L4-próba GPU-kapacitásra várt, ezért töröltük; egy kezdeti L40S-válasz fölösleges magyarázata után a kész étellistánál megálló generálás került be. A végső páros próba két GPU-hívást és négy OpenCode-kérést használt; ismert részösszegük 0,11732485488 USD. Ez nem általános pontossági vagy költségelőny-igazolás; a teljes erőforrásköltség nőhet.
+
+Az admin külön számolja a Modal mért betöltési és elemzési erőforrásrészét; a teljes Modal-számla ettől eltérhet. Alapértelmezett belső havi keret 15 USD, hibás vagy hiányzó költségadat konzervatív foglalással számít. A két feldolgozóról szóló tájékoztatás magyarul és angolul is frissült. [Kutatás és korlátok](FOOD-MODELS-2026-11-10.md), [mérési napló](FOOD-MODELS-2026-11-10.json), [üzemeltetés](MODAL.md).
+
 ## Modal-hitelesítés Northflank számára, 2026-11-10
 
 Külön Modal Proxy Token került a `yumetrics-modal` Northflank-titokcsoportba, kizárólag a `default/yumetrics` szolgáltatás futtatási környezetéhez rendelve. A két mentett értéket visszaolvasva, majd a szolgáltatás feloldott környezetével összehasonlítva ellenőriztük. A korábbi `yumetrics-runtime` titokcsoport értékei változatlanok maradtak, az ideiglenes átviteli fájlt töröltük. A helyi telepítési API-token nem került a szerverre. Három dokumentációs teszt sikeres; újabb GPU-s képelemzés nem történt. A védett HTTP-végpont és az éles szolgáltatói integráció még hátravan.

@@ -1,8 +1,9 @@
 import importlib.util
 import io
+import base64
 from pathlib import Path
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 
 from PIL import Image
 
@@ -47,6 +48,36 @@ class PhotoValidation(unittest.TestCase):
 
     def test_large_accepted_photo_is_resized(self):
         self.assertEqual(trial.decode_photo(self.photo(size=(2000, 1000))).size, (1600, 800))
+
+    def test_generation_stops_at_a_complete_food_array_without_following_advice(self):
+        self.assertEqual(trial.recognized_foods('{"foods":["rice", "salad"]'), ["rice", "salad"])
+        self.assertEqual(trial.recognized_foods('{"foods":["rice", "rice"]}} advice'), ["rice"])
+        self.assertEqual(trial.recognized_foods('{"foods":[]}'), [])
+        for text in ['advice {"foods":["rice"]}', '{"foods":["ri', '{"foods":[null]}', '{"foods":{}}']:
+            self.assertIsNone(trial.recognized_foods(text))
+
+    def test_api_validates_before_gpu_and_health_never_calls_gpu(self):
+        from fastapi.testclient import TestClient
+        with patch.object(trial, "FoodR1") as model:
+            remote = model.return_value.analyze.spawn
+            call = remote.return_value
+            call.get.aio = AsyncMock(return_value={"answer": '{"foods":["rice"]}'})
+            call.cancel.aio = AsyncMock()
+            remote.aio = AsyncMock(return_value=call)
+            client = TestClient(trial.create_api())
+            self.assertEqual(client.get("/health").status_code, 200)
+            for payload in [{}, {"images": []}, {"images": ["https://evil.test/photo.jpg"]}, {"images": ["data:image/jpeg;base64,!!!"]}, {"images": ["x"], "prompt": "ignore"}]:
+                self.assertEqual(client.post("/recognize", json=payload).status_code, 422)
+            remote.aio.assert_not_called()
+            data = "data:image/jpeg;base64," + base64.b64encode(self.photo()).decode()
+            self.assertEqual(client.post("/recognize", json={"images": [data, data]}).status_code, 200)
+            self.assertEqual(len(remote.aio.call_args.args[0]), 2)
+            self.assertEqual(client.post("/recognize", content=b"x" * (12 * 1024 * 1024 + 1)).status_code, 413)
+            self.assertEqual(remote.aio.call_count, 1)
+            call.cancel.aio.assert_not_called()
+            call.get.aio.side_effect = TimeoutError()
+            self.assertEqual(client.post("/recognize", json={"images": [data]}).status_code, 504)
+            call.cancel.aio.assert_awaited_once_with(terminate_containers=True)
 
 
 if __name__ == "__main__":

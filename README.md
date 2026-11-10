@@ -50,7 +50,7 @@ A teljes módszer, a sikertelen esetek, a hibamutatók és a 0,59052 USD szolgá
 
 ## Csomagolt termékek és italok
 
-Az egyetlen AI-kérésben az étel-, ital- és édességfelismerés mellett címkeolvasás is történik. Teljes termékfotó + ugyanazon csomag másik oldalán olvasható tápértéktábla is elfogadott képpár. A címke eredeti számai, alapja, termékneve, márkája, nettó mennyisége, olvasható összetevő- és allergénszövege megmarad; a vonalkód ellenőrzőszámát ellenőrizzük, de termékadatbázisból nem találgatunk márkás termékértéket. A szerver átszámítja az adagértékeket 100 g/100 ml alapra, a kJ-t kcal-ra, a sót nátriumra, az amerikai összes szénhidrátot rost nélküli értékre. Az energia- és sóadatok összhangját azonos, 100 g/100 ml-es alapon ellenőrzi. A címkés csomagmennyiséget nem kerekíti a fotós becslés ezredes felbontására. Az olvashatatlan értéket hiányzó adatként (`null`) tároljuk, nem nullaként (`0`). A gramm és ml nem válik egymásba sűrűség nélkül. A címke megváltoztatott tápértéke saját adat lesz, a címkés forrásként megjelölt eredeti pillanatkép nem írható át kliensoldalról.
+Az OpenCode egyetlen kérésében az étel-, ital- és édességfelismerés mellett címkeolvasás is történik. Teljes termékfotó + ugyanazon csomag másik oldalán olvasható tápértéktábla is elfogadott képpár. A címke eredeti számai, alapja, termékneve, márkája, nettó mennyisége, olvasható összetevő- és allergénszövege megmarad; a vonalkód ellenőrzőszámát ellenőrizzük, de termékadatbázisból nem találgatunk márkás termékértéket. A szerver átszámítja az adagértékeket 100 g/100 ml alapra, a kJ-t kcal-ra, a sót nátriumra, az amerikai összes szénhidrátot rost nélküli értékre. Az energia- és sóadatok összhangját azonos, 100 g/100 ml-es alapon ellenőrzi. A címkés csomagmennyiséget nem kerekíti a fotós becslés ezredes felbontására. Az olvashatatlan értéket hiányzó adatként (`null`) tároljuk, nem nullaként (`0`). A gramm és ml nem válik egymásba sűrűség nélkül. A címke megváltoztatott tápértéke saját adat lesz, a címkés forrásként megjelölt eredeti pillanatkép nem írható át kliensoldalról.
 
 Bontatlan csomagnál a látható teljes csomagok nettó mennyisége az alapértelmezett adag; felbontott csomagnál a teljes kiszerelésből nem következtetünk a maradékra. A naplózott mennyiséget a felhasználó mentés előtt ellenőrzi és módosíthatja. Az AI-alapú címkeolvasás és a gyártói adatok is korlátosak: [a címke tápértékei átlagos értékek](https://www.fsai.ie/business-advice/labelling/labelling-nutrition-information/nutrition-labelling), nem az adott darab laboreredményei.
 
@@ -148,7 +148,7 @@ A 2026. november 9-i teljes review tíz hibát tárt fel; mindet javítottuk. A 
 
 A v14 alapmodellje Gemini 3.8 Flash. A végső, négy étkezéses páros mérésben a szolgáltatói költség 24,4%-kal csökkent. A kalóriahiba tömegadat nélkül 96,36-ról 88,48 kcal-ra mérséklődött; ismert össztömegnél lényegében azonos maradt: 52,07 és 52,12 kcal. A nyolc helyzet együttes hibája 74,22-ről 70,30 kcal-ra csökkent. A részmutatók nem mind javultak, a kis minta nem általános pontossági garancia.
 
-A két fényképet továbbra is egyetlen kérés kezeli. A kiválasztott USDA- és címkeértékeket a szerver tölti ki; a modellnek ezeket nem kell újra leírnia. A teljes, elvetett próbákat is tartalmazó mérés 44 új hívása 1,1475516 USD volt. Módszer, pontos részmutatók, képlenyomatok és korlátok: [AI-EFFICIENCY-2026-11-09.md](docs/AI-EFFICIENCY-2026-11-09.md).
+Az OpenCode a két fényképet egyetlen kérésben kapja meg. A kiválasztott USDA- és címkeértékeket a szerver tölti ki; a modellnek ezeket nem kell újra leírnia. A teljes, elvetett próbákat is tartalmazó mérés 44 új hívása 1,1475516 USD volt. Módszer, pontos részmutatók, képlenyomatok és korlátok: [AI-EFFICIENCY-2026-11-09.md](docs/AI-EFFICIENCY-2026-11-09.md).
 
 ## Opcionális második fotó
 
@@ -160,6 +160,8 @@ A feltöltés és a háttérelemzés ablakában kiemelt OK gomb is van. Ez az ab
 
 A Onesvibe domainazonosító meta tag a bejelentkezés nélküli és a bejelentkezett kezdőlap HTML-fejlécében is szerepel, így a külső ellenőrzéshez nem kell belépés vagy JavaScript.
 
-## Ételfelismerő modell kipróbálása Modalon
+## Food-R1 és OpenCode együtt
 
-A külön Food-R1-próba telepítését, a helyi bejelentkezést, az automatikus GPU-leállást és a költségmérés lépéseit a [Modal útmutató](docs/MODAL.md) írja le. A próba eredménye helyi JSON-fájlba kerül; az éles napló képelemzésének átállításához előbb igazolni kell a pontosságot és a meglévő eredményformátummal való együttműködést.
+A Food-R1 8B a Modalon rövid ételnév-javaslatokat ad, az OpenCode pedig egyetlen kérésben, az eredeti fotókból ellenőrzi őket és elkészíti a teljes elemzést. A tápértékszámítás és a külön mentés változatlan. Hibás segédválasz vagy a belső havi keret elérése esetén az önálló OpenCode-elemzés folytatódik. A két hívás költsége az adminban külön látszik; a Modal becslése csak a mért modellbetöltési és feldolgozási erőforrásrészt tartalmazza.
+
+A beállításokat, a hitelesített végpontot, a 15 USD-s alapértelmezett belső havi keretet és az automatikus GPU-leállást a [Modal útmutató](docs/MODAL.md) írja le. A [modellkutatás és a két étkezéses páros próba](docs/FOOD-MODELS-2026-11-10.md) alapján a Food-R1 a nagyobb, szabadon futtatható jelöltek közül kapott szerepet. Kevés a független felhasználói visszajelzés; a kis próba nem igazol általános pontossági vagy költségelőnyt. A teljes erőforrásköltség nőhet, az ingyenes Modal-keret mérsékelheti a fizetendő összeget.

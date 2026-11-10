@@ -1,0 +1,253 @@
+{
+  "date": "2026-11-10",
+  "promptVersion": "food-v16-food-r1-review",
+  "model": "gemini-3.8-flash",
+  "helper": "zy12123/Food-R1",
+  "helperPrecision": "BF16",
+  "source": "https://github.com/google-research-datasets/Nutrition5k",
+  "license": "CC BY 4.0, Google Research / Nutrition5k authors",
+  "note": "Two previously used public cases; no statistical or Hungarian-food accuracy claim. Both study branches had the same independent-recognizer instruction; the final code omits it for empty hints. Helper responses reused without a second GPU call. No known total weight supplied.",
+  "summary": {
+    "opencode": {
+      "n": 2,
+      "calorieMae": 185.31500249999993,
+      "openCodeUsd": 0.047786999999999996
+    },
+    "hybrid": {
+      "n": 2,
+      "calorieMae": 171.21500249999997,
+      "openCodeUsd": 0.0456885
+    }
+  },
+  "knownComputeAndOpenCodeUsd": 0.11732485488,
+  "images": [
+    {
+      "id": "dish_1565811061",
+      "files": [
+        {
+          "file": "dish_1565811061/overhead.png",
+          "sha256": "c351a10db228441ab065694afd85176cee45f251c3bb66330de7b1eb865bb2b4"
+        },
+        {
+          "file": "dish_1565811061/side.jpg",
+          "sha256": "0c835d91df700561b911b6cfbf7ddfa7077e2df6d8da3111210ff869f8dab8d7"
+        }
+      ]
+    },
+    {
+      "id": "dish_1566328805",
+      "files": [
+        {
+          "file": "dish_1566328805/overhead.png",
+          "sha256": "e8a65e64e76e0bfa08a1630a929ce259702beda1dcf99a5e5a178773a9502e31"
+        },
+        {
+          "file": "dish_1566328805/side.jpg",
+          "sha256": "b8b64f13e3b6107c2ce6a9781b1a5da7568571e60bba1bb72e2644a35c3510bb"
+        }
+      ]
+    }
+  ],
+  "rows": [
+    {
+      "id": "dish_1565811061",
+      "mode": "opencode",
+      "reference": {
+        "measured": true,
+        "method": "weighed_components",
+        "provenance": "Nutrition5k official dish_metadata CSV: measured component masses; USDA-derived energy/macros; dish_1565811061",
+        "edibleWeightG": 324,
+        "calories": 380.320007,
+        "protein": 65.801003,
+        "carbs": 9.06,
+        "fat": 7.762,
+        "carbohydrateBasis": "total_including_fiber"
+      },
+      "predicted": {
+        "calories": 230.8,
+        "protein": 35.3,
+        "carbs": 13.5,
+        "fat": 4.3,
+        "fiber": 5.7,
+        "sugar": 3.9,
+        "sodium": 192.8,
+        "saturatedFat": 1.1,
+        "edibleWeightG": 300
+      },
+      "absoluteCalorieError": 149.52000699999996,
+      "foods": [
+        "Csirkemellfilé",
+        "Bébispenót",
+        "Brokkoli",
+        "Sárgarépa"
+      ],
+      "openCodeUsd": 0.0248835,
+      "usage": {
+        "input": 8474,
+        "output": 693,
+        "cached": 0,
+        "thoughts": 930
+      },
+      "recognition": {
+        "state": "disabled"
+      },
+      "modal": null
+    },
+    {
+      "id": "dish_1565811061",
+      "mode": "hybrid",
+      "reference": {
+        "measured": true,
+        "method": "weighed_components",
+        "provenance": "Nutrition5k official dish_metadata CSV: measured component masses; USDA-derived energy/macros; dish_1565811061",
+        "edibleWeightG": 324,
+        "calories": 380.320007,
+        "protein": 65.801003,
+        "carbs": 9.06,
+        "fat": 7.762,
+        "carbohydrateBasis": "total_including_fiber"
+      },
+      "predicted": {
+        "calories": 234.9,
+        "protein": 35.4,
+        "carbs": 14.4,
+        "fat": 4.3,
+        "fiber": 6,
+        "sugar": 4.3,
+        "sodium": 199.7,
+        "saturatedFat": 1.1,
+        "edibleWeightG": 310
+      },
+      "absoluteCalorieError": 145.42000699999997,
+      "foods": [
+        "Bébispenót",
+        "Csirkemellfilé",
+        "Brokkoli",
+        "Sárgarépa"
+      ],
+      "openCodeUsd": 0.023001,
+      "usage": {
+        "input": 8544,
+        "output": 731,
+        "cached": 0,
+        "thoughts": 627
+      },
+      "recognition": {
+        "state": "used",
+        "model": "modal/food-r1-8b"
+      },
+      "modal": {
+        "model": "zy12123/Food-R1",
+        "revision": "c70e0d6585b1e81923432df46014d6ce32855e3f",
+        "answer": "{\"foods\": [\"chicken\", \"broccoli\", \"carrot\", \"spinach\", \"caesar dressing\"]}",
+        "input_tokens": 1796,
+        "output_tokens": 23,
+        "truncated": false,
+        "inference_seconds": 2.699,
+        "compute_seconds": 20.417,
+        "container_load_seconds": 17.718,
+        "peak_vram_gib": 16.857
+      }
+    },
+    {
+      "id": "dish_1566328805",
+      "mode": "opencode",
+      "reference": {
+        "measured": true,
+        "method": "weighed_components",
+        "provenance": "Nutrition5k official dish_metadata CSV: measured component masses; USDA-derived energy/macros; dish_1566328805",
+        "edibleWeightG": 488,
+        "calories": 927.809998,
+        "protein": 77.984001,
+        "carbs": 85.054001,
+        "fat": 28.737,
+        "carbohydrateBasis": "total_including_fiber"
+      },
+      "predicted": {
+        "calories": 706.7,
+        "protein": 60.4,
+        "carbs": 71.9,
+        "fat": 19.7,
+        "fiber": 5.3,
+        "sugar": 15.6,
+        "sodium": 965.4,
+        "saturatedFat": 7.8,
+        "edibleWeightG": 470
+      },
+      "absoluteCalorieError": 221.1099979999999,
+      "foods": [
+        "Hawaii jellegű pizza",
+        "Csirkemell, bőr nélkül, sütve",
+        "Ananász, nyers",
+        "Paradicsom, nyers"
+      ],
+      "openCodeUsd": 0.0229035,
+      "usage": {
+        "input": 8474,
+        "output": 795,
+        "cached": 0,
+        "thoughts": 564
+      },
+      "recognition": {
+        "state": "disabled"
+      },
+      "modal": null
+    },
+    {
+      "id": "dish_1566328805",
+      "mode": "hybrid",
+      "reference": {
+        "measured": true,
+        "method": "weighed_components",
+        "provenance": "Nutrition5k official dish_metadata CSV: measured component masses; USDA-derived energy/macros; dish_1566328805",
+        "edibleWeightG": 488,
+        "calories": 927.809998,
+        "protein": 77.984001,
+        "carbs": 85.054001,
+        "fat": 28.737,
+        "carbohydrateBasis": "total_including_fiber"
+      },
+      "predicted": {
+        "calories": 730.8,
+        "protein": 61.2,
+        "carbs": 76,
+        "fat": 21,
+        "fiber": 6,
+        "sugar": 18,
+        "sodium": 1088,
+        "saturatedFat": 8.6,
+        "edibleWeightG": 460
+      },
+      "absoluteCalorieError": 197.009998,
+      "foods": [
+        "Hawaii pizza",
+        "Sült csirkemellfilé",
+        "Ananászkockák",
+        "Koktélparadicsom"
+      ],
+      "openCodeUsd": 0.0226875,
+      "usage": {
+        "input": 8540,
+        "output": 761,
+        "cached": 0,
+        "thoughts": 556
+      },
+      "recognition": {
+        "state": "used",
+        "model": "modal/food-r1-8b"
+      },
+      "modal": {
+        "model": "zy12123/Food-R1",
+        "revision": "c70e0d6585b1e81923432df46014d6ce32855e3f",
+        "answer": "{\"foods\": [\"pizza\", \"chicken\", \"pineapple\", \"tomato\"]}",
+        "input_tokens": 1796,
+        "output_tokens": 17,
+        "truncated": false,
+        "inference_seconds": 2.11,
+        "compute_seconds": 19.087,
+        "container_load_seconds": 16.977,
+        "peak_vram_gib": 16.857
+      }
+    }
+  ]
+}

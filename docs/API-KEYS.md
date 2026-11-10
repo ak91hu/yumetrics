@@ -6,7 +6,7 @@ Ellenőrizve: 2026-11-07. A változónevek a jelenlegi kódhoz tartoznak. Helybe
 | --- | --- | --- | --- | --- |
 | Google-belépés | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google Cloud Console → Google Auth Platform → Clients → OAuth webalkalmazás | Azonosítás, automatikus fióklétrehozás | Igen, a napló használatához |
 | OpenCode Console | `OPENCODE_API_KEY` | OpenCode Console, a megfelelő workspace API-kulcsa | A Gemini-alapú kép- és tápértékbecslés | Igen, az új fotók elemzéséhez |
-| Modal | `MODAL_PROXY_TOKEN_ID`, `MODAL_PROXY_TOKEN_SECRET` | Külön Modal Proxy Token, Northflank runtime secret groupban tárolva | A később bekötendő, hitelesített Modal HTTP-végpont hívása | Előkészített, az éles képelemző még nem használja |
+| Modal | `MODAL_PROXY_TOKEN_ID`, `MODAL_PROXY_TOKEN_SECRET` | Külön Modal Proxy Token, Northflank runtime secret groupban tárolva | Hitelesített Food-R1 ételfelismerő végpont hívása | Opcionális segéd az OpenCode mellett |
 | Cloudinary | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Cloudinary Console → Product Environment; Settings → API Keys | Képek tartós feltöltése és törlése | Igen, a fotófeltöltéshez |
 | Northflank PostgreSQL | `DATABASE_URL` | Az addon Connection details írható primary `POSTGRES_URI` értéke; secret groupban `DATABASE_URL` alias | Felhasználók, napló, munkamenetek, feladatok és források | Igen; ez kapcsolati titok, nem API-kulcs |
 | USDA FoodData Central | `USDA_API_KEY` | FoodData Central API key signup | Bővebb Foundation/SR Legacy referenciakeresés | Opcionális; a 44 beépített rekord kulcs nélkül is használható |
@@ -28,6 +28,10 @@ Az `APP_ORIGIN=http://127.0.0.1:3000` ehhez tartozik. Élesben a saját HTTPS er
 Jelentkezz be az [OpenCode Console-ba](https://opencode.ai/console), válaszd ki a workspace-t, hozz létre API-kulcsot és ellenőrizd a modellhez rendelkezésre álló keretet/jogosultságot. Az app `OPENCODE_MODEL=gemini-3.8-flash` értékkel, a natív Google `generateContent` protokollon hív. Az aktuális modell és a fiók hozzáférése a szolgáltatónál ellenőrizendő; a kulcs megadása önmagában nem igazolja a keretet. [Hivatalos modelllista](https://opencode.ai/docs/console/models/).
 
 Ehhez a megvalósításhoz külön Google Gemini API-kulcs vagy OpenAI API-kulcs nem kell: az AI-kérés az OpenCode-on keresztül megy. A Google OAuth-azonosítók ettől különálló, belépési adatok.
+
+## Modal
+
+A Modal segédhez a két proxy token mellett `MODAL_FOOD_URL` szükséges, a telepített API `/recognize` címével. A `MODAL_MONTHLY_BUDGET_USD` belső becsült keret, alapértéke 15; nulla értékkel a segéd kikapcsolható. Ezek futtatási beállítások, nem böngészős kulcsok. A helyi Modal telepítési API-token nem kerül a Northflankra. A segéd hibája vagy a belső keret elérése esetén az OpenCode önállóan folytatja. Részletek: [Modal útmutató](MODAL.md).
 
 ## Cloudinary
 
