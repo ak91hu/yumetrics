@@ -6,6 +6,7 @@ Ellenőrizve: 2026-11-07. A változónevek a jelenlegi kódhoz tartoznak. Helybe
 | --- | --- | --- | --- | --- |
 | Google-belépés | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google Cloud Console → Google Auth Platform → Clients → OAuth webalkalmazás | Azonosítás, automatikus fióklétrehozás | Igen, a napló használatához |
 | OpenCode Console | `OPENCODE_API_KEY` | OpenCode Console, a megfelelő workspace API-kulcsa | A Gemini-alapú kép- és tápértékbecslés | Igen, az új fotók elemzéséhez |
+| Modal | `MODAL_PROXY_TOKEN_ID`, `MODAL_PROXY_TOKEN_SECRET` | Külön Modal Proxy Token, Northflank runtime secret groupban tárolva | A később bekötendő, hitelesített Modal HTTP-végpont hívása | Előkészített, az éles képelemző még nem használja |
 | Cloudinary | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Cloudinary Console → Product Environment; Settings → API Keys | Képek tartós feltöltése és törlése | Igen, a fotófeltöltéshez |
 | Northflank PostgreSQL | `DATABASE_URL` | Az addon Connection details írható primary `POSTGRES_URI` értéke; secret groupban `DATABASE_URL` alias | Felhasználók, napló, munkamenetek, feladatok és források | Igen; ez kapcsolati titok, nem API-kulcs |
 | USDA FoodData Central | `USDA_API_KEY` | FoodData Central API key signup | Bővebb Foundation/SR Legacy referenciakeresés | Opcionális; a 44 beépített rekord kulcs nélkül is használható |

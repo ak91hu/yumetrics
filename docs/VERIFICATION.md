@@ -1,5 +1,9 @@
 # Ellenőrzés
 
+## Modal-hitelesítés Northflank számára, 2026-11-10
+
+Külön Modal Proxy Token került a `yumetrics-modal` Northflank-titokcsoportba, kizárólag a `default/yumetrics` szolgáltatás futtatási környezetéhez rendelve. A két mentett értéket visszaolvasva, majd a szolgáltatás feloldott környezetével összehasonlítva ellenőriztük. A korábbi `yumetrics-runtime` titokcsoport értékei változatlanok maradtak, az ideiglenes átviteli fájlt töröltük. A helyi telepítési API-token nem került a szerverre. Három dokumentációs teszt sikeres; újabb GPU-s képelemzés nem történt. A védett HTTP-végpont és az éles szolgáltatói integráció még hátravan.
+
 ## Modal Food-R1-próba, 2026-11-10
 
 Külön, Modal-hitelesítéssel elérhető Food-R1-telepítés készült, rögzített modellverzióval, tartós modellkötettel, CPU-s letöltéssel, legfeljebb egy L40S-konténerrel és automatikus leállással. A helyi kliens bejelentkezése böngészős jóváhagyással történt; a token a felhasználói mappa konfigurációjában maradt. A Node-alkalmazás futtatókörnyezete és képelemző szolgáltatója változatlan.

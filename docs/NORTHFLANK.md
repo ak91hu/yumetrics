@@ -93,4 +93,6 @@ A TLS-t a Northflank automatikus Let’s Encrypt tanúsítványa és megújítá
 
 ## AI-modell és a v14 kiadása
 
+A későbbi Modal-bekötéshez külön `yumetrics-modal` runtime secret group tartozik, kizárólag a `yumetrics` szolgáltatásra korlátozva. A `MODAL_PROXY_TOKEN_ID` és `MODAL_PROXY_TOKEN_SECRET` végponthívó hitelesítés; a helyi Modal telepítési API-token nem kerül az alkalmazásba. Build argumentokhoz és böngészős kódhoz ezek a titkok nem adhatók át. A meglévő AI-szolgáltató ettől nem változik. Részletek: [Modal](MODAL.md#northflank-szerveroldali-hitelesítés).
+
 A kód és az `.env.example` alapmodellje `gemini-3.8-flash`. Az adatbázisban mentett adminbeállítás felülírja a környezeti alapértéket: frissítéskor az admin Beállítások nézetének modellmezőjét is ellenőrizni kell. A módosítás verzióellenőrzéssel és auditbejegyzéssel menthető; a többi beállítást meg kell őrizni. A korábbi modellek díjszabás-pillanatképei megmaradnak. A végső kiadás ellenőrzése a ténylegesen futó commitot, az éles készenléti végpontot és a mentett effektív modellt is vizsgálja. A v14 mért költsége és pontossági korlátai: [AI-EFFICIENCY-2026-11-09.md](AI-EFFICIENCY-2026-11-09.md).

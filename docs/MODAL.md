@@ -60,3 +60,13 @@ Ez működési próba, nem pontosságmérés: a fotóhoz nincs lemért tápért�
 Négy helyi Python-teszt és három dokumentációs Node-teszt sikeres, az alkalmazás buildje is elkészült. Újabb GPU-s hívást, második fotós próbát vagy összehasonlító mérést a takarékos tesztelés érdekében nem indítottunk.
 
 A próba utáni számlázási pillanatkép körülbelül 0,04 USD mért felhasználást és 0 USD fizetendő díjat mutatott; a kreditek és a hálózati keret fedezték a költséget. A részletes jelentésben az egyetlen L40S-futás 0,02028571 USD volt. A számlázási adatok késleltetve frissülhetnek, a tartós modellkötet pedig a GPU leállása után is megmarad.
+
+## Northflank szerveroldali hitelesítés
+
+A helyi telepítési API-token a felhasználói `.modal.toml` fájlban marad. A Northflank számára külön `yumetrics-northflank` nevű **Modal Proxy Token** készült. Ez a Modal hitelesített HTTP-végpontjainak hívására használható; nem telepítési vagy fiókkezelési jogosultság.
+
+A `default` Northflank-projekt `yumetrics-modal` titokcsoportja a `MODAL_PROXY_TOKEN_ID` és `MODAL_PROXY_TOKEN_SECRET` értékeket tartalmazza. A csoport kizárólag a `yumetrics` szolgáltatás **futtatási környezetéhez** van rendelve, build argumentként nem elérhető. Az értékeket mentés után visszaolvasva ellenőriztük; a meglévő alkalmazástitkok változatlanok maradtak. A tokent tartalmazó helyi átviteli fájlt töröltük.
+
+A későbbi HTTP-bekötéskor a végpontot `requires_proxy_auth=True` beállítással kell védeni, és a szerver a `Modal-Key`, illetve `Modal-Secret` fejlécben küldi a két környezeti értéket. A kulcs nem kerülhet böngészős JavaScriptbe, válaszokba vagy naplóba. A proxy token munkaterületi HTTP-hozzáférést ad, nem egyetlen modellre korlátozott kulcs; RBAC esetén a környezeti társítások tovább szűkíthetők. [Modal hitelesítés](https://modal.com/docs/guide/webhook-proxy-auth).
+
+Ez a hitelesítés előkészítése: a jelenlegi próba továbbra is a Modal SDK-val hívható. A védett HTTP-végpont, az alkalmazás szolgáltatói bekötése és az éles átállítás külön lépés; pusztán a két környezeti változó megléte ezeket nem kapcsolja be. A token Northflankba adásához újabb GPU-s modellhívást nem indítottunk.
