@@ -1,6 +1,6 @@
 # Az alapnyelvhez használt országadatok
 
-Frissítve: 2026. november 9. Ez az adatbázis az első megnyitás alapnyelvéhez és a látogatottság ország szerinti összesítéséhez ad országkódot; nem érinti az ételfelismerést vagy a tápértékszámítást.
+Frissítve: 2026. november 10. Ez az adatbázis az első megnyitás alapnyelvéhez és a látogatottság ország szerinti összesítéséhez ad országkódot; nem érinti az ételfelismerést vagy a tápértékszámítást.
 
 Forrás: [DB-IP IP to Country Lite](https://db-ip.com/db/download/ip-to-country-lite), 2026. novemberi kiadás. A `country.mmdb.gz` az eredeti, tömörített MMDB-adatbázis; az adatokat nem módosítottuk.
 
@@ -43,3 +43,5 @@ Kapcsolódó források: [országfelismerés](../geoip.mjs), [nyelvi elsőbbség]
 A látogatottságmérés csak országonkénti napi számlálót őriz meg, IP-címet vagy látogatói profilt nem. Az eredményt a tulajdonosi admin mutatja; a mérés ott kikapcsolható. A nyelvválasztás ettől függetlenül működik. A mérés módja, szűrései és korlátai: [ADMIN.md](../../docs/ADMIN.md#a-beépített-látogatottságmérés).
 
 A teljes alkalmazás 2026. november 9-i kódellenőrzésében az országadatok és az alapnyelv kapcsolata is szerepelt. A GeoIP-adatbázist ez a javítás nem cseréli le. A feltárt hibák, javítások és ellenőrzési korlátok a [review-jegyzőkönyvben](../../docs/CODE-REVIEW-2026-11-09.md) találhatók.
+
+A mai felületi és adatkezelési döntések összefoglalója: [2026. november 10-i állapot](../../docs/DECISIONS-2026-11-10.md). Az országfelismeréshez nem használunk ételfelismerő modellt; a modellpróbák nem változtatták meg a nyelvválasztás szabályait.

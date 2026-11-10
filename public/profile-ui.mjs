@@ -1,4 +1,4 @@
-import { t, html, locale } from '/localization.mjs';
+import { t, html, locale, messageSource } from '/localization.mjs';
 import { helpMarkup } from '/context-help.mjs';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -24,7 +24,7 @@ function challengesMarkup(challenge) {
   const {week,current,options,rewards,totalRewards}=challenge, selected=options.find(item=>item.id===current?.kind);
   return html`<section class="weekly-challenges" aria-labelledby="weekly-challenge-title"><div class="profile-section-heading"><h3 id="weekly-challenge-title" tabindex="-1">Heti kihívások</h3>${html(helpMarkup('weekly-challenge-help',t('A heti kihívások szabályai'),t('Hetente egy feladatot választhatsz. A hét hétfőtől vasárnapig, magyarországi idő szerint tart. Az adott hét korábbi mentései is számítanak, ha a bejegyzés dátuma erre a hétre esik, és nem jövőbeli. A külön lemért összetevőt a szerkesztőben jelöld meg; az étel össztömegének megadása önmagában nem elég. A háromnapos feladatnál a mentés napja számít. A heti haladásod és a megszerzett pecséted későbbi javítás vagy törlés után is megmarad.')))}</div><p class="profile-caption">${escape(date(week.start))} – ${escape(date(week.end))} · ${escape(t('Magyarországi idő szerint'))}</p>
     ${current?html`<div class="challenge-active ${current.completedAt?'challenge-complete':''}"><span class="challenge-mark" aria-hidden="true">${challengeMark}</span><h4>${escape(t(selected.title))}</h4><p>${escape(t(selected.description))}</p><label for="weekly-challenge-progress">${escape(t('Haladás:'))} ${current.progress} / ${selected.target}</label><progress id="weekly-challenge-progress" value="${current.progress}" max="${selected.target}"></progress><p class="challenge-status">${current.completedAt?t('Teljesítve · a heti pecséted megmarad.'):t('Az ezen a héten korábban mentett bejegyzések is beleszámítanak.')}</p>${current.completedAt?'':html`<p class="profile-caption">${escape(t(current.kind==='recipe'?'A saját receptet az étkezés részleteinél, a „Számítás saját receptből” résznél adhatod meg.':current.kind==='measured'?'Az étkezés részleteinél jelöld meg a külön lemért összetevőt, majd mentsd a bejegyzést.':'Egy napon legfeljebb egy lépést tehetsz meg. A mentés tényleges napját számoljuk, nem az étkezés átírt dátumát.'))}</p><button type="button" class="button outline" data-profile-day="${escape(data.statistics.period.end)}">Mai nap megnyitása</button>`}<p class="challenge-reward-line">${escape(t('Jutalom:'))} ${escape(t(selected.reward))} · ${escape(t('heti pecsét'))}</p></div>`:html`<form id="weekly-challenge-form"><fieldset><legend>Válassz egy feladatot erre a hétre</legend><div class="challenge-options">${options.map(option=>html`<label class="challenge-option"><input type="radio" name="kind" value="${escape(option.id)}" ${option.available===false?'disabled':''} required><span><strong>${escape(t(option.title))}</strong><span>${escape(t(option.description))}</span><small>${escape(t('Jutalom:'))} ${escape(t(option.reward))}</small>${option.available===false?html('<small>A korábbi mentésekkel együtt sincs elég nap a heti teljesítéshez.</small>'):''}</span></label>`).join('')}</div></fieldset><p class="profile-caption">A választásod erre a hétre szól; utána a következő héten választhatsz másikat.</p><button class="button primary" type="submit">Ezt a kihívást választom</button></form>`}
-    <p id="weekly-challenge-feedback" class="profile-caption" role="status"></p>
+    <p id="weekly-challenge-feedback" class="profile-caption" role="status" data-week-start="${escape(week.start)}"></p>
     <details id="weekly-challenge-rewards" class="profile-disclosure"><summary>${escape(t('Heti pecsétjeim'))} · ${totalRewards}</summary>${rewards.length?html`<ul class="challenge-rewards">${rewards.map(reward=>{const definition=options.find(option=>option.id===reward.kind);return html`<li><span class="challenge-mark" aria-hidden="true">${challengeMark}</span><div><strong>${escape(t(definition.reward))}</strong><small>${escape(t('A hét kezdete:'))} ${escape(date(reward.weekStart))}</small></div></li>`;}).join('')}</ul><p class="profile-caption">A legutóbbi 12 pecsétet mutatjuk; az összes megszerzett jutalmad megmarad.</p>`:html('<p class="profile-caption">Az első teljesített heti kihívásod után itt találod a pecsétedet.</p>')}</details></section>`;
 }
 function growthMarkup(m) {
@@ -93,6 +93,8 @@ export async function loadProfile(request, { quiet = false, celebrate = false } 
 }
 export function renderProfile() {
   if (!data) return;
+  const feedback=document.querySelector('#weekly-challenge-feedback');
+  const feedbackSource=feedback&&feedback.dataset.weekStart===data.weeklyChallenge?.week.start?messageSource(feedback.textContent):'';
   const openSections = [...document.querySelectorAll('#profile-summary details[open]')].map(element => element.id);
   const pendingChoice=document.querySelector('#weekly-challenge-form [name=kind]:checked')?.value;
   const { profile, statistics: s } = data, life = s.lifetime;
@@ -129,6 +131,7 @@ export function renderProfile() {
     ${life.lastLoggedDay ? `<p class="profile-caption">${escape(t('Legutóbbi naplózott nap:'))} ${escape(date(life.lastLoggedDay))}</p>` : html`<p class="profile-empty">Az első étkezés mentése után itt láthatod a naplód összesítéseit.</p>`}
     <details class="profile-disclosure" id="profile-account-details"><summary>Fiókadatok és időzóna</summary><dl class="profile-account"><div><dt>Bejelentkezés</dt><dd>Google</dd></div><div><dt>Csatlakozás</dt><dd>${escape(date(profile.joinedAt))}</dd></div><div><dt>Időzóna</dt><dd>${escape(s.timeZone)}</dd></div></dl></details>`;
   renderPeriod();
+  if(feedbackSource)document.querySelector('#weekly-challenge-feedback').textContent=t(feedbackSource);
   const challengeButton = document.querySelector('#weekly-challenge-form button[type=submit]');
   if (challengeButton) challengeButton.disabled = challengePending;
   for(const radio of document.querySelectorAll('#weekly-challenge-form [name=kind]'))radio.checked=!radio.disabled&&radio.value===pendingChoice;

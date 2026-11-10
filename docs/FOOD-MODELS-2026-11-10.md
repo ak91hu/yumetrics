@@ -1,5 +1,7 @@
 # Ételspecialista modell választása – 2026. november 10.
 
+Mai kiegészítés: a Food-R1 ételspecializációja érv a kipróbálása mellett, a ritka nyilvános frissítés önmagában nem pontossági ítélet. A frissebb Qwen3.8-modellek csak összehasonlítási jelöltek, nem igazoltan jobb cserék. [Mai döntések és elsődleges források](DECISIONS-2026-11-10.md). Az alábbi korábbi mérések változatlanok.
+
 **Döntés:** Food-R1 8B, az eredeti BF16-súlyokkal a Modalon, az OpenCode által külön ellenőrzött ételfelismerő segédként. A kisebb Boba helyett a nagyobb, pontosságot előtérbe helyező választás került be. Széles körű, független felhasználói konszenzust egyik vizsgált nyílt ételspecialistánál sem találtunk; ezt nem pótolja a csillagok vagy letöltések száma.
 
 ## Kutatás és visszajelzések

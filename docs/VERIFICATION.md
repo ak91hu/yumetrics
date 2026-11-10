@@ -1,5 +1,13 @@
 # Ellenőrzés
 
+## Adminnavigáció, dokumentáció és indulási naplók, 2026-11-10
+
+**166/166 Node-teszt sikeres**, valódi helyi PostgreSQL-lel, kihagyás nélkül; a build és a végső angol Chrome-próba is sikeres. Az új tesztek ellenőrzik a PostgreSQL SSL-módok szigorú normalizálását, a kifejezett kompatibilitási beállítás megőrzését és a titkokat nem tartalmazó, hibás éles konfigurációnál leálló indulást.
+
+A böngészős próba ellenőrzi, hogy a felső Adminisztráció menüpont csak a jogosult felhasználónál látszik, az adminoldalak öt képernyőszélességen elférnek, a mobilos oldalválasztó és a szűrőtörlés működik, a három beállításcsoport menthető. A profil háttérfrissítése megőrzi az azonnal teljesített heti kihívás visszajelzését. Az admin áttekintését és beállításait mobilos és asztali képeken is ellenőriztük; a képek az `outputs/en-mobile/` könyvtárban találhatók, a felső menüé `owner-topbar-mobile.png`.
+
+A november 7-i napló korábbi konfigurációs hibát és ismétlődő SSL-figyelmeztetést tartalmazott. A történeti naplósorok megmaradnak; az új indulási diagnosztika nem ír ki beállításértékeket. A javítás nem lazítja a TLS-ellenőrzést. Új AI- vagy GPU-hívás nem indult, a böngészős szolgáltatók szimuláltak. A modellválasztási megbeszélések dokumentálása nem változtatott az éles szolgáltatópároson.
+
 ## Mobilos profilkép és visszamenőleges heti kihívások, 2026-11-10
 
 **163/163 Node-teszt sikeres**, valódi helyi PostgreSQL-lel, kihagyás nélkül. A próbák az azonnali heti jutalmat, a párhuzamos/idempotens választást, a hétvégi indulás feltételeit, a választás előtti mentések szerkesztés és törlés utáni megőrzését, a felhasználói határt és a nem jogosító bejegyzések kizárását is ellenőrzik. A `weekly_activity` migráció mindkét adatbázison sikeres. A build sikeres.

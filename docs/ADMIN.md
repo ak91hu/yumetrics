@@ -1,6 +1,6 @@
 # Tulajdonosi adminfelület
 
-Az `/admin` magyar nyelvű kezelőfelület. A napló Fiókom ablakából is megnyithatod, ha a Google által ellenőrzött `thisisnotka@gmail.com` fiókkal jelentkeztél be. A megjelenített név önmagában nem jogosít hozzáférésre.
+Az `/admin` magyar nyelvű kezelőfelület. A napló felső menüsávjának Adminisztráció pontjából és a Fiókom ablakából is megnyithatod, ha a Google által ellenőrzött `thisisnotka@gmail.com` fiókkal jelentkeztél be. A megjelenített név önmagában nem jogosít hozzáférésre.
 
 A szerver minden adminisztrációs kérésnél a munkamenethez tartozó, adatbázisból visszaolvasott fiókot ellenőrzi. Bejelentkezés nélkül 401-es, más Google-fiókkal 403-as választ ad; a védelem a HTML-oldalra és az API-ra is kiterjed. A kliensoldali profil vagy a kérés fejléceinek módosításával nem lehet adminisztrátori jogosultságot szerezni.
 
@@ -19,7 +19,9 @@ A szerver minden adminisztrációs kérésnél a munkamenethez tartozó, adatbá
 | Beállítások | Látogatottságmérés be- és kikapcsolása, új elemzések és csatlakozások engedélyezése, elemzési korlátok, az új fiókok napi energiakerete, AI-modell, válaszhossz és várakozási idő. |
 | Módosítási előzmények | A beállítások és fiókok módosításai: végrehajtó, időpont, érintett adat, korábbi és új érték. A kijelentkeztetéseket is rögzítjük. |
 
-Mobilon a teljes menü több sorban látható. Az időszak- és állapotszűrő módosítása azonnal frissíti a nézetet. A széles táblázatokat oldalirányban görgetheted; a grafikonok napi értékeit táblázatként is megnyithatod.
+A menü három csoportba rendeződik: Áttekintés, Napi kezelés, Beállítások és előzmények. Asztali nézetben az oldalsáv görgetés közben is elérhető; mobilon az Adminoldal választómezőből nyithatod meg a nézeteket. Az aktív oldal jelölést kap. Az áttekintés gyorshivatkozást ad az AI-válaszokhoz, költségekhez és sikertelen feldolgozásokhoz.
+
+Az időszak- és állapotszűrő azonnal frissít. A Szűrők törlése gomb visszaállítja az adott nézet alapbeállításait és első oldalát. A táblázatok vízszintesen és szükség esetén függőlegesen görgethetők; fejlécük látható marad. A grafikonok értékei táblázatként is megnyithatók. A működési beállítások külön hozzáférési/adatgyűjtési, használati korlát és AI-elemzési csoportban szerepelnek; csak a Beállítások mentése gomb véglegesít.
 
 ## A módosítások hatása
 

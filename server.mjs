@@ -105,7 +105,11 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   // An explicit local .env belongs to this app; production secrets are injected by Northflank.
   if (process.env.NODE_ENV !== 'production' && existsSync(resolve(ROOT, '.env'))) Object.assign(process.env, parseEnv(readFileSync(resolve(ROOT, '.env'), 'utf8')));
   const env = process.env, host = env.HOST || '127.0.0.1', port = Number(env.PORT || 3000);
-  if (env.NODE_ENV === 'production' && (!env.DATABASE_URL || !env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET || !env.APP_ORIGIN?.startsWith('https://'))) throw new Error('Production requires DATABASE_URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and an HTTPS APP_ORIGIN.');
+  if(env.NODE_ENV==='production'){
+    const invalid=['DATABASE_URL','GOOGLE_CLIENT_ID','GOOGLE_CLIENT_SECRET'].filter(key=>!env[key]?.trim());
+    if(!env.APP_ORIGIN?.startsWith('https://'))invalid.push('APP_ORIGIN (HTTPS-cím szükséges)');
+    if(invalid.length){console.error('Az éles alkalmazás nem indítható. Hiányzó vagy hibás beállítás: '+invalid.join(', ')+'. A Northflank futtatókörnyezetében add meg őket.');process.exit(1);}
+  }
   let db;
   try { if (env.DATABASE_URL) { db = await openPostgresDatabase(env.DATABASE_URL); await importHistoricalUsage(db); } }
   catch (error) { console.error('PostgreSQL startup failed:', error.code || error.name); process.exit(1); }

@@ -1,5 +1,7 @@
 # A megvalósított ételértékelés
 
+A mai modellválasztási következtetések, költségfeltételek és éles működés összefoglalója: [2026. november 10-i döntések](DECISIONS-2026-11-10.md). A Qwen-modellek összehasonlítási jelöltek; nincs új modellváltás vagy új pontossági mérés.
+
 A v17 az értékesített és az elkészítés utáni címkeadatokat külön kezeli. A száraz csomagtömeg nem helyettesíti a kész étel mennyiségét; az olvasható címketápérték olvashatatlan terméknév mellett is használható, a név bizonytalanságának jelzésével. A regressziós esetek és korlátok: [2026. november 10-i felülvizsgálat](CODE-REVIEW-2026-11-10.md).
 
 ## Aktuális működés: címkék és g/ml mennyiségek

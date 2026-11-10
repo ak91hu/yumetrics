@@ -229,6 +229,7 @@ try {
   assert.equal(await evaluate("getComputedStyle(document.querySelector('#month-label')).textTransform"),'none');
   assert.ok(await evaluate("!document.querySelector('#demo-button')"));
   assert.ok(await evaluate("document.querySelector('#admin-link').hidden && !document.querySelector('#connection-status')"), 'Ordinary users have no admin link or provider panel');
+  assert.ok(await evaluate("document.querySelector('#topbar-admin-link').hidden && document.querySelector('#topbar-admin-link').getClientRects().length===0"),'Ordinary users have no administration menu in the top bar');
   await screenshot('desktop.png');
   for (const width of [320,390,768,1024,1440]) { await viewport(width,844,width<768); assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth'), 'App fits '+width); }
   await viewport(device === 'desktop' ? 1440 : 390, device === 'desktop' ? 1100 : 844, device !== 'desktop'); await screenshot('mobile.png');
@@ -671,15 +672,20 @@ try {
   Object.assign(googleClient,adminClient); googleClient.callbackOrigin=origin;
   await send('Page.navigate',{url:origin+'/auth/google'});
   await waitFor("document.querySelector('#admin-link')?.hidden === false");
+  assert.ok(await evaluate("!document.querySelector('#topbar-admin-link').hidden"));
+  for(const width of [320,390,768,1440]){await viewport(width,900,width<768);assert.ok(await evaluate("document.documentElement.scrollWidth<=innerWidth && document.querySelector('#topbar-admin-link').getBoundingClientRect().width>0"),'Owner top-bar administration menu fits '+width);}
+  await viewport(390,844,true);await screenshot('owner-topbar-mobile.png',false);
   const chartOwner=(await db.prepare('SELECT id FROM users WHERE google_sub=?').bind('admin-browser-fixture').first()).id;
   for(const [back,status] of [[1,'saved'],[3,'draft'],[6,'saved']]){
     const time=new Date(Date.now()-back*86400000).toISOString(),sample={name:'Grafikon próba',confidence:'medium',assumptions:'Böngészőteszt',ingredients:[ingredient]};
     await db.prepare('INSERT INTO meals(id,user_id,day,time,type,status,analysis,original_analysis,model,usage,photo,public_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)').bind(randomUUID(),chartOwner,time.slice(0,10),'12:00','Ebéd',status,JSON.stringify(sample),JSON.stringify(sample),'gemini-4-argon',JSON.stringify({passes:[{promptTokenCount:5000*back,candidatesTokenCount:1500,thoughtsTokenCount:400,cachedContentTokenCount:500}]}),'{}','chart-fixture',time,time).run();
   }
-  await evaluate("document.querySelector('#admin-link').click()");
+  await evaluate("document.querySelector('#topbar-admin-link').click()");
   await waitFor("document.querySelector('#admin-view')?.getAttribute('aria-busy') === 'false' && !!document.querySelector('.admin-card')");
   assert.equal(await evaluate("document.querySelector('#admin-identity').textContent"),'thisisnotka@gmail.com');
   assert.equal(await evaluate("document.querySelectorAll('.admin-chart svg[role=img]').length"),4);
+  assert.equal(await evaluate("document.querySelectorAll('.admin-shortcuts a').length"),3);
+  await viewport(390,844,true);assert.ok(await evaluate("document.querySelector('#admin-section').getBoundingClientRect().width>0 && getComputedStyle(document.querySelector('.admin-sidebar nav')).display==='none'"),'Mobile admin navigation is available without horizontal menu scrolling');
   await viewport(1440,1100,false); await screenshot('admin-overview-desktop.png');
   await viewport(390,844,true); await screenshot('admin-overview-mobile.png',false);
   const adminId=(await db.prepare('SELECT id FROM users WHERE google_sub=?').bind('admin-browser-fixture').first()).id;
@@ -690,7 +696,7 @@ try {
   const archiveFixture=randomUUID();
   for(const [id,model] of [[archiveFixture,'gemini-3.8-flash'],[randomUUID(),'modal:zy12123/Food-R1']])await db.prepare('INSERT INTO ai_requests(id,meal_id,user_id,model,state,created_at,response_text,request_meta,response_meta,result_analysis,reviewed_analysis,reviewed_at,reviewed_revision) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)').bind(id,adminMeal,adminId,model,'completed',adminTime,'Archive fixture: <img src=x onerror="window.archiveXSS=true"> Rizs és csirke',JSON.stringify({promptVersion:'fixture-v1',imageHashes:['a'.repeat(64)]}),JSON.stringify({provider:model.startsWith('modal:')?'modal':'opencode'}),JSON.stringify(adminAnalysis),JSON.stringify({...adminAnalysis,name:'Javított tesztétkezés'}),adminTime,1).run();
   for(const tab of ['visitors','users','meals','jobs','costs','ai-responses','logs','settings','audit']){
-    await evaluate(`location.hash=${JSON.stringify(tab)}`);
+    await evaluate(`document.querySelector('#admin-section').value=${JSON.stringify(tab)};document.querySelector('#admin-section').dispatchEvent(new Event('change',{bubbles:true}))`);
     await waitFor(`document.querySelector('#admin-title').textContent === ${JSON.stringify({'ai-responses':'AI-válaszok és összehasonlítás',visitors:'Látogatottság',users:'Felhasználók',meals:'Étkezések',jobs:'Feldolgozások',settings:'Beállítások',audit:'Módosítási előzmények',costs:'AI-használat és költségek',logs:'Működési napló'}[tab])} && document.querySelector('#admin-view').getAttribute('aria-busy') === 'false'`);
     assert.ok(await evaluate("document.querySelector('#admin-message').hidden"),'Admin tab loads '+tab);
     for(const width of [320,390,768,1024,1440]){await viewport(width,1000,width<768);assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth'),'Admin '+tab+' fits '+width);}
@@ -753,8 +759,13 @@ try {
       assert.ok(await evaluate("document.querySelectorAll('.admin-table tbody .admin-pill').length > 0 && [...document.querySelectorAll('.admin-table tbody .admin-pill')].every(pill=>pill.textContent === 'Hiba')"));
       await viewport(1440,1100,false);await screenshot('admin-logs-desktop.png');
       await viewport(390,844,true);await screenshot('admin-logs-mobile.png');
+      await evaluate("document.querySelector('[data-reset-filters]').click()");
+      await waitFor("location.hash==='#logs' && document.querySelector('#admin-view').getAttribute('aria-busy')==='false'");
+      assert.equal(await evaluate("document.querySelector('#logs-filter [name=level]').value"),'');
+      assert.ok(await evaluate("!document.querySelector('[data-reset-filters]')"),'Clearing filters restores the unfiltered first page');
     }
     if(tab==='settings'){
+      assert.equal(await evaluate("document.querySelectorAll('#admin-settings fieldset legend').length"),3,'Settings are grouped by purpose');
       await evaluate("document.querySelector('[name=hourlyLimit]').value='2';document.querySelector('#admin-settings').requestSubmit()");
       await waitFor("!document.querySelector('#admin-message').hidden && document.querySelector('#admin-message').textContent.includes('Elmentettük')");
       await send('Page.reload');await waitFor("document.querySelector('[name=hourlyLimit]')?.value === '2'");
@@ -773,6 +784,8 @@ try {
   await evaluate("document.querySelector('#weekly-challenge-form [value=measured]').click();document.querySelector('#weekly-challenge-form').requestSubmit()");
   await waitFor("!!document.querySelector('.challenge-complete') && document.querySelector('#weekly-challenge-progress')?.value===1");
   assert.ok(await evaluate(`document.querySelector('#weekly-challenge-feedback').textContent.includes(${JSON.stringify(expected('Teljesítetted','completed'))})`),'Choosing an already completed challenge immediately announces the reward');
+  await evaluate("(async()=>{const {loadProfile}=await import('/profile-ui.mjs');await loadProfile(async(path,options)=>{const response=await fetch(path,options);if(!response.ok)throw Error('Profile reload failed');return response.json()},{quiet:true})})()");
+  assert.ok(await evaluate(`document.querySelector('#weekly-challenge-feedback').textContent.includes(${JSON.stringify(expected('Teljesítetted','completed'))})`),'A background profile refresh preserves the weekly completion message');
   assert.equal(await evaluate("document.querySelectorAll('.challenge-rewards li').length"),1);assert.equal(aiRequests,beforeImmediateReward);
   await viewport(390,844,true);await evaluate("document.querySelector('.weekly-challenges').scrollIntoView({block:'start'})");await screenshot('weekly-challenge-immediate-mobile.png',false);
   assert.deepEqual(errors,[]);
@@ -793,7 +806,7 @@ try {
   result.checks.push('Google avatar in sidebar and profile, safe URL checks and failed-image initials fallback', 'all supplementary upload fields collapsed, valid automatic metadata and reset on reopening', 'optional review questions and notes collapsed');
   result.screenshots.push('upload-simple.png');
   result.checks.push('expanded AI methodology fits five viewport widths and links to the selected language guide');
-  result.checks.push('both photos mandatory; missing and duplicate second views blocked before provider work', 'native camera chooser for both views; 2048px image preparation', 'one detailed AI request for pair checking, visual inventory and nutrient estimation');
+  result.checks.push('one photo required, optional second photo and duplicate-view validation before provider work', 'native camera chooser for both views; 2048px image preparation', 'one detailed AI request for pair checking, visual inventory and nutrient estimation');
   result.screenshots.push('methodology-desktop.png', 'methodology-mobile.png');
   result.checks.push('six generated botanical badge images load; ordinary users see no provider panel or admin link', 'owner Google identity opens admin; every tab fits five widths; user goal and application settings persist; meal details and audit log work');
   result.checks.push('redesigned culinary badge names in both languages; line and distribution charts with accessible daily data; automatic period filters; AI cost breakdown with incomplete coverage; error-only operational log filtering');
@@ -812,6 +825,8 @@ try {
   result.screenshots.push('admin-costs-desktop.png','admin-costs-mobile.png','admin-logs-desktop.png','admin-logs-mobile.png','admin-ai-responses-desktop.png','admin-ai-comparison-desktop.png','admin-ai-comparison-mobile.png');
   result.checks.push('owner AI response search, paired comparison at five widths, escaped model text and JSON export; mocked providers only');
   result.checks.push('prominent camera and gallery actions, rear-camera capture attributes, immediate pending-upload status and persistent processing/completion notices');
+  result.checks.push('owner-only topbar administration link, grouped desktop navigation and mobile section picker, filter reset and three settings groups', 'immediately completed weekly challenge feedback survives a background profile refresh');
+  result.screenshots.push('owner-topbar-mobile.png');
   result.screenshots.push('upload-in-progress.png');
   result.screenshots.push('badges-mobile.png','admin-overview-desktop.png','admin-overview-mobile.png','admin-settings-desktop.png','admin-settings-mobile.png','admin-audit-desktop.png');
   writeFileSync(resolve(out, 'browser-check.json'), JSON.stringify(result, null, 2)); console.log(JSON.stringify(result, null, 2));

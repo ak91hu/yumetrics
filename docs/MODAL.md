@@ -53,6 +53,8 @@ A modell a kész étellistánál megáll. A 160 új tokenes korlátot elérő, h
 
 ## Költségek
 
+A 2026. november 10-i ellenőrzéskor mindkét konténerszám nulla, a modellkötet körülbelül 16,35 GiB volt. Ez belefér az [árlista](https://modal.com/pricing) 1 TiB-os ingyenes Volume-keretébe, így kérés nélkül az elvárt üresjárati díj 0 USD/nap. Ez nem teljes napos számlázási mérés. Más feltöltések, tesztek, egészségellenőrzések, további tárhely és más alkalmazások eltérő fogyasztást okozhatnak.
+
 Egy L40S, 48 GB VRAM, két CPU-mag és 16 GiB rendszermemória szerepel a konfigurációban. A kisebb L4-re indított próba kapacitáshiány miatt sorban maradt; a hívást töröltük. Az L40S-en a két végső próba 2,1–2,7 másodperc alatt adott 17–23 tokenes étellistát; hidegindításkor további körülbelül 17–18 másodperc volt a betöltés.
 
 Legfeljebb egy GPU-konténer futhat, minimum és tartalék konténer nincs. A GPU és a külön CPU-s gateway egyaránt `single_use_containers=True` beállítással fut: a [Modal dokumentált működése](https://modal.com/docs/sdk/py/latest/App#cls) szerint minden feldolgozott bemenet után megszűnik a konténer. A GPU-függvényhez `retries=0` tartozik; az üresjárati tartalékbeállítás két másodperc. Időtúllépés és hiba esetén a gateway `terminate_containers=True` paraméterrel törli a modellhívást. Az alkalmazás telepítve és hívható marad, de kérés nélkül nincs fenntartott GPU- vagy gateway-konténer. A közvetlen SDK-próbák külön alkalmazásban is indíthatnak konténert, ezért ezeket egymás után kell futtatni.

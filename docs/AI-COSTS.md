@@ -1,5 +1,7 @@
 # AI-használat, becsült költségek és működési napló
 
+A jelenlegi Modal-konfiguráció kérés nélkül várhatóan 0 USD/nap: nincs fenntartott konténer, és a körülbelül 16,35 GiB-os modellkötet az [árlista](https://modal.com/pricing) 1 TiB-os ingyenes Volume-keretén belül van. Ez a 2026. november 10-i ellenőrzésből számolt üresjárat, nem napi számlázási mérés. A képelemzés és külön ellenőrző hívás már használhat erőforrást. A napi költség nem a havi 30 USD-kredit automatikus napi felosztása. [Mai döntések és korlátok](DECISIONS-2026-11-10.md).
+
 ## Food-R1 segéd a Modalon, v16
 
 A Food-R1 8B és az OpenCode hívásai külön `ai_requests` rekordot kapnak, még a hálózati kérés előtt. A segédnél a rögzített L40S-, két CPU-magos és 16 GiB memóriás konfiguráció mért modellbetöltési és elemzési idejéből számolunk. Ez csak részösszeg: a gateway, az üresjárat, a tárhely és a platform indulási többlete nem szerepel benne. Hiányzó időadatnál a díj ismeretlen, nem nulla. Az ingyenes kredit nem változtatja nullává az erőforrás becsült díját; a fizetendő összeget a Modal számlázása mutatja.
@@ -40,6 +42,10 @@ Az `ai_requests` nem függ az étkezés idegen kulcsától: a bejegyzés és fot
 A korábban megmaradt `meals.usage` adatok induláskor és az admin első lekérésekor egyszer, azonosítóval védetten átkerülnek a használati naplóba. Ezek „Korábbi adat” jelzést kapnak; napjuk a régi bejegyzés létrehozási napja. A változtatás előtt már törölt bejegyzések és a korábban eldobott hibás válaszok utólag nem állíthatók helyre. Párhuzamos import nem hoz létre ismételt rekordokat.
 
 ## Működési napló
+
+A Northflank `INFO` indulási sorai és a `Process terminated with exit code 0` üzenet önmagukban nem hibák. A november 7-i 1-es kilépés hiányzó éles konfiguráció miatt történt. Az alkalmazás ilyenkor továbbra sem indul el, de röviden felsorolja a hiányzó beállítások nevét; értékeket és titkokat nem ír ki. A szükséges változók: `DATABASE_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, valamint HTTPS-című `APP_ORIGIN`.
+
+A `pg` SSL-figyelmeztetését nem általános naplótiltással kezeljük. Az explicit libpq-kompatibilitást nem kérő URL-ek `prefer`, `require` és `verify-ca` módját a jelenlegi szigorú viselkedésnek megfelelő `verify-full` névre írjuk át a kapcsolat létrehozásakor. A tanúsítvány- és gépnévellenőrzés megmarad; a Northflank titkos változóját nem kell felülírni. [Driverdokumentáció](https://node-postgres.com/features/ssl).
 
 Az `/admin#logs` a szerver indulását és hibáit, belépéseket/kijelentkezéseket, a feldolgozások indulását és sikerét, valamint az elemzési és törlési hibákat mutatja. Időszak, súlyosság és szöveg szerint szűrhető, lapozható. A beállítások változásai közérthető megnevezésekkel, a korábbi és az új értékkel a külön Módosítási előzmények nézetben látszanak.
 

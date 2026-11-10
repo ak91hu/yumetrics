@@ -57,7 +57,7 @@ async function request(path, options = {}) {
 }
 function showLogin() { if (!state.redirectingToLogin) { state.redirectingToLogin = true; window.location.assign('/'); } }
 async function initialize() {
-  try { state.status = await request('/api/status'); state.goal = state.status.user.calorieGoal; $('.profile strong').textContent = state.status.user.name; $('.profile small').textContent = state.status.user.email; document.querySelectorAll('.avatar').forEach(element=>renderAvatar(element,state.status.user)); $('#logout-button').hidden = false; $('#admin-link').hidden = !state.status.user.admin; await loadMonth(); await loadProfile(request, { quiet: true }); }
+  try { state.status = await request('/api/status'); state.goal = state.status.user.calorieGoal; $('.profile strong').textContent = state.status.user.name; $('.profile small').textContent = state.status.user.email; document.querySelectorAll('.avatar').forEach(element=>renderAvatar(element,state.status.user)); $('#logout-button').hidden = false; $('#admin-link').hidden = !state.status.user.admin; $('#topbar-admin-link').hidden = !state.status.user.admin; $('.topbar').classList.toggle('has-admin',state.status.user.admin); await loadMonth(); await loadProfile(request, { quiet: true }); }
   catch (error) { $('#loading').hidden = true; if (error.status !== 401) toast(error.message); }
 }
 async function loadMonth() {
