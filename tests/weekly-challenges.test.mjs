@@ -68,9 +68,37 @@ for(const dialect of ['sqlite','postgres']){
     const next=await weeklyChallenges(f.db,f.user,null,new Date('2026-11-15T23:00:00Z'));assert.equal(next.current,null);assert.equal(next.totalRewards,1);
     const nextChoice=await weeklyChallenges(f.db,f.user,{kind:'recipe',weekStart:next.week.start},new Date('2026-11-15T23:00:00Z'));assert.equal(nextChoice.current.kind,'recipe');assert.equal(nextChoice.current.progress,0);assert.equal(nextChoice.totalRewards,1);
     assert.equal(Number((await f.db.prepare('SELECT COUNT(*) AS n FROM weekly_challenges WHERE user_id=?').bind(f.user).first()).n),2);
-    const saturday=new Date('2026-11-14T12:00:00Z'),late=await weeklyChallenges(f.db,f.other,null,saturday);assert.equal(late.options.filter(option=>option.available).length,2);
-    await assert.rejects(weeklyChallenges(f.db,f.other,{kind:'three_days',weekStart:week.start},saturday),e=>e.status===400);
-    assert.equal((await weeklyChallenges(f.db,f.other,{kind:'measured',weekStart:week.start},saturday)).current.kind,'measured');
+    const saturday=new Date('2026-11-14T12:00:00Z'),late=await weeklyChallenges(f.db,f.other,null,saturday);assert.equal(late.options.filter(option=>option.available).length,3);
+    const lateChoice=await weeklyChallenges(f.db,f.other,{kind:'three_days',weekStart:week.start},saturday);
+    assert.equal(lateChoice.current.progress,1,'The earlier Tuesday save makes a Saturday start feasible');
+  });
+  test(`${dialect}: earlier weekly activity awards an immediate stamp, once, including a weekend selection`,{skip:dialect==='postgres'&&!process.env.TEST_DATABASE_URL},async t=>{
+    const f=await fixture(t),now=new Date('2026-11-15T12:00:00Z'),week=challengeWeek(now);
+    for(const [day,updated] of [['2026-11-09','2026-11-09T12:00:00.000Z'],['2026-11-10','2026-11-10T12:00:00.000Z'],['2026-11-11','2026-11-11T12:00:00.000Z']])await f.meal(day,{updated});
+    const choices=await Promise.all([weeklyChallenges(f.db,f.user,{kind:'three_days',weekStart:week.start},now),weeklyChallenges(f.db,f.user,{kind:'three_days',weekStart:week.start},now)]);
+    for(const result of choices){assert.equal(result.current.progress,3);assert.equal(result.totalRewards,1);assert.equal(result.current.completedAt,now.toISOString());}
+    await f.reopen();assert.equal((await weeklyChallenges(f.db,f.user,null,now)).totalRewards,1);
+    const measured=analysis();measured.ingredients[0].weightBasis='measured_ingredient';
+    await f.meal('2026-11-10',{owner:f.other,value:measured,updated:'2026-11-10T12:00:00.000Z'});
+    const result=await weeklyChallenges(f.db,f.other,{kind:'measured',weekStart:week.start},now);assert.equal(result.current.progress,1);assert.equal(result.totalRewards,1);
+    await f.db.prepare('DELETE FROM meals WHERE user_id=?').bind(f.other).run();assert.equal((await weeklyChallenges(f.db,f.other,null,now)).totalRewards,1);
+  });
+  test(`${dialect}: activity before choosing survives later edits and meal deletion`,{skip:dialect==='postgres'&&!process.env.TEST_DATABASE_URL},async t=>{
+    const f=await fixture(t),id=await f.meal('2026-11-09',{status:'draft'});
+    for(const day of ['09','10','11'])await f.saveOn(id,new Date(`2026-11-${day}T12:00:00Z`));
+    await f.db.prepare('DELETE FROM meals WHERE id=?').bind(id).run();await f.reopen();
+    const now=new Date('2026-11-15T12:00:00Z'),week=challengeWeek(now);
+    const selected=await weeklyChallenges(f.db,f.user,{kind:'three_days',weekStart:week.start},now);
+    assert.equal(selected.current.progress,3);assert.equal(selected.totalRewards,1);
+  });
+  test(`${dialect}: retrospective recipe credit ignores drafts, other weeks, future dates and pending deletions`,{skip:dialect==='postgres'&&!process.env.TEST_DATABASE_URL},async t=>{
+    const f=await fixture(t),now=new Date('2026-11-13T12:00:00Z'),week=challengeWeek(now);
+    const recipe=validateAnalysis({...analysis(),recipe:{cookedWeightG:400,eatenWeightG:100,lossesAccountedFor:true,ingredients:[{...ingredient}]}});
+    for(const options of [{status:'draft'},{owner:f.other},{deleting:true}])await f.meal('2026-11-10',{value:recipe,...options});
+    await f.meal('2026-11-08',{value:recipe});await f.meal('2026-11-14',{value:recipe});
+    const chosen=await weeklyChallenges(f.db,f.user,{kind:'recipe',weekStart:week.start},now);assert.equal(chosen.current.progress,0);
+    await f.meal('2026-11-10',{value:recipe});
+    const completed=await weeklyChallenges(f.db,f.user,null,now);assert.equal(completed.current.progress,1);assert.equal(completed.totalRewards,1);
   });
   test(`${dialect}: recipe and weighed-ingredient rewards follow validated meal saves and cannot be claimed across accounts`,{skip:dialect==='postgres'&&!process.env.TEST_DATABASE_URL},async t=>{
     const f=await fixture(t),week=challengeWeek(),body={kind:'measured',weekStart:week.start};

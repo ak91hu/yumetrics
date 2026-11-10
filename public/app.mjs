@@ -57,7 +57,7 @@ async function request(path, options = {}) {
 }
 function showLogin() { if (!state.redirectingToLogin) { state.redirectingToLogin = true; window.location.assign('/'); } }
 async function initialize() {
-  try { state.status = await request('/api/status'); state.goal = state.status.user.calorieGoal; $('.profile strong').textContent = state.status.user.name; $('.profile small').textContent = state.status.user.email; renderAvatar($('.avatar'), state.status.user); $('#logout-button').hidden = false; $('#admin-link').hidden = !state.status.user.admin; await loadMonth(); await loadProfile(request, { quiet: true }); }
+  try { state.status = await request('/api/status'); state.goal = state.status.user.calorieGoal; $('.profile strong').textContent = state.status.user.name; $('.profile small').textContent = state.status.user.email; document.querySelectorAll('.avatar').forEach(element=>renderAvatar(element,state.status.user)); $('#logout-button').hidden = false; $('#admin-link').hidden = !state.status.user.admin; await loadMonth(); await loadProfile(request, { quiet: true }); }
   catch (error) { $('#loading').hidden = true; if (error.status !== 401) toast(error.message); }
 }
 async function loadMonth() {
@@ -198,7 +198,7 @@ function setUploadBusy(busy) {
   state.busy=busy;$('#upload-form').classList.toggle('is-processing',busy);
   $('#analyze-button').disabled=busy||processingPhotos>0;$('#analyze-button').hidden=busy;
   $('#upload-ok').hidden=!busy;$('#analysis-progress').hidden=!busy;
-  $('#upload-form .modal-actions [data-close]').textContent=t(busy?'Bezárás':'Mégsem');
+  $('#upload-cancel').hidden=busy;
   render();
 }
 async function choosePhoto(file, secondary = false) {
@@ -266,7 +266,7 @@ function renderDetail() {
   const meal = state.edit, analysis = meal.analysis;
   $('#detail-heading').textContent = analysis ? meal.status === 'draft' ? t('Elkészült az elemzés') : t('Az étkezés részletei') : t(meal.status==='analyzing'?'Az étkezés feldolgozása folyamatban':'Befejezetlen elemzés');
   if (!analysis || !meal.photo || meal.job?.kind === 'delete') {
-    $('#meal-detail').innerHTML = `<p class="dialog-intro ${meal.status==='analyzing'&&meal.job?.kind!=='delete'?'processing-feedback':''}" role="status">${escape(t(meal.error) || (meal.job?.kind === 'delete' ? t('A bejegyzés és a képek törlése még tart. Megszakadás esetén később folytatjuk.') : t('A fotót elmentettük, az elemzés még tart. Bezárhatod az ablakot; az eredményt később is megnyithatod.')))}</p>${meal.job?.state === 'failed' && meal.job?.kind === 'analyze' ? html('<p class="form-hint">Az újrapróbálás új AI-kérést indít.</p><button type="button" class="button primary" id="retry-meal">Elemzés újrapróbálása</button>') : ''}<button type="button" class="delete-button" id="delete-meal">${icon('trash')}${meal.job?.kind === 'delete' ? t('Törlés újrapróbálása') : t('Bejegyzés és kép törlése')}</button>${html('<div class="modal-actions"><button type="button" class="button outline" data-close>Bezárás</button><button type="button" class="button primary" id="processing-ok" data-close>OK</button></div>')}`;
+    $('#meal-detail').innerHTML = `<p class="dialog-intro ${meal.status==='analyzing'&&meal.job?.kind!=='delete'?'processing-feedback':''}" role="status">${escape(t(meal.error) || (meal.job?.kind === 'delete' ? t('A bejegyzés és a képek törlése még tart. Megszakadás esetén később folytatjuk.') : t('A fotót elmentettük, az elemzés még tart. Bezárhatod az ablakot; az eredményt később is megnyithatod.')))}</p>${meal.job?.state === 'failed' && meal.job?.kind === 'analyze' ? html('<p class="form-hint">Az újrapróbálás új AI-kérést indít.</p><button type="button" class="button primary" id="retry-meal">Elemzés újrapróbálása</button>') : ''}<button type="button" class="delete-button" id="delete-meal">${icon('trash')}${meal.job?.kind === 'delete' ? t('Törlés újrapróbálása') : t('Bejegyzés és kép törlése')}</button>${html('<div class="modal-actions"><button type="button" class="button primary" id="processing-ok" data-close>OK</button></div>')}`;
     $('#retry-meal')?.addEventListener('click', async event => {
       event.currentTarget.disabled = true;
       try { await request(`/api/meals/${meal.id}/retry`, { method: 'POST' }); state.pendingOpenId = meal.id; await loadMonth(); }

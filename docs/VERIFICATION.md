@@ -1,5 +1,13 @@
 # Ellenőrzés
 
+## Mobilos profilkép és visszamenőleges heti kihívások, 2026-11-10
+
+**163/163 Node-teszt sikeres**, valódi helyi PostgreSQL-lel, kihagyás nélkül. A próbák az azonnali heti jutalmat, a párhuzamos/idempotens választást, a hétvégi indulás feltételeit, a választás előtti mentések szerkesztés és törlés utáni megőrzését, a felhasználói határt és a nem jogosító bejegyzések kizárását is ellenőrzik. A `weekly_activity` migráció mindkét adatbázison sikeres. A build sikeres.
+
+A mobilos felső sáv a meglévő, biztonságosan kezelt Google-profilképet használja, kép hiányában monogrammal. A feldolgozási ablak alján egyetlen OK gomb látszik. A DB-IP-hivatkozás a nyelvi tájékoztatóban marad, a láblécből eltűnt; az IPv4/IPv6 alapú ország- és nyelvválasztás tesztjei sikeresek. A változtatás nem indít új AI-hívást.
+
+A helyi Chrome-próba is sikeres: a mobilos felső sáv képe megnyitja a profilt; a két feldolgozási állapotban egyetlen alsó OK gomb szerepel; egy korábban rögzített, külön lemért összetevő után a kihívás választáskor azonnal teljesül és egy pecsét jár. Képernyőképek: `outputs/mobile-topbar-profile.png`, `outputs/weekly-challenge-immediate-mobile.png`. A szolgáltatók szimuláltak, fizetős AI-hívás nem indult.
+
 ## Felismerési és címkeszámítási felülvizsgálat, v17, 2026-11-10
 
 **157/157 Node-teszt sikeres**, valódi helyi PostgreSQL-lel és külön admin-tesztadatbázissal, kihagyás nélkül. A három új regressziós eset a javítás előtt sikertelen volt: kész ételt felülíró száraz csomagtömeg, olvashatatlan terméknév miatt eldobott címketápérték és más elkészítési állapotú ml-es táblázat téves g/ml-ütközése. A név bizonytalanságát jelző figyelmeztetés után a címke- és fordítási tesztek külön is sikeresek, **21/21** eredménnyel. A build sikeres.

@@ -215,6 +215,13 @@ try {
   assert.ok(await evaluate("new Date(document.querySelector('#upload-day').value+'T12:00:00').toDateString() === new Date().toDateString()"));
   await evaluate("document.querySelector('#upload-dialog [data-close]').click()");
   await waitFor("document.querySelector('.avatar img')?.naturalWidth === 64");
+  await waitFor("document.querySelector('#topbar-avatar img')?.naturalWidth === 64");
+  assert.ok(await evaluate("document.querySelector('#topbar-avatar').getBoundingClientRect().width>=30"),'The mobile top bar shows a visible profile picture');
+  assert.equal(await evaluate("document.querySelector('#topbar-avatar img').referrerPolicy"),'no-referrer');
+  assert.ok(await evaluate("!document.querySelector('footer a[href=\"https://db-ip.com\"]') && !!document.querySelector('#learn-dialog a[href=\"https://db-ip.com\"]')"),'Geolocation credit remains in language information, outside the footer');
+  await viewport(390,844,true);await screenshot('mobile-topbar-profile.png',false);
+  await evaluate("document.querySelector('.topbar-profile').click()");await waitFor("document.querySelector('#settings-dialog').open");
+  await evaluate("document.querySelector('#settings-dialog [data-close]').click()");await viewport(1440,1100,false);
   assert.equal(await evaluate("document.querySelector('.avatar img').referrerPolicy"), 'no-referrer');
   await evaluate(`(async () => { const {renderAvatar} = await import('/profile-ui.mjs'); const element = document.createElement('span'); element.id = 'avatar-test'; document.body.append(element); for (const avatarUrl of [null, 'javascript:alert(1)', 'https://evil.test/photo', 'https://lh3.googleusercontent.com.evil.test/photo', 'http://lh3.googleusercontent.com/photo']) { renderAvatar(element, { name: 'Teszt Elek', avatarUrl }); if (element.querySelector('img') || element.textContent !== 'TE') throw Error('Invalid avatar fallback'); } renderAvatar(element, { name: 'Teszt Elek', avatarUrl: 'https://lh3.googleusercontent.com/missing' }); })()`);
   await waitFor("document.querySelector('#avatar-test').textContent === 'TE' && !document.querySelector('#avatar-test img')");
@@ -236,7 +243,7 @@ try {
   await evaluate("document.querySelector('[data-action=next-day]').click(); document.querySelector('[data-action=prev-day]').click(); document.querySelector('[data-action=today]').click()");
   await evaluate("document.querySelector('.mobile-nav [data-action=learn]').click()");
   assert.ok(await evaluate("document.querySelector('#learn-dialog').open"));
-  assert.ok((await evaluate("document.querySelector('#learn-dialog a').getAttribute('href')")).endsWith(language === 'en' ? '/guide' : '/utmutato'));
+  assert.ok((await evaluate("document.querySelector('#learn-dialog a[href^=\"/\"]').getAttribute('href')")).endsWith(language === 'en' ? '/guide' : '/utmutato'));
   for (const width of [320,390,768,1024,1440]) {
     await viewport(width,900,width<768);
     assert.ok(await evaluate("document.querySelector('#learn-dialog').scrollWidth <= document.querySelector('#learn-dialog').clientWidth"), 'Methodology fits '+width);
@@ -536,6 +543,7 @@ try {
   assert.ok(await evaluate("document.querySelector('#upload-form').classList.contains('is-processing') && document.querySelector('#analysis-progress').getBoundingClientRect().top>0"),'Processing feedback is visible immediately while the upload request is pending');
   assert.ok(await evaluate("!!document.querySelector('#draft-list .draft-processing')"),'The upload remains visible outside the dialog');
   assert.ok(await evaluate("document.querySelector('#upload-ok').classList.contains('primary')"));
+  assert.equal(await evaluate("[...document.querySelectorAll('#upload-form .modal-actions button')].filter(button=>button.getClientRects().length).length"),1,'Only OK is shown while submitting');
   await screenshot('upload-in-progress.png',false);
   await evaluate("document.querySelector('#upload-ok').click();window.reviewRelease()");
   await waitFor("window.reviewDone && !!document.querySelector('#draft-list [data-meal]')");
@@ -545,6 +553,7 @@ try {
   await waitFor("!!document.querySelector('#processing-ok')");
   assert.ok(await evaluate(`document.querySelector('#detail-heading').textContent===${JSON.stringify(expected('Az étkezés feldolgozása folyamatban','Your meal is being processed'))}`));
   assert.ok(await evaluate("document.querySelector('#processing-ok').classList.contains('primary')"));
+  assert.equal(await evaluate("document.querySelectorAll('#meal-detail .modal-actions button').length"),1,'Only OK is shown in the processing dialog');
   await screenshot('processing-ok.png',false);
   await evaluate("document.querySelector('#processing-ok').click()");
   assert.ok(await evaluate("!document.querySelector('#meal-dialog').open"));
@@ -756,12 +765,24 @@ try {
   await evaluate("location.hash='audit'");await evaluate("document.querySelector('#refresh').click()");
   await waitFor("document.querySelector('#admin-view').getAttribute('aria-busy') === 'false' && document.querySelectorAll('.admin-table tbody tr').length >= 2");
   await viewport(1440,1100,false);await screenshot('admin-audit-desktop.png');
+  const earlierMeasured=validateAnalysis({...adminAnalysis,ingredients:[{...ingredient,weightBasis:'measured_ingredient'}]});
+  await db.prepare("UPDATE meals SET status='saved',analysis=?,updated_at=? WHERE id=?").bind(JSON.stringify(earlierMeasured),new Date().toISOString(),adminMeal).run();
+  await send('Page.navigate',{url:origin+'/'});await waitFor("document.querySelector('#loading')?.hidden && !!document.querySelector('#topbar-avatar')");
+  await evaluate("document.querySelector('.topbar-profile').click()");await waitFor("!!document.querySelector('#weekly-challenge-form')");
+  const beforeImmediateReward=aiRequests;
+  await evaluate("document.querySelector('#weekly-challenge-form [value=measured]').click();document.querySelector('#weekly-challenge-form').requestSubmit()");
+  await waitFor("!!document.querySelector('.challenge-complete') && document.querySelector('#weekly-challenge-progress')?.value===1");
+  assert.ok(await evaluate(`document.querySelector('#weekly-challenge-feedback').textContent.includes(${JSON.stringify(expected('Teljesítetted','completed'))})`),'Choosing an already completed challenge immediately announces the reward');
+  assert.equal(await evaluate("document.querySelectorAll('.challenge-rewards li').length"),1);assert.equal(aiRequests,beforeImmediateReward);
+  await viewport(390,844,true);await evaluate("document.querySelector('.weekly-challenges').scrollIntoView({block:'start'})");await screenshot('weekly-challenge-immediate-mobile.png',false);
   assert.deepEqual(errors,[]);
 
   const result = { passed: true, language, device, desktop: '1440×1100', mobile: '390×844', checkedWidths: [320, 390, 768, 1024, 1440], checks: ['no horizontal overflow', 'meal cards fit at every breakpoint', 'mandatory Google login (mock exchange)', 'no demo entry', 'mobile navigation', 'calendar selection', 'photo decode and JPEG conversion', 'two-view upload', 'full-image portion and measured weight; no consumption fraction', 'single-request mocked AI and signed Cloudinary upload', 'live portion scaling', 'USDA reference selection', '44 reference options and Hungarian substitution caveats', 'live USDA search and canonical selection (mock API)', 'separately measured edible portion', 'manual edit invalidates reference provenance', 'expanded source and nutrient controls fit at 320px', 'review form fits mobile', 'save', 'reload persistence', 'both views deleted', 'profile stored in database', 'logout', 'Hungarian dish guidance and preserved preparation facts', 'whole-pot recipe, loss confirmation and measured yield', 'recipe save/reload preserves original AI result', 'public documentation route and independent file bundle', 'documentation responsive at five widths and print styles'], providerMode: 'mocked; no real credentials or external API requests', screenshots: ['login-desktop.png', 'login-mobile.png', 'desktop.png', 'mobile.png', 'mobile-review.png', 'mobile-ingredients.png', 'mobile-recipe.png', 'documentation-desktop.png', 'documentation-mobile.png'] };
   result.checks.push('language preference survives reload and sign-out', 'language switching keeps selected photos, dirty notes, canonical meal type and unfinished recipe values', 'English interface translation audit', 'native camera file chooser and environment capture configuration (fixture image)', 'second-photo removal and replacement', 'ingredient addition and removal', 'recoverable analysis failure and retry', 'calendar month/day navigation and guide dialog', 'cancel deletion and confirm deletion');
   result.checks.push('real saved-meal profile counts and averages, then empty state after deletion', '365-day activity graph: keyboard navigation, language changes and diary navigation', 'profile fits five viewport widths without losing unsaved energy goal');
   result.screenshots.push('profile-desktop.png', 'profile-mobile.png');
+  result.screenshots.push('mobile-topbar-profile.png','weekly-challenge-immediate-mobile.png');
+  result.checks.push('mobile top-bar profile photo opens the profile; one processing acknowledgement button; geolocation credit outside footer; immediate weekly reward for earlier activity');
   result.checks.push('7/30/365-day profile periods, per-meal averages and meal-type table; expanded details fit five viewport widths');
   result.screenshots.push('profile-details-mobile.png');
   result.checks.push('diary-growth card, today CTA from a past selection, first-badge celebration, six badges and reset after last saved meal is deleted');

@@ -8,7 +8,7 @@ Letöltés: https://download.db-ip.com/free/dbip-country-lite-2026-11.mmdb.gz
 
 A tömörítetlen adatbázis MD5-ellenőrzőösszege: `5974b336a7409ec854f67eacd52c2061`, megegyezik a forrásoldalon közölt értékkel.
 
-Licenc: [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/). Adatgazda: [DB-IP.com](https://db-ip.com). A belépőoldalon és a napló láblécében szerepel a forráshivatkozás.
+Licenc: [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/). Adatgazda: [DB-IP.com](https://db-ip.com). A belépőoldal Nyelvi beállítások részében, a naplóban pedig a számítási tájékoztató Nyelvi beállítások részében szerepel a forráshivatkozás; a láblécben nem jelenik meg.
 
 Az adatgazda havonta ad ki új állományt; az alkalmazásba csomagolt példány nem frissül automatikusan. A szerver induláskor helyben olvassa be a fájlt; látogatásonként nincs külső kérés, és az alkalmazás nem menti el az IP-címet a nyelvválasztáshoz.
 

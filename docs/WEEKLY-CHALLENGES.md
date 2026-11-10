@@ -8,7 +8,7 @@ A Fiókom nézetben minden héten egy feladat választható. A hét hétfőtől 
 | A hét első saját receptje | Saját receptből, a teljes kész tömeg és az adag alapján számolt étkezés mentése. | Receptalkotó |
 | Mérlegre vele! | Legalább egy külön lemért, grammban megadott összetevőt tartalmazó étkezés mentése. | Mértékmester |
 
-Csak a választás után mentett bejegyzés számít, ha a naplódátuma az adott hétre esik, és nem jövőbeli. Az étkezés dátumának átírása vagy több bejegyzés egyidejű mentése nem ad három külön napnyi haladást. A háromnapos kihívás péntekig indítható; szombaton és vasárnap a másik két feladat közül lehet választani. A korábban elindított háromnapos feladatot hétvégén is folytatni lehet.
+A választás előtti heti mentések is számítanak, ha a naplódátum az adott hétre esik, és nem jövőbeli. A már teljesített feladatért választáskor azonnal jár a pecsét. Az étkezés dátumának átírása vagy több bejegyzés egyidejű mentése nem ad három külön mentési napot. A háromnapos feladat hétvégén is választható, ha a korábbi mentési napokkal és a még hátralévő napokkal teljesíthető. A mai napot nem számítjuk kétszer.
 
 A teljes étel tömegének megadása nem helyettesíti a külön lemért összetevő jelölését. A milliliterben megadott, külön megmért térfogat sem számít grammban lemért összetevőnek. A saját receptnek át kell mennie a már meglévő receptellenőrzésen; az összetevők, kész tömeg és adag megadása szükséges.
 
@@ -33,3 +33,9 @@ A profil lekérése, egy piszkozat, egy hibás vagy elutasított mentés nem ad 
 A `tests/weekly-challenges.test.mjs` SQLite-on és PostgreSQL-en vizsgálja a választást, párhuzamos ismétlést, heti váltást, hétvégi korlátot, tulajdonosi határt, tényleges mentési napokat, saját receptet, külön lemért grammos mennyiséget, valamint a részleges haladás és jutalom megőrzését adatbázis-újranyitás után. Külön esetek fedik az évváltást és az óraátállítást.
 
 A böngészős folyamat mindkét nyelven ellenőrzi a három lehetőséget, a nyelvváltáskor megőrzött választást, a mentés utáni haladást, a teljesítési visszajelzést, az újratöltést és a törlés után is megmaradó pecsétet. Képernyőszélességek: 320, 390, 768, 1024 és 1440 px.
+
+## A választás előtti tevékenység megőrzése
+
+A `weekly_activity` tábla felhasználónként, hétenként és tényleges mentési naponként rögzíti, hogy történt-e naplózás, saját recept mentése vagy külön lemért grammos összetevő rögzítése. Ez a kihívás kiválasztása előtt is működik, és későbbi szerkesztés vagy étkezéstörlés után is megmarad. A mentéssel közös tranzakció és felhasználói sorzár védi. A párhuzamos választás nem ad több pecsétet. Migrációk: SQLite `0010_weekly_activity`, PostgreSQL `0008_weekly_activity`.
+
+A korábbi, még meglevő heti bejegyzésekből a legutóbbi sikeres mentés napját és a megfelelő recept-/mérésjelölést átvesszük. A kiadás előtt törölt bejegyzések és korábbi szerkesztéssel elveszett mentési időpontok nem állíthatók helyre. A már rögzített haladást és jutalmakat nem csökkentjük.
