@@ -2,6 +2,8 @@
 
 ## Food-R1 8B és OpenCode együtt, v16, 2026-11-10
 
+Az éles Northflank-konténerben a `food-v16-food-r1-review` verziót, a 15 USD-s belső keretet, a megmaradt OpenCode-hozzáférést, a belső készenléti végpont sikerét és a Modal `/health` hitelesített, 200-as válaszát ellenőriztük. Ehhez új GPU-s elemzés nem indult. A Modal kimutatása 0,11959387 USD havi mért felhasználást és 0 USD fizetendő díjat mutatott; ebben a korábbi próbák is benne vannak. A GPU-konténerek száma a futások után nulla volt.
+
 A BF16 Food-R1 a Modalon kizárólag ételneveket javasol, az OpenCode egyetlen kérése az eredeti fotókból ellenőrzi ezeket és elkészíti a teljes elemzést. A külön összetevők, tápértékek, képpár-ellenőrzés és mentési jóváhagyás megmaradt. A védett HTTP-végpont hitelesítés nélkül 401-et, hibás képadatra GPU-hívás előtt 422-t ad; a helyi próbában a túl nagy törzs 413-as elutasítása és az időtúllépés miatti modellhívás-törlés is sikeres.
 
 **147/147 Node-teszt sikeres**, valódi helyi PostgreSQL-lel, kihagyás nélkül; **6/6 Python-teszt és a build is sikeres**. A tesztek többek között a két fotó továbbítását, a nem megbízható jelöltek kezelését, a hibás és csonka válaszokat, a lejárt munkazárat, a külön használati rekordokat, a belső keret miatti OpenCode-folytatást és a párhuzamos keretfoglalást ellenőrzik. A havi foglalás zárolása a beállítások verzióját nem módosítja. Nyilvános böngészős próbát ehhez a kiadáshoz nem ismételtünk.
