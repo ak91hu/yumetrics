@@ -35,7 +35,7 @@ A becslés nem szolgáltatói számla: nem tartalmaz adót, árfolyamváltást v
 
 Minden új AI-kérés előtt létrejön az `ai_requests` rekord. Amikor válasz érkezik, a számszerűen ellenőrzött tokenmennyiségek, a díjszabás másolata, a becsült költség, HTTP-válaszkód és időtartam a tartalmi validáció előtt elmentődnek. Így a csonka, visszautasított vagy hibás elemzés is szerepel, ha a szolgáltató közölt használati adatot. Hálózati megszakadásnál az ismeretlen használat ismeretlen marad. A sikertelen és megszakadt futások elkülönülnek a sikeresektől.
 
-Az `ai_requests` nem függ az étkezés idegen kulcsától: a bejegyzés és fotók törlése után megmarad a használati rekord. Fotót, megjegyzést, modellszöveget, API-kulcsot vagy belépési tokent nem tárol. A számlálóban csak az ismert tokenmezők maradnak meg, a szolgáltató tetszőleges egyéb mezői nem kerülnek a naplóba.
+Az `ai_requests` nem függ az étkezés idegen kulcsától: a bejegyzés és fotók törlése után megmarad a használati rekord és az új AI-válaszarchívum is. A válasz szövegét és a jóváhagyott elemzést megőrizzük; a képfájlt, a HTTP-fejléceket és a belső gondolatmenetet nem. A felismert titkokat eltávolítjuk. A számlálóban csak az ismert tokenmezők maradnak meg, a szolgáltató tetszőleges egyéb mezői nem kerülnek bele. A részletes megőrzési szabályok az [admin útmutatójában](ADMIN.md#ai-válaszarchívum) olvashatók.
 
 A korábban megmaradt `meals.usage` adatok induláskor és az admin első lekérésekor egyszer, azonosítóval védetten átkerülnek a használati naplóba. Ezek „Korábbi adat” jelzést kapnak; napjuk a régi bejegyzés létrehozási napja. A változtatás előtt már törölt bejegyzések és a korábban eldobott hibás válaszok utólag nem állíthatók helyre. Párhuzamos import nem hoz létre ismételt rekordokat.
 

@@ -11,6 +11,15 @@ const table = (caption,heads,rows) => `<div class="admin-table-wrap" tabindex="0
 const pager = data => `<div class="admin-pagination"><span>${number(data.total)} találat · ${data.page}. oldal</span><div><button class="button outline" data-page="${data.page-1}" ${data.page<=1?'disabled':''}>← Előző</button><button class="button outline" data-page="${data.page+1}" ${data.page*data.pageSize>=data.total?'disabled':''}>Következő →</button></div></div>`;
 const option = (value,text,selected) => `<option value="${escape(value)}" ${value===selected?'selected':''}>${escape(text)}</option>`;
 let loadVersion=0, userEmail;
+let archiveExport;
+async function aiResponses(params) {
+  const data=await request('/ai-responses?'+params),days=Number(params.get('days')||30),model=params.get('model')||'',state=params.get('state')||'';
+  return `${periodFilter('ai-response-filter',days,`<label>Modell<select name="model">${option('','Minden modell',model)}${data.models.map(row=>option(row.model,row.model,model)).join('')}</select></label><label>Állapot<select name="state">${option('','Minden állapot',state)}${['completed','failed','interrupted','running','imported'].map(value=>option(value,labels[value]||value,state)).join('')}</select></label><label>Keresés a válaszban<input name="q" maxlength="120" value="${escape(params.get('q')||'')}" placeholder="Például: brokkoli"></label><button class="button primary" type="submit">Keresés</button>`)}<p class="admin-note">A válaszokat az adatbázis őrzi, az alkalmazás újraindítása és az étkezés törlése után is. A korábbi, nem archivált nyers válaszok nem állíthatók vissza. A jóváhagyott javítás nem méréssel igazolt referencia. Exportálás előtt nézd át a szövegekben esetleg szereplő személyes adatokat.</p>${table('Archivált AI-válaszok',['Időpont / felhasználó','Modell / állapot','Válasz','Művelet'],data.items.map(row=>`<tr><td>${escape(date(row.created_at))}<small>${escape(row.email||'Korábbi fiók')}</small></td><td>${escape(row.model)}<br>${pill(row.state)}</td><td>${Number(row.has_response)?Number(row.response_truncated)?'Részlegesen megőrizve':'Megőrizve':'Nem áll rendelkezésre'}</td><td><button class="button outline" data-ai-response="${escape(row.id)}">Megnyitás és összevetés</button></td></tr>`))}${pager(data)}`;
+}
+function archiveDetails(data) {
+  const format=value=>{try{return JSON.stringify(JSON.parse(value),null,2);}catch{return value||'Nem áll rendelkezésre.';}};
+  return `<p class="admin-note">${escape(data.notice)}</p><button class="button primary" data-ai-export="yes">Összehasonlítás mentése JSON-fájlba</button><div class="ai-compare">${[data.record,...data.related].map(row=>`<article><h3>${escape(row.model)}</h3><p>${escape(date(row.created_at))} · ${pill(row.state)}</p>${Number(row.response_truncated)?'<p class="admin-notice warning">A válasz hiányos vagy a megőrzési korlát miatt rövidített.</p>':''}<h4>Szolgáltatói válasz</h4><pre tabindex="0">${escape(row.response_text??'Nem érkezett vagy korábban nem naplózott válasz.')}</pre>${[['request_meta','Az összehasonlításhoz rögzített bemenetek'],['response_meta','Válaszadatok és verziók'],['result_analysis','Az alkalmazás által feldolgozott eredmény'],['reviewed_analysis','Legutóbbi jóváhagyott változat'],['usage','Felhasználás']].map(([key,label])=>`<details><summary>${label}</summary><pre tabindex="0">${escape(format(row[key]))}</pre></details>`).join('')}${row.reviewed_at?`<p>Jóváhagyva: ${escape(date(row.reviewed_at))} · ${number(row.reviewed_revision)}. változat</p>`:''}</article>`).join('')}</div>`;
+}
 function route() { const [view='overview',query=''] = location.hash.slice(1).split('?'); return { view:view || 'overview', params:new URLSearchParams(query) }; }
 function navigate(view,params=new URLSearchParams()) { location.hash = view + (params.size ? '?' + params.toString() : ''); }
 function message(text,error=false) { $('#admin-message').textContent=text; $('#admin-message').hidden=false; $('#admin-message').classList.toggle('error',error); }
@@ -103,20 +112,20 @@ async function audit(params) {
   const actions={'settings.update':'Alkalmazásbeállítások módosítása','user.update':'Felhasználó beállításainak módosítása','sessions.revoke':'Felhasználó kijelentkeztetése minden eszközről'};
   return table('A fiókokon és beállításokon végzett módosítások',['Mikor?','Mi változott?','Ki módosította?','Érintett','Részletek'],data.items.map(row=>`<tr><td>${escape(date(row.created_at))}</td><td>${escape(actions[row.action]||row.action)}</td><td>${escape(row.email)}</td><td>${escape(row.target==='application'?'Alkalmazás':row.target_email||row.target)}</td><td><details><summary>Változás megtekintése</summary>${changeDetails(row.details)}</details></td></tr>`))+pager(data);
 }
-const views={overview,visitors,users,meals,jobs,settings,audit,costs,logs};
-const titles={overview:'Áttekintés',visitors:'Látogatottság',users:'Felhasználók',meals:'Étkezések',jobs:'Feldolgozások',costs:'AI-használat és költségek',logs:'Működési napló',settings:'Beállítások',audit:'Módosítási előzmények'};
+const views={"ai-responses":aiResponses,overview,visitors,users,meals,jobs,settings,audit,costs,logs};
+const titles={'ai-responses':'AI-válaszok és összehasonlítás',overview:'Áttekintés',visitors:'Látogatottság',users:'Felhasználók',meals:'Étkezések',jobs:'Feldolgozások',costs:'AI-használat és költségek',logs:'Működési napló',settings:'Beállítások',audit:'Módosítási előzmények'};
 async function load() {
   const {view,params}=route(),version=++loadVersion;
   $('#admin-view').setAttribute('aria-busy','true'); $('#admin-message').hidden=true;
   $('#admin-title').textContent=titles[view]||'Adminisztráció';
-  $('#admin-description').textContent={overview:'A napló használata és a napi változások.',visitors:'Oldalmegnyitások, érkezési források és technikai bontások.',users:'Keresd meg a felhasználót, majd módosítsd a hozzáférését vagy a napi energiakeretét.',meals:'Nézd át a mentett étkezéseket és az eredeti elemzéseket.',jobs:'Kövesd az elemzéseket és a törléseket; itt láthatod az elakadásokat is.',settings:'Állítsd be az alkalmazás működését és az elemzési korlátokat.',audit:'Mikor, ki és mit változtatott meg az alkalmazásban?',costs:'Tekintsd át az AI-hívásokat, a becsült költségeket és a hiányzó adatokat.',logs:'A feldolgozások eseményei és hibái időrendben.'}[view]||'';
+  $('#admin-description').textContent={'ai-responses':'Eredeti válaszok, modellverziók és jóváhagyott javítások összevetése.',overview:'A napló használata és a napi változások.',visitors:'Oldalmegnyitások, érkezési források és technikai bontások.',users:'Keresd meg a felhasználót, majd módosítsd a hozzáférését vagy a napi energiakeretét.',meals:'Nézd át a mentett étkezéseket és az eredeti elemzéseket.',jobs:'Kövesd az elemzéseket és a törléseket; itt láthatod az elakadásokat is.',settings:'Állítsd be az alkalmazás működését és az elemzési korlátokat.',audit:'Mikor, ki és mit változtatott meg az alkalmazásban?',costs:'Tekintsd át az AI-hívásokat, a becsült költségeket és a hiányzó adatokat.',logs:'A feldolgozások eseményei és hibái időrendben.'}[view]||'';
   $('#refresh').disabled=true;
   document.querySelectorAll('.admin-sidebar a').forEach(a=>a.hash==='#'+view?a.setAttribute('aria-current','page'):a.removeAttribute('aria-current'));
   try { if(!views[view]) throw new Error('Ez az adminoldal nem található.'); const markup=await views[view](params); if(version===loadVersion) $('#admin-view').innerHTML=markup; }
   catch(error) { if(version===loadVersion) { $('#admin-view').textContent='A nézetet nem sikerült betölteni.'; message(error.message,true); } }
   finally { if(version===loadVersion) { $('#admin-view').setAttribute('aria-busy','false'); $('#refresh').disabled=false; } }
 }
-document.addEventListener('change',event=>{if(event.target.matches('#period-filter select,#cost-period select,#logs-filter select,#visitor-period select,#job-filter select,#meal-filter select'))event.target.form.requestSubmit();});
+document.addEventListener('change',event=>{if(event.target.matches('#ai-response-filter select,#period-filter select,#cost-period select,#logs-filter select,#visitor-period select,#job-filter select,#meal-filter select'))event.target.form.requestSubmit();});
 $('#refresh').addEventListener('click',load); window.addEventListener('hashchange',load);
 $('#close-detail').addEventListener('click',()=>$('#admin-detail').close());
 document.addEventListener('submit',async event=>{
@@ -135,10 +144,22 @@ document.addEventListener('click',async event=>{
   const {view,params}=route();
   if(button.dataset.page){params.set('page',button.dataset.page);navigate(view,params);return;}
   if(button.dataset.userMeals){navigate('meals',new URLSearchParams({userId:button.dataset.userMeals}));return;}
-  if(!button.dataset.saveUser&&!button.dataset.revoke&&!button.dataset.meal)return;
+  if(button.dataset.aiExport&&archiveExport){
+    const url=URL.createObjectURL(new Blob([JSON.stringify({format:'yumetrics-ai-comparison-v1',...archiveExport},null,2)],{type:'application/json'}));
+    const link=document.createElement('a');link.href=url;link.download='yumetrics-ai-'+archiveExport.record.id.replace(/[^a-zA-Z0-9_-]/g,'-')+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);return;
+  }
+  if(!button.dataset.saveUser&&!button.dataset.revoke&&!button.dataset.meal&&!button.dataset.aiResponse)return;
   button.disabled=true;
   try{
+    if(button.dataset.aiResponse){
+      archiveExport=await request('/ai-responses/'+encodeURIComponent(button.dataset.aiResponse));
+      $('#admin-detail').classList.add('ai-detail');
+      document.querySelector('#admin-detail h2').textContent='AI-válaszok összehasonlítása';
+      $('#admin-meal-detail').innerHTML=archiveDetails(archiveExport);$('#admin-detail').showModal();return;
+    }
     if(button.dataset.meal){
+      $('#admin-detail').classList.remove('ai-detail');
+      document.querySelector('#admin-detail h2').textContent='Étkezés részletei';
       const {meal}=await request('/meals/'+encodeURIComponent(button.dataset.meal));
       const photos=[meal.photo,meal.photo?.additional].filter(photo=>{try{const url=new URL(photo?.url,location.origin);return url.origin===location.origin&&url.pathname.startsWith('/api/meals/');}catch{return false;}});
       const keys=['calories','protein','carbs','fat','fiber','sugar','sodium','saturatedFat'];

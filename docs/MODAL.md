@@ -4,6 +4,8 @@ A Modalon a `zy12123/Food-R1` körülbelül 8 milliárd paraméteres ételspecia
 
 A választás és a mérések: [modellkutatás](FOOD-MODELS-2026-11-10.md). A segéd gramm-, kalória- és makrotápanyag-becsléseit nem adjuk tovább. A próbában javasolt, nem igazolható Caesar-öntet nem került a végső étkezésbe.
 
+A segéd válaszát és az OpenCode eredményét az alkalmazás tartósan archiválja, külön hívásrekordban. A Modal a rögzített modellrevízió mellett a felismerési prompt verzióját és SHA-256-lenyomatát, valamint a generálási korlátot is visszaadja. Ez segít megkülönböztetni a későbbi változatokat, új GPU-hívás nélkül. Hozzáférés és megőrzés: [AI-válaszarchívum](ADMIN.md#ai-válaszarchívum).
+
 ## Kliens és telepítés
 
 ```powershell

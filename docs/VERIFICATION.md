@@ -1,5 +1,13 @@
 # Ellenőrzés
 
+## Tartós AI-válaszarchívum, 2026-11-10
+
+**154/154 Node-teszt sikeres**, helyi PostgreSQL-lel és külön admin-tesztadatbázissal, kihagyás nélkül. **6/6 Python-teszt és a build is sikeres**. A próbák ellenőrzik a két szolgáltató válaszának és bemeneti lenyomatainak tárolását, a hibás és csonka válaszok megőrzését, a méretkorlátot, a titkok és belső gondolatmenetek kizárását, a tulajdonosi hozzáférést, a jóváhagyás és ütköző mentés kezelését, valamint az étkezés törlése után megmaradó archívumot. A dokumentáció módosítása után a három dokumentációs teszt, a végső archívum- és Modal-próbák is külön sikeresek.
+
+A helyi Chrome-próba szimulált Google-, kép- és AI-szolgáltatókkal sikeres: keresés, az egy étkezéshez tartozó két hívás megnyitása, asztali egymás melletti összevetés, öt képernyőszélesség, biztonságosan megjelenített HTML-tartalmú válasz és JSON-export. A képernyőképek az `outputs/admin-ai-responses-desktop.png`, `outputs/admin-ai-comparison-desktop.png` és `outputs/admin-ai-comparison-mobile.png` fájlokban készültek.
+
+A Modal-végpont új kódja telepítve; a felismerési prompt verzióját, lenyomatát és generálási korlátját is visszaadja. Ehhez nem indult új GPU-s elemzés vagy fizetős AI-hívás. Régi nyers válasz nem állítható helyre; a jóváhagyott felhasználói változat nem méréssel igazolt referencia, és nincs automatikus modelltréning.
+
 ## Food-R1 8B és OpenCode együtt, v16, 2026-11-10
 
 Az éles Northflank-konténerben a `food-v16-food-r1-review` verziót, a 15 USD-s belső keretet, a megmaradt OpenCode-hozzáférést, a belső készenléti végpont sikerét és a Modal `/health` hitelesített, 200-as válaszát ellenőriztük. Ehhez új GPU-s elemzés nem indult. A Modal kimutatása 0,11959387 USD havi mért felhasználást és 0 USD fizetendő díjat mutatott; ebben a korábbi próbák is benne vannak. A GPU-konténerek száma a futások után nulla volt.

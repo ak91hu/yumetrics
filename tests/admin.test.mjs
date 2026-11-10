@@ -36,7 +36,7 @@ for (const dialect of ['sqlite','postgres']) {
     await fn({db,env,owner,other,cookies,call,settings,save,login,googleClient,calls,fetcher});
   });
   run('protects every private route and hides provider configuration from ordinary users',async f=>{
-    for(const path of ['/admin','/admin.html','/api/admin/settings','/api/admin/overview','/api/admin/visitors','/api/admin/users','/api/admin/meals','/api/admin/jobs','/api/admin/audit','/api/admin/logs','/api/admin/costs']){
+    for(const path of ['/admin','/admin.html','/api/admin/settings','/api/admin/overview','/api/admin/visitors','/api/admin/users','/api/admin/meals','/api/admin/jobs','/api/admin/audit','/api/admin/logs','/api/admin/costs','/api/admin/ai-responses']){
       assert.equal((await f.call(path,{id:null})).status,401,path);
       assert.equal((await f.call(path,{id:f.other})).status,403,path);
       assert.equal((await f.call(path)).status,200,path);
@@ -54,12 +54,41 @@ for (const dialect of ['sqlite','postgres']) {
     const original=f.googleClient.verifyIdToken;f.googleClient.verifyIdToken=async options=>{const ticket=await original(options);return{getPayload:()=>({...ticket.getPayload(),email:'thisisnotka@gmail.com',email_verified:false})};};
     const denied=await f.login();assert.equal(denied.headers.get('location'),'/?login=failed');assert.ok(!denied.headers.getSetCookie().some(cookie=>cookie.startsWith('yumetrics_session=')));
   });
+  run('archives responses, provenance and the last accepted correction without exposing them to other accounts',async f=>{
+    const id=randomUUID(),body={id,image,day:'2026-11-10',time:'12:00',type:'Ebéd',notes:'Private recipe note'};
+    assert.equal((await f.call('/api/analyze',{id:f.other,method:'POST',body})).status,202);
+    const fetcher=(url,options)=>url.endsWith('/destroy')?Response.json({result:'ok'}):f.fetcher(url,options);
+    await processNextJob({db:f.db,env:f.env,fetcher});
+    const row=await f.db.prepare('SELECT * FROM ai_requests WHERE meal_id=?').bind(id).first();
+    assert.equal(row.state,'completed');assert.ok(row.response_text.includes('Test meal'));
+    const meta=JSON.parse(row.request_meta);assert.equal(meta.provider,'opencode');assert.match(meta.promptHash,/^[a-f0-9]{64}$/);assert.equal(meta.imageHashes.length,1);
+    assert.ok(!row.request_meta.includes('Private recipe note'));assert.ok(!row.request_meta.includes(image));assert.ok(JSON.parse(row.result_analysis).ingredients.length);
+    const endpoint='/api/admin/ai-responses/'+row.id;
+    assert.equal((await f.call(endpoint,{id:null})).status,401);assert.equal((await f.call(endpoint,{id:f.other})).status,403);
+    const list=await(await f.call('/api/admin/ai-responses?mealId='+id+'&q=Test&model='+row.model+'&state=completed')).json();
+    assert.equal(list.total,1);assert.equal(Number(list.items[0].has_response),1);assert.equal(list.items[0].response_text,undefined);
+    const meal=(await(await f.call('/api/meals/'+id,{id:f.other})).json()).meal;
+    assert.ok(!JSON.stringify(meal).includes('request_meta'));assert.ok(!JSON.stringify(meal).includes('response_text'));
+    const review={...body,revision:meal.revision,analysis:{...meal.analysis,name:'Corrected meal'}};delete review.image;
+    assert.equal((await f.call('/api/meals/'+id,{id:f.other,method:'PATCH',body:review})).status,200);
+    assert.equal((await f.call('/api/meals/'+id,{id:f.other,method:'PATCH',body:{...review,analysis:{...review.analysis,name:'Stale correction'}}})).status,409);
+    assert.equal((await f.call('/api/meals/'+id,{id:f.other,method:'DELETE'})).status,202);
+    await processNextJob({db:f.db,env:f.env,fetcher});assert.equal((await f.call('/api/meals/'+id,{id:f.other})).status,404);
+    const detail=await(await f.call(endpoint)).json();assert.equal(detail.record.response_text,row.response_text);
+    assert.equal(JSON.parse(detail.record.reviewed_analysis).name,'Corrected meal');assert.equal(Number(detail.record.reviewed_revision),meal.revision+1);assert.ok(detail.record.reviewed_at);
+    assert.equal(detail.related.length,0);assert.ok(!JSON.stringify(detail).includes('private-ai-key'));
+    assert.equal((await f.call('/api/admin/ai-responses?days=999')).status,400);
+    assert.equal((await f.call('/api/admin/ai-responses/'+randomUUID())).status,404);
+    assert.equal((await f.call('/api/admin/ai-responses/%ZZ')).status,400);
+    assert.equal((await f.call('/api/admin/ai-responses?q='+encodeURIComponent("' OR 1=1 --"))).status,200);
+  });
   run('keeps costs from rejected AI responses after meal deletion and exposes only safe operational logs',async f=>{
     const id=randomUUID(),body={id,image,secondImage,day:'2026-11-09',time:'12:00',type:'Ebéd'};
     assert.equal((await f.call('/api/analyze',{id:f.other,method:'POST',body})).status,202);
     await processNextJob({db:f.db,env:f.env,fetcher:async(url,options)=>url.startsWith('https://opencode.ai/')?Response.json({candidates:[{finishReason:'MAX_TOKENS',content:{parts:[]}}],usageMetadata:{promptTokenCount:1000,candidatesTokenCount:5,thoughtsTokenCount:100,cachedContentTokenCount:400,privateField:'never-log-this'}}):f.fetcher(url,options)});
     const row=await f.db.prepare('SELECT * FROM ai_requests WHERE meal_id=?').bind(id).first();
     assert.equal(row.state,'failed');assert.equal(Number(row.http_status),200);assert.ok(Math.abs(row.cost_usd-.00229)<1e-12);assert.ok(!row.usage.includes('never-log-this'));
+    assert.equal(JSON.parse(row.response_meta).finishReason,'MAX_TOKENS');assert.notEqual(row.response_text,null);
     const ordinary=await(await f.call('/api/meals/'+id,{id:f.other})).json();assert.equal(ordinary.meal.job.error,undefined);assert.ok(!JSON.stringify(ordinary).includes('cost_usd'));
     await f.db.prepare('DELETE FROM meals WHERE id=?').bind(id).run();
     const costs=await(await f.call('/api/admin/costs?days=7')).json();assert.equal(Number(costs.summary.requests),1);assert.equal(Number(costs.summary.priced_requests),1);assert.ok(Math.abs(costs.summary.estimated_usd-.00229)<1e-12);

@@ -669,9 +669,11 @@ try {
   storedPhotos.set('yumetrics/'+adminMeal,'data:image/png;base64,'+readFileSync('public/badges/first.png').toString('base64'));
   await db.prepare('INSERT INTO meals(id,user_id,day,time,type,status,analysis,original_analysis,photo,public_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').bind(adminMeal,adminId,adminTime.slice(0,10),'12:00','Ebéd','draft',JSON.stringify(adminAnalysis),JSON.stringify(adminAnalysis),JSON.stringify({publicId:'yumetrics/'+adminMeal,type:'authenticated',url:'https://res.cloudinary.com/test-cloud/image/authenticated/v1/yumetrics/'+adminMeal+'.jpg'}),adminMeal,adminTime,adminTime).run();
   await db.prepare("INSERT INTO analysis_jobs(meal_id,kind,state,input_hash,error,created_at,updated_at) VALUES(?,'analyze','failed','','Provider diagnostic visible only to the owner',?,?)").bind(adminMeal,adminTime,adminTime).run();
-  for(const tab of ['visitors','users','meals','jobs','costs','logs','settings','audit']){
+  const archiveFixture=randomUUID();
+  for(const [id,model] of [[archiveFixture,'gemini-3.8-flash'],[randomUUID(),'modal:zy12123/Food-R1']])await db.prepare('INSERT INTO ai_requests(id,meal_id,user_id,model,state,created_at,response_text,request_meta,response_meta,result_analysis,reviewed_analysis,reviewed_at,reviewed_revision) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)').bind(id,adminMeal,adminId,model,'completed',adminTime,'Archive fixture: <img src=x onerror="window.archiveXSS=true"> Rizs és csirke',JSON.stringify({promptVersion:'fixture-v1',imageHashes:['a'.repeat(64)]}),JSON.stringify({provider:model.startsWith('modal:')?'modal':'opencode'}),JSON.stringify(adminAnalysis),JSON.stringify({...adminAnalysis,name:'Javított tesztétkezés'}),adminTime,1).run();
+  for(const tab of ['visitors','users','meals','jobs','costs','ai-responses','logs','settings','audit']){
     await evaluate(`location.hash=${JSON.stringify(tab)}`);
-    await waitFor(`document.querySelector('#admin-title').textContent === ${JSON.stringify({visitors:'Látogatottság',users:'Felhasználók',meals:'Étkezések',jobs:'Feldolgozások',settings:'Beállítások',audit:'Módosítási előzmények',costs:'AI-használat és költségek',logs:'Működési napló'}[tab])} && document.querySelector('#admin-view').getAttribute('aria-busy') === 'false'`);
+    await waitFor(`document.querySelector('#admin-title').textContent === ${JSON.stringify({'ai-responses':'AI-válaszok és összehasonlítás',visitors:'Látogatottság',users:'Felhasználók',meals:'Étkezések',jobs:'Feldolgozások',settings:'Beállítások',audit:'Módosítási előzmények',costs:'AI-használat és költségek',logs:'Működési napló'}[tab])} && document.querySelector('#admin-view').getAttribute('aria-busy') === 'false'`);
     assert.ok(await evaluate("document.querySelector('#admin-message').hidden"),'Admin tab loads '+tab);
     for(const width of [320,390,768,1024,1440]){await viewport(width,1000,width<768);assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth'),'Admin '+tab+' fits '+width);}
     if(tab==='visitors'){
@@ -711,6 +713,21 @@ try {
       await evaluate("document.querySelector('.chart-data').open=false");
       await viewport(1440,1100,false);await screenshot('admin-costs-desktop.png');
       await viewport(390,844,true);await screenshot('admin-costs-mobile.png');
+    }
+    if(tab==='ai-responses'){
+      await evaluate("document.querySelector('#ai-response-filter [name=q]').value='Archive fixture';document.querySelector('#ai-response-filter').requestSubmit()");
+      await waitFor("document.querySelector('#admin-view').getAttribute('aria-busy')==='false' && document.querySelectorAll('[data-ai-response]').length===2");
+      await viewport(1440,1100,false);await screenshot('admin-ai-responses-desktop.png');
+      await evaluate(`document.querySelector('[data-ai-response="${archiveFixture}"]').click()`);
+      await waitFor("document.querySelector('#admin-detail').open && document.querySelectorAll('.ai-compare article').length===2");
+      assert.ok(await evaluate("document.querySelector('.ai-compare').textContent.includes('<img src=x') && !document.querySelector('.ai-compare img') && !window.archiveXSS"));
+      for(const width of [320,390,768,1024,1440]){await viewport(width,1000,width<768);assert.ok(await evaluate("document.querySelector('#admin-detail').scrollWidth<=document.querySelector('#admin-detail').clientWidth"),'AI comparison fits '+width);}
+      await viewport(1440,1100,false);assert.ok(await evaluate("document.querySelectorAll('.ai-compare article')[0].getBoundingClientRect().top===document.querySelectorAll('.ai-compare article')[1].getBoundingClientRect().top"),'AI answers appear side by side on desktop');await screenshot('admin-ai-comparison-desktop.png',false);
+      await viewport(390,844,true);await screenshot('admin-ai-comparison-mobile.png',false);
+      await evaluate("window.originalArchiveURL=URL.createObjectURL;window.originalArchiveClick=HTMLAnchorElement.prototype.click;URL.createObjectURL=blob=>{blob.text().then(text=>window.archiveDownload=JSON.parse(text));return window.originalArchiveURL(blob)};HTMLAnchorElement.prototype.click=function(){if(!this.download)return window.originalArchiveClick.call(this)};document.querySelector('[data-ai-export]').click()");
+      await waitFor("window.archiveDownload?.format==='yumetrics-ai-comparison-v1'");
+      assert.equal(await evaluate('window.archiveDownload.related.length'),1);
+      await evaluate("URL.createObjectURL=window.originalArchiveURL;HTMLAnchorElement.prototype.click=window.originalArchiveClick;document.querySelector('#close-detail').click()");
     }
     if(tab==='logs'){
       await evaluate("document.querySelector('#logs-filter [name=level]').value='error';document.querySelector('#logs-filter [name=level]').dispatchEvent(new Event('change',{bubbles:true}))");
@@ -762,7 +779,8 @@ try {
   result.checks.push('three weekly choices in both languages, persistent selection, no provider calls, live progress, completion toast, reload persistence and permanent reward after meal deletion');
   result.screenshots.push('weekly-challenge-choices-mobile.png','weekly-challenge-completed-mobile.png','weekly-challenge-completed-desktop.png');
   result.screenshots.push('food-breakdown-desktop.png','food-breakdown-mobile.png');
-  result.screenshots.push('admin-costs-desktop.png','admin-costs-mobile.png','admin-logs-desktop.png','admin-logs-mobile.png');
+  result.screenshots.push('admin-costs-desktop.png','admin-costs-mobile.png','admin-logs-desktop.png','admin-logs-mobile.png','admin-ai-responses-desktop.png','admin-ai-comparison-desktop.png','admin-ai-comparison-mobile.png');
+  result.checks.push('owner AI response search, paired comparison at five widths, escaped model text and JSON export; mocked providers only');
   result.screenshots.push('badges-mobile.png','admin-overview-desktop.png','admin-overview-mobile.png','admin-settings-desktop.png','admin-settings-mobile.png','admin-audit-desktop.png');
   writeFileSync(resolve(out, 'browser-check.json'), JSON.stringify(result, null, 2)); console.log(JSON.stringify(result, null, 2));
 } catch (error) {

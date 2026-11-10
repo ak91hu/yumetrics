@@ -7,3 +7,4 @@
 .admin-card .money-value{font:24px/1.3 var(--serif);overflow-wrap:anywhere}
 .admin-table{min-width:640px}.admin-table td,.admin-table th{min-width:90px}.admin-pill{white-space:nowrap}.chart-data .admin-table{min-width:0}.admin-scroll-hint{display:none}.admin-table-wrap:focus-visible{outline:2px solid #647f46;outline-offset:3px}
 @media(max-width:700px){.cost-summary .cost-card,.cost-summary .money-card{grid-column:1/-1}.cost-card strong{font-size:20px}.cost-summary .cost-card strong{font-size:28px}.admin-scroll-hint{display:block;font-size:11px;color:#66745b;margin:8px 0 16px}}
+.admin-page #admin-detail.ai-detail{width:min(1100px,calc(100% - 24px));max-width:1100px}.ai-compare{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:16px;margin-top:20px}.ai-compare article{min-width:0}.ai-compare pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto}

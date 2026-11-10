@@ -13,6 +13,7 @@ A szerver minden adminisztrációs kérésnél a munkamenethez tartozó, adatbá
 | Felhasználók | Keresés, lapozás, a napi energiakeret módosítása, hozzáférés tiltása vagy visszaállítása, valamint kijelentkeztetés minden eszközről. A felhasználó bejegyzései innen külön is megnyithatók. |
 | Étkezések | Szűrés felhasználó és állapot szerint; fotók, összetevők, számított értékek, eredeti és javított elemzések, valamint használati adatok megtekintése. |
 | AI-használat és költségek | Napi költséggrafikon, modellenkénti és hívásonkénti bontás. A felület jelzi, hány hívás költsége számítható ki, és hol hiányzik adat. |
+| AI-válaszok és összehasonlítás | Időszak, modell, állapot és válaszszöveg szerinti keresés. Az egy étkezéshez tartozó hívások, az eredeti válasz és a jóváhagyott javítás összevetése; JSON-export. |
 | Feldolgozások | Elemzések és törlések állapota, próbálkozások száma, hibák és a futó feladat foglalásának lejárata. |
 | Működési napló | Indulások, belépések, kijelentkezések és feldolgozási események. Időszak, súlyosság és szöveg szerint szűrhető. |
 | Beállítások | Látogatottságmérés be- és kikapcsolása, új elemzések és csatlakozások engedélyezése, elemzési korlátok, az új fiókok napi energiakerete, AI-modell, válaszhossz és várakozási idő. |
@@ -49,6 +50,27 @@ A **Beállítások → Látogatottság mérése** kapcsoló a következő oldalm
 A számlálók egyetlen adatbázis-műveletben növekednek; az admin összesítése és bontásai közös lekérdezési pillanatképből készülnek, párhuzamos megnyitások mellett is. A mérés tárolási hibája nem alakítja hibaválasszá a sikeresen elkészült oldalt. Migrációk: PostgreSQL `0005_visitors`, SQLite `0007_visitors`.
 
 Az alkalmazásbeállítások az `app_settings`, a módosítási előzmények az `admin_audit`, az AI-hívások az `ai_requests`, a működési napló eseményei az `app_logs` táblába kerülnek. A szükséges PostgreSQL-migrációk: `0002_admin` és `0003_telemetry`; a SQLite-változatok: `0004_admin` és `0005_telemetry`. Induláskor a meglévő, zárolt migrációs folyamat futtatja őket, a mentett étkezések átírása nélkül.
+
+## AI-válaszarchívum
+
+Az `/admin#ai-responses` kizárólag a tulajdonosi Google-fiókból érhető el. A listában csak rövid hívásadatok szerepelnek; a válaszszöveg megnyitáskor töltődik be. Az egy étkezéshez tartozó legfeljebb tíz hívás együtt látható, JSON-fájlba is menthető. A szöveg egyszerű, HTML-ként nem értelmezett tartalomként jelenik meg.
+
+Az `ai_requests` új mezői a következők:
+
+| Mező | Tartalom |
+| --- | --- |
+| `request_meta` | Szolgáltató, promptverzió és -lenyomat, sémalenyomat, válaszhosszkorlát, nyelv, elemzési beállítások, ételnévjavaslatok és a bemeneti képek SHA-256-lenyomata. A szabad megjegyzésből csak lenyomat készül. |
+| `response_text` | A szolgáltató nyilvános válaszszövege, a felismert titkok és képadatok eltávolítása után. A hibás JSON-választ is megőrizzük. |
+| `response_meta` | Válaszazonosító, modellverzió, befejezési ok, válaszlenyomat és a rendelkezésre álló Modal-revízió, promptverzió, generálási és időzítési adatok. |
+| `response_truncated` | Méretkorlát, megszakadt olvasás vagy a szolgáltató által jelzett csonkolás. |
+| `result_analysis` | Az OpenCode-válasz alkalmazás által ellenőrzött, feldolgozott eredménye. |
+| `reviewed_analysis`, `reviewed_at`, `reviewed_revision` | A legutóbbi sikeresen mentett felhasználói változat, időpontja és verziószáma. Ütköző mentés nem írja át. |
+
+Válaszonként legfeljebb 64 KiB szöveget őrzünk meg; a hálózati válasz olvasása 1 MiB-ra korlátozott. Belső gondolatmenet, képfájl, teljes HTTP-kérés, hitelesítési fejléc vagy hozzáférési kulcs nem része az archívumnak. Hálózati hiba esetén válaszszöveg helyett a hiba ténye marad meg. A szűrés nem garantálja a szövegek teljes anonimitását: az elemzés tartalmazhat felhasználói adatot, ezért megosztás előtt az exportot át kell nézni.
+
+A rekordok az adatbázisban maradnak, újraindítás, újratelepítés és étkezéstörlés után is; automatikus archiválási lejárat jelenleg nincs. A tárhelyigény a forgalommal nő, és az archívumról is az adatbázis mentési rendje szerint kell gondoskodni. Az üzemeltetőnek a saját adatkezelési tájékoztatójában is rendeznie kell a megőrzést és a törlési kérelmeket. Az étkezés törlése az archivált válasz vagy javítás törlését nem jelenti.
+
+A gyűjtés a kiadás után érkező válaszokra terjed ki, régi nyers szöveg nem állítható elő utólag. A jóváhagyott javítás nem feltétlenül helyes, lemért referencia; összehasonlításhoz és további mérési esetek kiválasztásához használható. Nincs automatikus modelltréning vagy új, fizetős ellenőrző hívás. Migrációk: PostgreSQL `0007_ai_archive`, SQLite `0009_ai_archive`.
 
 ## Ellenőrzés
 

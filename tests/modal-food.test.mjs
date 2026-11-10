@@ -99,8 +99,10 @@ test('meal jobs retain both usage ledgers, then continue with OpenCode when the 
     const response=await api(new Request('http://localhost/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,image:photo,day:'2026-11-10',time:'12:00',type:'Ebéd',notes:''})}),{db,env:runtime,userId,fetcher});
     assert.equal(response.status,202,await response.text());await processNextJob({db,env:runtime,fetcher});
     const meal=await db.prepare('SELECT status,usage FROM meals WHERE id=?').bind(id).first();assert.equal(meal.status,'draft');assert.equal(JSON.parse(meal.usage).recognition.state,budget==='15'?'used':'budget');
-    const ledger=(await db.prepare('SELECT model,state,cost_usd FROM ai_requests WHERE meal_id=?').bind(id).all()).results;
+    const ledger=(await db.prepare('SELECT model,state,cost_usd,request_meta,response_text,response_meta,result_analysis FROM ai_requests WHERE meal_id=?').bind(id).all()).results;
     assert.equal(ledger.length,budget==='15'?2:1);assert.ok(ledger.every(row=>row.state==='completed'&&row.cost_usd>0));
+    assert.ok(ledger.every(row=>JSON.parse(row.request_meta).imageHashes.length===1&&row.response_text&&JSON.parse(row.response_meta).provider));
+    assert.equal(ledger.filter(row=>row.result_analysis!==null).length,1);
   }
   assert.equal(modalCalls,1);assert.equal(openCodeCalls,2);
 });

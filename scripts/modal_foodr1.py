@@ -3,6 +3,7 @@
 import base64
 import io
 import json
+import hashlib
 import re
 from pathlib import Path
 from time import perf_counter
@@ -15,6 +16,7 @@ MODEL_DIR = f"/models/food-r1/{REVISION}"
 MAX_BYTES = 8 * 1024 * 1024
 MAX_PIXELS = 20_000_000
 MAX_NEW_TOKENS = 160
+RECOGNITION_PROMPT_VERSION = "food-r1-visible-foods-v2"
 PROMPT = (
     'List all visible foods, drinks, sides and sauces as short English names. '
     'The photos show the same serving; list each food once. '
@@ -144,6 +146,9 @@ class FoodR1:
         self.unaccounted_load_seconds = 0
         return {
             "model": MODEL_ID, "revision": REVISION, "answer": answer,
+            "prompt_version": RECOGNITION_PROMPT_VERSION,
+            "prompt_hash": hashlib.sha256(PROMPT.encode()).hexdigest(),
+            "max_new_tokens": MAX_NEW_TOKENS,
             "input_tokens": inputs["input_ids"].shape[1], "output_tokens": len(generated),
             "truncated": len(generated) >= MAX_NEW_TOKENS and foods is None,
             "inference_seconds": round(perf_counter() - started, 3),

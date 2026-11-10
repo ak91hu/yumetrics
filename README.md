@@ -56,6 +56,12 @@ Bontatlan csomagnál a látható teljes csomagok nettó mennyisége az alapérte
 
 ## Használat és profil
 
+### AI-válaszok megőrzése és összehasonlítása
+
+Az [admin AI-válaszok nézete](https://yumetrics.app/admin#ai-responses) a Food-R1 és az OpenCode válaszait, modell- és promptverzióit, a képek SHA-256-lenyomatát, a felhasználási adatokat, az ellenőrzött eredményt és a legutóbbi felhasználói jóváhagyást mutatja. Kereshető, szűrhető, az egy étkezéshez tartozó hívások összevethetők és JSON-fájlba menthetők. Az adatok PostgreSQL-ben, az `ai_requests` táblában maradnak meg, az étkezés törlése után is. A válaszarchívum nem tartalmaz képfájlt vagy belső gondolatmenetet; a felismert titkokat eltávolítjuk. A megőrzés önmagában nem indít új AI-hívást.
+
+A gyűjtés ettől a kiadástól működik; korábban eldobott válasz nem állítható helyre. A jóváhagyott javítás összehasonlítási alap, nem méréssel igazolt referencia. A hozzáférés, méretkorlátok és adatkezelési részletek: [ADMIN.md](docs/ADMIN.md#ai-válaszarchívum).
+
 ### Látogatottság, külön analitikai előfizetés nélkül
 
 Az [admin Látogatottság nézete](https://yumetrics.app/admin#visitors) a tényleges oldalmegnyitásokból készít napi és óránkénti grafikonokat, ország-, érkezési forrás-, oldal-, eszköz-, böngésző-, operációsrendszer- és alapnyelvi bontást. A 7, 30 vagy 365 napos nézetben a részletes darabszámok és arányok táblázatban is megnyithatók. Csak a tulajdonosi Google-fiók fér hozzá. Umami-fiók, külső mérőkód vagy új szolgáltatás nem kell hozzá; a meglévő szerver és adatbázis erőforrásait használja.
