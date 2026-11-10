@@ -33,10 +33,11 @@ export function dishGuidance(profile) {
   return `<p>${esc(t(dish.hint))}</p>${dish.questions.length ? `<ul>${dish.questions.map(q => `<li>${esc(t(q))}</li>`).join('')}</ul>` : ''}`;
 }
 export function installAnalysisUI() {
+  document.querySelector('#upload-form').prepend(document.querySelector('#analysis-progress'),document.querySelector('.photo-options'));
   document.querySelector('#upload-form .form-grid').insertAdjacentHTML('beforebegin', html`
     <div class="capture-guide"><span>01</span><div><strong>Egy fotó elég, a második segíthet pontosítani.</strong><p>Az első képen látszódjon az egész adag vagy termék. A második fotó nem kötelező: egy másik nézet segíthet az étel felismerésében és az adag méretének becslésében. Csomagolt terméknél érdemes az olvasható tápértéktáblát is lefotózni.</p></div></div>
       <label class="second-photo-picker">2. fotó · Másik nézet vagy címke (nem kötelező)<input id="second-photo-input" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif"><span>Mutasd az adag magasságát vagy a termék olvasható tápértéktábláját.</span></label>
-      <button type="button" class="text-button" id="second-camera-button">Második fotó készítése</button><input type="file" id="second-camera-input" accept="image/*" capture="environment" hidden>
+      <button type="button" class="button outline" id="second-camera-button">Második fotó készítése</button><input type="file" id="second-camera-input" accept="image/*" capture="environment" hidden>
       <div class="second-preview-wrap" hidden><img id="second-photo-preview" alt="Az étel második nézete"><button type="button" id="remove-second-photo">Második kép eltávolítása</button></div>
       <div class="help-heading"><span>Milyen legyen a második fotó?</span>${html(helpMarkup('photo-help', t('Második fotó'), t('Egy fotóval is elindíthatod az elemzést. A második képen ugyanazt az adagot mutasd ferdén oldalról, hogy a magassága és a takart részei is látszódjanak. Az első kép elforgatása vagy kivágása nem ad új nézetet. Csomagolt terméknél az olvasható tápértéktáblát fotózd le.')))}</div>
       <p class="form-hint">Ha második képet is feltöltesz, az ugyanahhoz az adaghoz vagy termékhez tartozzon. A címkét közelről, élesen és tükröződés nélkül fotózd. A teljes csomag és az elfogyasztott rész eltérhet: a naplózott g vagy ml mennyiséget mentés előtt ellenőrizd.</p>
@@ -49,7 +50,6 @@ export function installAnalysisUI() {
   document.querySelector('#context-panel .form-grid').insertAdjacentHTML('beforebegin', html`<div class="help-heading"><span>Mért mennyiségek</span>${html(helpMarkup('weight-help', t('Mért mennyiségek'), t('Az egész adagot tányér nélkül, a csonttal vagy más nem ehető résszel együtt mérd le. A külön megadott csont- és héjtömeget levonjuk. Az összetevők aránya ettől még becsült marad. Ha nem mértél, vagy milliliterben megadott italt is naplózol, az össztömeget hagyd üresen. A tányérátmérő csak képi támpont.')))}</div>`);
   document.querySelector('#context-panel .context-fields').append(document.querySelector('#upload-day').closest('.form-grid'), document.querySelector('#upload-notes').closest('label'));
   document.querySelector('.daily-section').insertAdjacentHTML('beforeend', '<div class="daily-details" id="daily-details"></div>');
-  document.querySelector('#analysis-progress').textContent = t('A feltöltés és az elemzés folyamatban van. Az OK gombbal bezárhatod az ablakot; az elkészült eredményt az oldal tetején jelezzük.');
   document.querySelector('#dish-profile').addEventListener('change', event => { document.querySelector('#dish-guidance').innerHTML = dishGuidance(event.target.value); });
 }
 export function recipeMarkup(analysis, editing) {

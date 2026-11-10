@@ -83,7 +83,7 @@ def prepare():
 @app.cls(
     image=image, gpu="L40S", cpu=2, memory=16384, volumes={"/models": weights},
     min_containers=0, max_containers=1, buffer_containers=0, scaledown_window=2,
-    timeout=90, startup_timeout=60,
+    single_use_containers=True, retries=0, timeout=90, startup_timeout=60,
 )
 class FoodR1:
     @modal.enter()
@@ -210,7 +210,7 @@ def create_api():
     return api
 
 
-@app.function(image=api_image, cpu=0.25, memory=512, max_containers=1, scaledown_window=2, timeout=180)
+@app.function(image=api_image, cpu=0.25, memory=512, min_containers=0, max_containers=1, buffer_containers=0, single_use_containers=True, scaledown_window=2, timeout=180)
 @modal.asgi_app(requires_proxy_auth=True)
 def food_api():
     return create_api()

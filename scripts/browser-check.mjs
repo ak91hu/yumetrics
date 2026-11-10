@@ -250,6 +250,9 @@ try {
   assert.ok(await evaluate("document.querySelector('#upload-form').checkValidity() && document.querySelector('#dish-profile').value === 'generic'"), 'Metadata is already valid without manual entry');
   assert.ok(await evaluate("!document.querySelector('#second-photo-input').closest('details') && !document.querySelector('#second-photo-input').closest('[hidden]')"), 'The required second view is visible outside optional fields');
   await screenshot('upload-simple.png', false);
+  assert.ok(await evaluate("document.querySelector('#camera-button').classList.contains('primary') && !document.querySelector('#change-photo').hidden"),'Camera and gallery are both visible before choosing a photo');
+  assert.equal(await evaluate("document.querySelector('#camera-input').getAttribute('capture')"),'environment');
+  assert.equal(await evaluate("document.querySelector('#second-camera-input').getAttribute('capture')"),'environment');
   await evaluate("document.querySelector('#context-panel').open=true; document.querySelector('#upload-dialog [data-close]').click(); document.querySelector('.mobile-nav [data-action=upload]').click()");
   assert.ok(await evaluate("![...document.querySelectorAll('#upload-form details')].some(element => element.open)"), 'Reopening upload collapses optional fields again');
   await evaluate("document.querySelector('#dish-profile').value='fozelek'; document.querySelector('#dish-profile').dispatchEvent(new Event('change')); document.querySelector('#preparation-notes').value='20%-os tejföllel habart'");
@@ -530,19 +533,24 @@ try {
     window.fetch=async(...args)=>{if(args[0]==='/api/analyze'&&args[1]?.method==='POST'){window.reviewHeld=true;await new Promise(resolve=>window.reviewRelease=resolve);const response=await window.reviewFetch(...args);window.reviewDone=true;return response;}return window.reviewFetch(...args);};
     document.querySelector('#upload-form').requestSubmit()`);
   await waitFor("window.reviewHeld && !document.querySelector('#upload-ok').hidden");
+  assert.ok(await evaluate("document.querySelector('#upload-form').classList.contains('is-processing') && document.querySelector('#analysis-progress').getBoundingClientRect().top>0"),'Processing feedback is visible immediately while the upload request is pending');
+  assert.ok(await evaluate("!!document.querySelector('#draft-list .draft-processing')"),'The upload remains visible outside the dialog');
   assert.ok(await evaluate("document.querySelector('#upload-ok').classList.contains('primary')"));
+  await screenshot('upload-in-progress.png',false);
   await evaluate("document.querySelector('#upload-ok').click();window.reviewRelease()");
-  await waitFor("window.reviewDone && !!document.querySelector('#draft-list button')");
+  await waitFor("window.reviewDone && !!document.querySelector('#draft-list [data-meal]')");
   await evaluate('window.fetch=window.reviewFetch');
   assert.ok(await evaluate("!document.querySelector('#upload-dialog').open && !document.querySelector('#meal-dialog').open"),'Acknowledging upload must not reopen a dialog');
   await evaluate("document.querySelector('#draft-list button').click()");
   await waitFor("!!document.querySelector('#processing-ok')");
+  assert.ok(await evaluate(`document.querySelector('#detail-heading').textContent===${JSON.stringify(expected('Az étkezés feldolgozása folyamatban','Your meal is being processed'))}`));
   assert.ok(await evaluate("document.querySelector('#processing-ok').classList.contains('primary')"));
   await screenshot('processing-ok.png',false);
   await evaluate("document.querySelector('#processing-ok').click()");
   assert.ok(await evaluate("!document.querySelector('#meal-dialog').open"));
   releaseAnalysis();analysisGate=null;
   await waitFor("!!document.querySelector('#draft-list .draft-ready')");
+  assert.ok(await evaluate(`document.title.includes(${JSON.stringify(expected('Elkészült az elemzés','Your analysis is ready'))})`),'The browser tab also announces completion');
   assert.ok(await evaluate("document.querySelector('#toast').hidden"),'The persistent review notice is not covered by an obsolete progress toast');
   assert.ok(await evaluate("!document.querySelector('#meal-dialog').open"),'A finished analysis must not steal focus after OK');
   assert.ok(await evaluate("document.querySelector('#main').firstElementChild.id==='draft-list'"));
@@ -781,6 +789,8 @@ try {
   result.screenshots.push('food-breakdown-desktop.png','food-breakdown-mobile.png');
   result.screenshots.push('admin-costs-desktop.png','admin-costs-mobile.png','admin-logs-desktop.png','admin-logs-mobile.png','admin-ai-responses-desktop.png','admin-ai-comparison-desktop.png','admin-ai-comparison-mobile.png');
   result.checks.push('owner AI response search, paired comparison at five widths, escaped model text and JSON export; mocked providers only');
+  result.checks.push('prominent camera and gallery actions, rear-camera capture attributes, immediate pending-upload status and persistent processing/completion notices');
+  result.screenshots.push('upload-in-progress.png');
   result.screenshots.push('badges-mobile.png','admin-overview-desktop.png','admin-overview-mobile.png','admin-settings-desktop.png','admin-settings-mobile.png','admin-audit-desktop.png');
   writeFileSync(resolve(out, 'browser-check.json'), JSON.stringify(result, null, 2)); console.log(JSON.stringify(result, null, 2));
 } catch (error) {

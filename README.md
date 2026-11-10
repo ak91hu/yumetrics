@@ -70,6 +70,10 @@ Ez **oldalmegnyitás-számlálás, nem egyedilátogató-mérés**. Nem használu
 
 ### Naplózás, jelvények és fiók
 
+Az étkezés hozzáadásánál a **Fotó készítése** és a **Kép kiválasztása** gomb egyaránt az ablak tetején érhető el. Mobilon a fényképezés a készülék natív kameráját kéri, lehetőség szerint a hátlapi kamerával; a második, nem kötelező kép is elkészíthető közvetlenül. A natív kamera megnyitásának módját a böngésző és az operációs rendszer határozza meg.
+
+A beküldés azonnal látható feldolgozási állapotot kap, és az ablak bezárása után a napló tetején is követhető. Az elkészült elemzést kiemelt, az átnézésig megmaradó értesítés és a böngészőfül címe jelzi. Az **OK** és a **Bezárás** gomb csak az ablakot zárja be, a már beküldött feldolgozást nem szakítja meg.
+
 A **Fiókom → Heti kihívások** résznél hetente egy feladat választható: naplózás három különböző napon, saját receptből számolt étkezés mentése vagy külön lemért, grammban megadott összetevő rögzítése. A választott feladat haladása a kezdőlapon is látszik. Teljesítéskor gyűjthető heti pecsét jár: Ritmustaláló, Receptalkotó vagy Mértékmester. A választás, a részleges haladás és a jutalom a tartós PostgreSQL-adatbázis `weekly_challenges` táblájában marad meg, új AI-hívás nélkül.
 
 A hét hétfőtől vasárnapig, magyarországi idő szerint tart. A háromnapos kihívásnál a mentés tényleges napját számoljuk; a visszadátumozás és az ugyanazon napi ismételt mentés nem ad több napot. Ez a feladat péntekig indítható. A haladás és a megszerzett pecsétek későbbi javítás vagy törlés után is megmaradnak. A következő héten új feladat választható. Részletes szabályok és tárolás: [WEEKLY-CHALLENGES.md](docs/WEEKLY-CHALLENGES.md).

@@ -30,6 +30,7 @@ function icons(root = document) { root.querySelectorAll('[data-icon]').forEach(e
 icons();
 installAnalysisUI();
 initializeLanguage();
+const pageTitle=messageSource(document.title);
 const dayKey = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 const asDate = day => new Date(`${day}T12:00:00`);
 const today = () => dayKey(new Date());
@@ -102,10 +103,15 @@ function render() {
   $('#empty-state').hidden = selected.length > 0;
   $('#meal-list').innerHTML = selected.map(meal => html`<button class="meal-card" data-meal="${escape(meal.id)}" aria-label="${escape(meal.analysis.name)}, ${integer(meal.totals.calories)} kilokalória, részletek"><img src="${escape(meal.photo.url)}" alt="${escape(meal.analysis.name)}" loading="lazy"><div class="meal-card-info"><div class="meal-meta"><span>${escape(t(meal.type))}</span><span>·</span><span>${escape(meal.time)}</span></div><h3>${escape(meal.analysis.name)}</h3><p class="meal-components">${meal.analysis.ingredients.map(item => escape(item.name)).join(' · ')}</p><div class="meal-macros"><span><i class="macro-dot protein"></i>${number(meal.totals.protein)} g fehérje</span><span><i class="macro-dot carbs"></i>${number(meal.totals.carbs)} g szénhidrát</span><span><i class="macro-dot fat"></i>${number(meal.totals.fat)} g zsír</span></div></div><div class="meal-kcal"><strong>${integer(meal.totals.calories)}</strong><small>kcal</small></div></button>`).join('');
   const drafts = state.meals.filter(meal => meal.status !== 'saved' || meal.job?.kind === 'delete').sort((a,b) => Number(b.status === 'draft' && b.job?.kind !== 'delete') - Number(a.status === 'draft' && a.job?.kind !== 'delete'));
-  $('#draft-list').hidden = drafts.length === 0;
-  const draftMarkup = drafts.map(meal => {
+  const uploading=state.busy&&!state.meals.some(meal=>meal.id===state.uploadId);
+  const hasReady=drafts.some(meal=>meal.status==='draft'&&meal.job?.kind!=='delete');
+  const hasProcessing=uploading||drafts.some(meal=>meal.status==='analyzing'&&meal.job?.kind!=='delete');
+  document.title=hasReady?t('Elkészült az elemzés')+' · Yumetrics':hasProcessing?t('Az étkezés feldolgozása folyamatban')+' · Yumetrics':t(pageTitle);
+  $('#draft-list').hidden = drafts.length === 0&&!uploading;
+  const draftMarkup = (uploading?html`<div class="draft-card draft-processing"><div><strong>Az étkezés feltöltése folyamatban</strong><p>A beküldés még tart. Nem kell újra elküldened.</p></div><button class="button outline" data-action="upload">Feltöltés megnyitása</button></div>`:'')+drafts.map(meal => {
     const ready = meal.status === 'draft' && meal.job?.kind !== 'delete';
-    return html`<div class="draft-card ${ready ? 'draft-ready' : ''}"><div>${ready ? html('<p class="draft-ready-title">Elkészült az elemzés. Ellenőrizd és mentsd az étkezést!</p>') : ''}<strong>${escape(meal.analysis?.name || t('Befejezetlen elemzés'))}</strong><p>${escape(meal.day)} · ${meal.job?.kind === 'delete' ? (meal.job.state === 'failed' ? t('Nem sikerült törölni · Újra megpróbálhatod') : t('Törlés folyamatban')) : meal.status === 'draft' ? t('Ellenőrizheted és mentheted') : meal.status === 'failed' ? t('Nem sikerült az elemzés · Újra megpróbálhatod') : t('Elemzés folyamatban · Az ablakot bezárhatod')}</p></div><button class="${ready ? 'button primary' : ''}" data-meal="${escape(meal.id)}">${ready ? t('Átnézés és mentés') : t('Megnyitás')}</button></div>`;
+    const processing=meal.status==='analyzing'&&meal.job?.kind!=='delete';
+    return html`<div class="draft-card ${ready ? 'draft-ready' : processing?'draft-processing':''}"><div>${ready ? html('<p class="draft-ready-title">Elkészült az elemzés. Ellenőrizd és mentsd az étkezést!</p>') : ''}<strong>${escape(meal.analysis?.name || t(processing?'Az étkezés feldolgozása folyamatban':'Befejezetlen elemzés'))}</strong><p>${escape(meal.day)} · ${meal.job?.kind === 'delete' ? (meal.job.state === 'failed' ? t('Nem sikerült törölni · Újra megpróbálhatod') : t('Törlés folyamatban')) : meal.status === 'draft' ? t('Ellenőrizheted és mentheted') : meal.status === 'failed' ? t('Nem sikerült az elemzés · Újra megpróbálhatod') : t('Az eredményt itt jelezzük, amint elkészült. Nem kell újra beküldened.')}</p></div><button class="${ready ? 'button primary' : ''}" data-meal="${escape(meal.id)}">${ready ? t('Átnézés és mentés') : t('Megnyitás')}</button></div>`;
   }).join('');
   if (draftMarkup !== renderedDrafts) { $('#draft-list').innerHTML = draftMarkup; renderedDrafts = draftMarkup; }
   renderCalendar();
@@ -183,16 +189,23 @@ function openUpload() {
   $('#upload-form').reset(); $('#upload-day').value = state.selected; $('#upload-time').value = new Date().toTimeString().slice(0, 5);
   $('#upload-form').querySelectorAll('details').forEach(element => { element.open = false; });
   const hour = new Date().getHours(); $('#upload-type').value = hour < 11 ? 'Reggeli' : hour < 16 ? 'Ebéd' : hour < 22 ? 'Vacsora' : 'Kisétkezés';
-  $('#photo-preview').hidden = true; $('#upload-zone').hidden = false; $('#change-photo').hidden = true; $('#upload-error').hidden = true; $('#analysis-progress').hidden = true;
+  $('#photo-preview').hidden = true; $('#upload-zone').hidden = false; $('#upload-error').hidden = true; $('#analysis-progress').hidden = true;
   $('.second-preview-wrap').hidden = true;
   $('#analyze-button').disabled = false; $('#analyze-button').innerHTML = t`${icon('sparkles')}Elemzés indítása`;
   show('#upload-dialog');
+}
+function setUploadBusy(busy) {
+  state.busy=busy;$('#upload-form').classList.toggle('is-processing',busy);
+  $('#analyze-button').disabled=busy||processingPhotos>0;$('#analyze-button').hidden=busy;
+  $('#upload-ok').hidden=!busy;$('#analysis-progress').hidden=!busy;
+  $('#upload-form .modal-actions [data-close]').textContent=t(busy?'Bezárás':'Mégsem');
+  render();
 }
 async function choosePhoto(file, secondary = false) {
   if (!file || state.busy) return;
   const version = secondary ? ++secondPhotoVersion : ++photoVersion;
   if (secondary) { state.secondPhoto = null; $('.second-preview-wrap').hidden = true; }
-  else { state.photo = null; $('#photo-preview').hidden = true; $('#upload-zone').hidden = false; $('#change-photo').hidden = true; }
+  else { state.photo = null; $('#photo-preview').hidden = true; $('#upload-zone').hidden = false; }
   processingPhotos++; $('#upload-error').hidden = true; $('#analyze-button').disabled = true;
   const objectUrl = URL.createObjectURL(file);
   try {
@@ -209,7 +222,7 @@ async function choosePhoto(file, secondary = false) {
     if (version !== (secondary ? secondPhotoVersion : photoVersion)) return;
     if (dataUrl === (secondary ? state.photo : state.secondPhoto)) throw new Error(t('Ugyanazt a képet választottad kétszer. Készíts másik nézetet, csomagolt terméknél olvasható címkefotót.'));
     if (secondary) { state.secondPhoto = dataUrl; $('#second-photo-preview').src = dataUrl; $('.second-preview-wrap').hidden = false; }
-    else { state.photo = dataUrl; $('#photo-preview').src = dataUrl; $('#photo-preview').hidden = false; $('#upload-zone').hidden = true; $('#change-photo').hidden = false; }
+    else { state.photo = dataUrl; $('#photo-preview').src = dataUrl; $('#photo-preview').hidden = false; $('#upload-zone').hidden = true; }
   } catch (error) { if (version === (secondary ? secondPhotoVersion : photoVersion)) errorAt('#upload-error', error); }
   finally { URL.revokeObjectURL(objectUrl); processingPhotos--; $('#analyze-button').disabled = state.busy || processingPhotos > 0; }
 }
@@ -228,7 +241,7 @@ $('#upload-form').addEventListener('submit', async event => {
   $('#upload-error').hidden = true;
   if (!state.photo) { errorAt('#upload-error', new Error(t('Válassz egy ételfotót az elemzéshez.'))); return; }
   try { validateImages(state.photo, state.secondPhoto); } catch (error) { errorAt('#upload-error', error); return; }
-  state.busy = true; $('#analyze-button').disabled = true; $('#analyze-button').hidden = true; $('#upload-ok').hidden = false; $('#analysis-progress').hidden = false;
+  setUploadBusy(true);
   const id = state.uploadId;
   try {
     const payload = { id, image: state.photo, secondImage: state.secondPhoto, context: { language: getLanguage(), dishProfile: $('#dish-profile').value, preparationNotes: $('#preparation-notes').value, totalWeightG: $('#context-weight').value ? Number($('#context-weight').value) : null, inedibleWeightG: Number($('#context-inedible').value), plateDiameterCm: $('#context-diameter').value ? Number($('#context-diameter').value) : null }, day: $('#upload-day').value, time: $('#upload-time').value, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, type: $('#upload-type').value, notes: $('#upload-notes').value };
@@ -240,7 +253,7 @@ $('#upload-form').addEventListener('submit', async event => {
     if ($('#upload-dialog').open) { $('#upload-dialog').close(); state.pendingOpenId = current.status === 'analyzing' ? meal.id : null; openMeal(meal.id); }
     if (current.analysis) hideToast(); else toast(t('A fotót elmentettük, az elemzés a háttérben folytatódik.'));
   } catch (error) { errorAt('#upload-error', error); if (!$('#upload-dialog').open) toast(error.message); await loadMonth(); }
-  finally { state.busy = false; $('#analyze-button').disabled = false; $('#analyze-button').hidden = false; $('#upload-ok').hidden = true; $('#analysis-progress').hidden = true; }
+  finally { setUploadBusy(false); }
 });
 const field = (label, name, value, attrs = '') => html(`<label>${escape(t(label))}<input name="${name}" value="${escape(value)}" ${attrs}></label>`);
 const nutrientNames = { calories: 'Energia (kcal)', protein: 'Fehérje (g)', carbs: 'Szénhidrát (g)', fat: 'Zsír (g)', fiber: 'Rost (g)', sugar: 'Cukor (g)', sodium: 'Nátrium (mg)', saturatedFat: 'Telített zsírsavak (g)' };
@@ -251,9 +264,9 @@ function openMeal(id) {
 }
 function renderDetail() {
   const meal = state.edit, analysis = meal.analysis;
-  $('#detail-heading').textContent = analysis ? meal.status === 'draft' ? t('Ellenőrizd a becsült tápértékeket') : t('Az étkezés részletei') : t('Befejezetlen elemzés');
+  $('#detail-heading').textContent = analysis ? meal.status === 'draft' ? t('Elkészült az elemzés') : t('Az étkezés részletei') : t(meal.status==='analyzing'?'Az étkezés feldolgozása folyamatban':'Befejezetlen elemzés');
   if (!analysis || !meal.photo || meal.job?.kind === 'delete') {
-    $('#meal-detail').innerHTML = `<p class="dialog-intro">${escape(t(meal.error) || (meal.job?.kind === 'delete' ? t('A bejegyzés és a képek törlése még tart. Megszakadás esetén később folytatjuk.') : t('A fotót elmentettük, az elemzés még tart. Bezárhatod az ablakot; az eredményt később is megnyithatod.')))}</p>${meal.job?.state === 'failed' && meal.job?.kind === 'analyze' ? html('<p class="form-hint">Az újrapróbálás új AI-kérést indít.</p><button type="button" class="button primary" id="retry-meal">Elemzés újrapróbálása</button>') : ''}<button type="button" class="delete-button" id="delete-meal">${icon('trash')}${meal.job?.kind === 'delete' ? t('Törlés újrapróbálása') : t('Bejegyzés és kép törlése')}</button>${html('<div class="modal-actions"><button type="button" class="button outline" data-close>Mégsem</button><button type="button" class="button primary" id="processing-ok" data-close>OK</button></div>')}`;
+    $('#meal-detail').innerHTML = `<p class="dialog-intro ${meal.status==='analyzing'&&meal.job?.kind!=='delete'?'processing-feedback':''}" role="status">${escape(t(meal.error) || (meal.job?.kind === 'delete' ? t('A bejegyzés és a képek törlése még tart. Megszakadás esetén később folytatjuk.') : t('A fotót elmentettük, az elemzés még tart. Bezárhatod az ablakot; az eredményt később is megnyithatod.')))}</p>${meal.job?.state === 'failed' && meal.job?.kind === 'analyze' ? html('<p class="form-hint">Az újrapróbálás új AI-kérést indít.</p><button type="button" class="button primary" id="retry-meal">Elemzés újrapróbálása</button>') : ''}<button type="button" class="delete-button" id="delete-meal">${icon('trash')}${meal.job?.kind === 'delete' ? t('Törlés újrapróbálása') : t('Bejegyzés és kép törlése')}</button>${html('<div class="modal-actions"><button type="button" class="button outline" data-close>Bezárás</button><button type="button" class="button primary" id="processing-ok" data-close>OK</button></div>')}`;
     $('#retry-meal')?.addEventListener('click', async event => {
       event.currentTarget.disabled = true;
       try { await request(`/api/meals/${meal.id}/retry`, { method: 'POST' }); state.pendingOpenId = meal.id; await loadMonth(); }
@@ -417,7 +430,7 @@ window.addEventListener('languagechanging', () => {
   };
 });
 window.addEventListener('languagechange', () => {
-  render(); renderProfile(); renderMotivation();
+  setUploadBusy(state.busy); renderProfile(); renderMotivation();
   $('#dish-guidance').innerHTML = dishGuidance($('#dish-profile').value);
   $('#analyze-button').innerHTML = `${icon('sparkles')}${t('Elemzés indítása')}`;
   if (state.edit && $('#meal-dialog').open) {

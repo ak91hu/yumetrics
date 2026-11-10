@@ -1,5 +1,13 @@
 # Ellenőrzés
 
+## Egyszer használatos Modal-konténerek és feltöltési visszajelzés, 2026-11-10
+
+A GPU és a CPU-s gateway `single_use_containers=True` beállítással települt. A Modal vezérlősíkjából visszaolvasott konfiguráció mindkét értéket igazolta; az ellenőrzéskor mindkét konténerszám és a várakozó GPU-kérések száma nulla volt. Nem indult új GPU-s képelemzés vagy fizetős AI-hívás. A kérés utáni tényleges felhős leállást ehhez a módosításhoz külön, fizetős futással nem mértük újra.
+
+**154/154 Node-teszt** sikeres, valódi helyi PostgreSQL-lel, kihagyás nélkül. **7/7 Python-teszt** sikeres: az SDK-ban összeállított konténerbeállítás, a GPU-s újrapróbálások tiltása, valamint időtúllépés és modellhiba esetén a konténert leállító törlés is ellenőrzött. A build sikeres.
+
+A magyar és angol helyi Chrome-próba szimulált szolgáltatókkal ellenőrzi a kiemelt kamera- és képkiválasztó gombot, a megfelelő natív kamerabemenet megnyitását, a hátlapi kamerát kérő `capture` beállítást, az egy- és kétképes beküldést, az azonnali feltöltési állapotot, az OK utáni háttérfeldolgozást és a tartós elkészülési jelzést. Az új képernyőképek: `outputs/upload-simple.png`, `outputs/upload-in-progress.png` és angol megfelelőik. Valódi iOS- vagy Android-kamerafelvételt ebben a környezetben nem próbáltunk.
+
 ## Tartós AI-válaszarchívum, 2026-11-10
 
 **154/154 Node-teszt sikeres**, helyi PostgreSQL-lel és külön admin-tesztadatbázissal, kihagyás nélkül. **6/6 Python-teszt és a build is sikeres**. A próbák ellenőrzik a két szolgáltató válaszának és bemeneti lenyomatainak tárolását, a hibás és csonka válaszok megőrzését, a méretkorlátot, a titkok és belső gondolatmenetek kizárását, a tulajdonosi hozzáférést, a jóváhagyás és ütköző mentés kezelését, valamint az étkezés törlése után megmaradó archívumot. A dokumentáció módosítása után a három dokumentációs teszt, a végső archívum- és Modal-próbák is külön sikeresek.

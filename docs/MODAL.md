@@ -55,7 +55,9 @@ A modell a kész étellistánál megáll. A 160 új tokenes korlátot elérő, h
 
 Egy L40S, 48 GB VRAM, két CPU-mag és 16 GiB rendszermemória szerepel a konfigurációban. A kisebb L4-re indított próba kapacitáshiány miatt sorban maradt; a hívást töröltük. Az L40S-en a két végső próba 2,1–2,7 másodperc alatt adott 17–23 tokenes étellistát; hidegindításkor további körülbelül 17–18 másodperc volt a betöltés.
 
-Legfeljebb egy GPU-konténer futhat, minimum és tartalék konténer nincs; az üresjárati leállítás beállítása két másodperc. A közvetlen SDK-próbák külön alkalmazásban is indíthatnak konténert, ezért ezeket egymás után kell futtatni. A gateway külön CPU-konténer.
+Legfeljebb egy GPU-konténer futhat, minimum és tartalék konténer nincs. A GPU és a külön CPU-s gateway egyaránt `single_use_containers=True` beállítással fut: a [Modal dokumentált működése](https://modal.com/docs/sdk/py/latest/App#cls) szerint minden feldolgozott bemenet után megszűnik a konténer. A GPU-függvényhez `retries=0` tartozik; az üresjárati tartalékbeállítás két másodperc. Időtúllépés és hiba esetén a gateway `terminate_containers=True` paraméterrel törli a modellhívást. Az alkalmazás telepítve és hívható marad, de kérés nélkül nincs fenntartott GPU- vagy gateway-konténer. A közvetlen SDK-próbák külön alkalmazásban is indíthatnak konténert, ezért ezeket egymás után kell futtatni.
+
+Az egyszer használatos konténer minden új képelemzéshez újra betölti a modellt. Ez növelheti a várakozást és a hidegindítás költségét a közvetlenül egymás után érkező kéréseknél; cserébe sikeres válasz után sem marad melegen a GPU. A modellkötet tárhelye ettől még megmarad, és a belső havi keret továbbra sem szolgáltatói költési plafon.
 
 A 2026-11-10-én ellenőrzött [árlista](https://modal.com/pricing) szerint az L40S GPU-rész 0,000542 USD/másodperc. Az admin a mért modellbetöltési és elemzési időre GPU-, CPU- és memóriaköltséget becsül, külön hívásrekordban. Ez részösszeg: a gateway, üresjárat, tárhely és a platform indulási többlete nem szerepel benne. Hiányzó időadatnál a költség ismeretlen, nem nulla. A teljes díjat és a kreditet a Modal számlázásában kell ellenőrizni.
 

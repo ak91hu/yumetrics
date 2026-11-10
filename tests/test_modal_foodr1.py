@@ -15,6 +15,12 @@ spec.loader.exec_module(trial)
 
 
 class PhotoValidation(unittest.TestCase):
+    def test_gpu_and_gateway_containers_are_single_use_without_retries(self):
+        for function in [trial.FoodR1._get_class_service_function(), trial.food_api]:
+            with self.subTest(function=function):
+                self.assertTrue(function.info().single_use_containers)
+        self.assertEqual(trial.FoodR1._get_class_service_function().info().max_retries, 0)
+
     def photo(self, image_format="JPEG", size=(120, 80), orientation=None):
         buffer = io.BytesIO()
         image = Image.new("RGB", size)
@@ -77,6 +83,11 @@ class PhotoValidation(unittest.TestCase):
             call.cancel.aio.assert_not_called()
             call.get.aio.side_effect = TimeoutError()
             self.assertEqual(client.post("/recognize", json={"images": [data]}).status_code, 504)
+            call.cancel.aio.assert_awaited_once_with(terminate_containers=True)
+            call.cancel.aio.reset_mock()
+            call.get.aio.side_effect = RuntimeError("Model failed")
+            with self.assertRaisesRegex(RuntimeError, "Model failed"):
+                client.post("/recognize", json={"images": [data]})
             call.cancel.aio.assert_awaited_once_with(terminate_containers=True)
 
 
