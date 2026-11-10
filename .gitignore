@@ -37,6 +37,9 @@ yarn-error.log*
 # Checkout-local tool state
 /.wrangler/
 /.sites-runtime/
+__pycache__/
+*.pyc
+.modal.toml
 
 # Workspace scaffolding and publication archives
 /.agents/

@@ -1,5 +1,13 @@
 # Ellenőrzés
 
+## Modal Food-R1-próba, 2026-11-10
+
+Külön, Modal-hitelesítéssel elérhető Food-R1-telepítés készült, rögzített modellverzióval, tartós modellkötettel, CPU-s letöltéssel, legfeljebb egy L40S-konténerrel és automatikus leállással. A helyi kliens bejelentkezése böngészős jóváhagyással történt; a token a felhasználói mappa konfigurációjában maradt. A Node-alkalmazás futtatókörnyezete és képelemző szolgáltatója változatlan.
+
+Négy helyi Python-teszt ellenőrzi a képformátumokat, a méretkorlátokat, a hibás fájlt, az EXIF-forgatást és az átméretezést. Három dokumentációs Node-teszt és a build is sikeres. Egyetlen felhős képelemzési próba futott az oldal nyilvános csülökfotójával: 12,696 másodperc elemzés, 15,590 másodperc modellbetöltés, 39,164 másodperc kliensoldali várakozás, 16,804 GiB csúcs VRAM. A modell felismerte a csülköt és a salátát. A futás után nulla futó konténert ellenőriztünk.
+
+A válasz még nem felel meg a napló összetevőnkénti tápértékszerződésének, és kéretlen táplálkozási tanácsokat is tartalmazott. A tokenizer betöltési figyelmeztetésének hatását, a felismerési pontosságot, az ismételt futtatást és az éles integrációt nem vizsgáltuk. Részletek és parancsok: [Modal útmutató](MODAL.md). A korábbi 138 szerveroldali teszt teljes készletét ehhez az önálló telepítési segédhez nem futtattuk újra.
+
 ## OK gomb, felső jóváhagyási jelzés és Onesvibe, 2026-11-09
 
 A beküldés és a feldolgozás ablakának kiemelt OK gombja bezárja az ablakot, miközben a háttérmunka folytatódik. Bezárás után az eredmény nem nyitja újra az ablakot automatikusan. Az ellenőrzésre váró étkezés a főoldal tetején, görgetés közben is látható, kiemelt kártyát és „Átnézés és mentés” gombot kap; csak mentéskor kerül a napi összesítésbe. A rövid értesítések is felül jelennek meg. Az új eredmény jelzése az OK-val bezárt ablak mellett is frissül. Változatlan kártya frissítése megtartja a billentyűzetfókuszt.

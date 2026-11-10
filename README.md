@@ -159,3 +159,7 @@ A v15-ben egy fotóval is elindítható az elemzés. A második képet a magyar 
 A feltöltés és a háttérelemzés ablakában kiemelt OK gomb is van. Ez az ablakot zárja be; az elemzés folytatódik, az étkezés mentéséhez később külön jóváhagyás kell. Az ellenőrzésre váró eredmények az oldal tetején, görgetés közben is látható, kiemelt jelzésben jelennek meg, „Átnézés és mentés” gombbal. Az OK-val bezárt feldolgozási ablak nem nyílik vissza váratlanul.
 
 A Onesvibe domainazonosító meta tag a bejelentkezés nélküli és a bejelentkezett kezdőlap HTML-fejlécében is szerepel, így a külső ellenőrzéshez nem kell belépés vagy JavaScript.
+
+## Ételfelismerő modell kipróbálása Modalon
+
+A külön Food-R1-próba telepítését, a helyi bejelentkezést, az automatikus GPU-leállást és a költségmérés lépéseit a [Modal útmutató](docs/MODAL.md) írja le. A próba eredménye helyi JSON-fájlba kerül; az éles napló képelemzésének átállításához előbb igazolni kell a pontosságot és a meglévő eredményformátummal való együttműködést.
