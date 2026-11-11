@@ -139,3 +139,5 @@ Közvetlen megkeresésünk nem előfeltétele a hatósági panasznak. Magyarorsz
 Új cél, szolgáltató, lényeges megőrzési változás vagy új érzékeny adatkezelés előtt a tájékoztatót és szükség szerint a hozzájárulást frissíteni kell. Új hozzájárulási célt nem tesz elfogadottá önmagában a weboldal további használata.
 
 Az AI eredménye becslés, nem orvosi tanács vagy mérési bizonyítvány; ennek használati feltételeit [külön dokumentum](TERMS-HU.md) rendezi. Ez a figyelmeztetés nem korlátozza az adatvédelmi jogaidat, a hatóság hatáskörét vagy az adatkezelő jogszabályban előírt felelősségét, ideértve a GDPR 82. cikke szerinti kártérítési jogot.
+
+**A felhasználási feltételek a jogszabály által megengedett legteljesebb mértékben kizárják Kovács Ákos fejlesztő és üzemeltető felelősségét az alkalmazás használatából eredő károkért. Ez nem terjed ki a ki nem zárható felelősségre, és nem jelent lemondást az adatvédelmi jogaidról.**

@@ -139,3 +139,5 @@ Contacting us first is not a condition for complaining to a supervisory authorit
 New purposes, providers, material retention changes or new sensitive processing require an updated notice and, where needed, renewed consent before processing. Continuing to use the website does not itself accept a new consent purpose.
 
 AI output is an estimate, not medical advice or a measurement certificate. [Separate terms](TERMS-EN.md) describe its use. This warning does not restrict your privacy rights, supervisory powers or the controller's statutory liability, including the right to compensation under GDPR Article 82.
+
+**The terms exclude the liability of Kovács Ákos, as developer and operator, for loss or damage arising from use of the application to the fullest extent permitted by law. This does not cover liability that cannot lawfully be excluded and does not waive your privacy rights.**

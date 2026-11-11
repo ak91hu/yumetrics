@@ -2,6 +2,10 @@
 
 **Felülvizsgálati tervezet · 2026. november 11. · Még nem hatályos.** A szöveg nem helyettesíti a [közzététel előtti jogi és működési ellenőrzést](README.md). [English version](TERMS-EN.md).
 
+> **Felelősségkizárás:** Kovács Ákos fejlesztő és üzemeltető az alkalmazandó jog által megengedett legteljesebb mértékben kizárja felelősségét az alkalmazás használatából vagy használhatatlanságából, különösen az AI-becslésekre alapozott felhasználói döntésekből eredő károkért.
+>
+> **Törvényi kivételek:** a kizárás nem érinti a jogszabály szerint ki nem zárható felelősséget, a kötelező fogyasztói jogokat vagy a GDPR szerinti jogokat és felelősséget. A részletes szabályokat a 7. fejezet tartalmazza.
+
 ## 1. A szolgáltatás és az üzemeltető
 
 A Yumetrics személyes étkezési napló, amely fényképből ételneveket, mennyiségeket és tápértékeket becsül, majd ellenőrizhető és javítható naplóbejegyzést készít. Üzemeltető: **Kovács Ákos**. Kapcsolat, panasz és adatvédelmi kérelem: **thisisnotka@gmail.com**. A szolgáltató esetleg kötelező további azonosító és kapcsolati adatainak meghatározása még szükséges; levelezési címet az üzemeltető nem adott meg közzétételre.
@@ -38,7 +42,9 @@ Karbantartás, szolgáltatói hiba, kvóta, biztonsági esemény vagy modellhiba
 
 Lényeges változást megfelelően közölni kell; a feltételek nem módosíthatók visszamenőleg az érintett kárára. Új hozzájárulási célt külön kell kezelni. Végleges megszüntetésnél észszerű előzetes tájékoztatást és a jogszabály szerint járó adathozzáférést, hordozhatóságot és törlést biztosítani kell.
 
-## 7. Felelősség
+## 7. Felelősségkizárás és törvényi kivételek
+
+**Kovács Ákos fejlesztő és üzemeltető az alkalmazandó jog által megengedett legteljesebb mértékben kizárja felelősségét az alkalmazás használatából vagy használhatatlanságából eredő károkért, az alábbi kötelező kivételek fenntartásával.** A kizárás különösen a téves ételfelismerésből, adag- és tápértékbecslésből, valamint az ezekre alapozott étrendi vagy más felhasználói döntésekből eredő károkra terjed ki, amennyiben azokért a felelősség jogszerűen kizárható.
 
 Az üzemeltető nem vállal külön pontossági, egészségügyi eredményre vagy megszakítás nélküli működésre vonatkozó garanciát. Az alkalmazás a közölt korlátokkal, személyes naplózásra használható. A felhasználó saját döntéseiért az alkalmazandó jog szerint felel; ez nem jelenti az üzemeltető minden felelősségének áthárítását.
 

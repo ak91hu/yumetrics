@@ -27,7 +27,7 @@ Jogforrás: [GDPR](https://eur-lex.europa.eu/eli/reg/2016/679/oj/eng/), 2. cikk 
 
 **Teljes felelősségkizárás nem adható jogszerűen.** A GDPR 82. cikke szerinti kártérítési szabályokat és a hatósági hatásköröket egy weboldali nyilatkozat nem írja felül. A felelősség nem automatikus minden hiba miatt: a konkrét jogsértés, kár, okozati összefüggés és a jogszerű mentesülés feltételeit vizsgálni kell. A kötelező polgári jogi korlátok és tisztességtelen fogyasztói feltételek tilalma is számít; lásd [Ptk.](https://njt.jog.gov.hu/jogszabaly/2013-5-00-00), különösen 6:102. és következő §-ok, 6:152. §. Az utóbbi módosításainak pontos hatását a végleges feltételeknél külön jogászi ellenőrzésre kell bocsátani.
 
-A tervezet ezért a szolgáltatás rendeltetését, az AI pontatlanságát, az ellenőrzés szükségességét és a külön garanciák hiányát mondja ki, de nem ígér mentességet a saját kötelezettségek alól.
+A tervezet ezért a szolgáltatás rendeltetését, az AI pontatlanságát, az ellenőrzés szükségességét és a külön garanciák hiányát mondja ki. Az elején és a felelősségi fejezetben kifejezett, a jog által megengedett legteljesebb körre szóló felelősségkizárás szerepel Kovács Ákos javára, a kötelező kivételekkel együtt. Ez nem ígér mentességet a ki nem zárható kötelezettségek alól. A konkrét kikötés szerződésbe épülését és tisztességességét külön is vizsgálni kell: a „jog által megengedett mértékben” fordulat önmagában nem biztosítja valamennyi rendelkezés érvényességét. Lásd a [Kúria felelősségkorlátozásról szóló döntését](https://kuria-birosag.hu/hu/kuriai-dontesek/17-i-szerzodesszeges-miatti-karteritesi-felelosseget-ptk-nak-kontraktualis).
 
 ## 3. Jogalap, érzékeny adat és hozzájárulás
 

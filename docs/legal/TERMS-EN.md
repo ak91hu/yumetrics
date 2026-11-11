@@ -2,6 +2,10 @@
 
 **Review draft · 11 November 2026 · Not yet in force.** These terms remain subject to the [legal and operational release review](README.md). [Magyar változat](TERMS-HU.md).
 
+> **Exclusion of liability:** To the fullest extent permitted by applicable law, Kovács Ákos, as developer and operator, excludes liability for loss or damage arising from use of, or inability to use, the application, particularly users' decisions based on AI estimates.
+>
+> **Statutory exceptions:** This exclusion does not affect liability that cannot lawfully be excluded, mandatory consumer rights, or rights and liability under the GDPR. Section 7 sets out the detailed provisions.
+
 ## 1. Service and operator
 
 Yumetrics is a personal food diary that estimates food names, quantities and nutrients from photographs and prepares entries for review and correction. Operator: **Kovács Ákos**. Contact, complaints and privacy requests: **thisisnotka@gmail.com**. Any further mandatory provider identification and contact particulars still need to be established; the operator has not supplied a postal address for publication.
@@ -38,7 +42,9 @@ Maintenance, provider failures, quotas, security events and model errors may cau
 
 Material changes require appropriate notice and must not operate retrospectively to the user's detriment. New consent purposes require separate handling. Permanent discontinuation requires reasonable advance information and legally required access, portability and erasure arrangements.
 
-## 7. Liability
+## 7. Exclusion of liability and statutory exceptions
+
+**To the fullest extent permitted by applicable law, Kovács Ákos, as developer and operator, excludes liability for loss or damage arising from use of, or inability to use, the application, subject to the mandatory exceptions below.** In particular, this exclusion covers loss or damage arising from incorrect food recognition, portion and nutrient estimates, and dietary or other decisions users base on those estimates, insofar as liability for such loss or damage may lawfully be excluded.
 
 The operator gives no separate guarantee of accuracy, health outcomes or uninterrupted operation. The application is for personal diary use within its disclosed limits. Users remain responsible for their own decisions as determined by applicable law; this does not transfer all operator liability to users.
 
