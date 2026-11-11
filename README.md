@@ -12,6 +12,8 @@ Adatvédelmi dokumentáció: [magyar és angol tájékoztató, felhasználási f
 
 A [magyar adatkezelési tájékoztató](https://yumetrics.app/adatvedelem) és az [angol változat](https://yumetrics.app/privacy) az alkalmazás betűtípusával és színeivel, mobilon is olvasható oldalon jelenik meg. Az útmutató, a technikai dokumentáció és az adatkezelési tájékoztató közös láblécből érhető el belépés előtt és után. A `/feltetelek` és `/terms` oldalak a kapcsolódó feltételeket mutatják, ugyancsak tervezetként. A HTML-t a dokumentációbuild a `docs/legal/` Markdown-forrásaiból állítja elő; a szöveget ott kell módosítani.
 
+A belépési oldal, a napló és az admin tetején keskeny, fekete–sárga csíkos sáv jelzi, hogy az alkalmazás bétatesztelés alatt áll. A napló és a belépési oldal felirata követi a magyar/angol nyelvválasztást; a magyar adminfelületen magyar marad.
+
 Magyar és angol nyelvű étkezési napló Google-belépéssel, fotó alapján becsült tápértékekkel és javítható összetevőkkel. Az első AI-becslés a képen látható **teljes ehető étel és ital 100%-ából** indul ki; a naplóba mentendő mennyiséget a piszkozatban ellenőrizheted és javíthatod. A fotós elemzés nem közvetlen kalóriamérés: a felismerést, a mennyiségi becslést, a tápértékforrást és a számítást külön kezeljük.
 
 ## Hogyan működik az alkalmazás?

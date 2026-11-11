@@ -15,6 +15,17 @@ test('the Onesvibe ownership tag is present in both homepage versions and public
   assert.equal(response.status,200);assert.ok((await response.text()).includes(claim));
 });
 
+test('the beta notice appears once on the login, diary and admin pages and has an English translation',async()=>{
+  const {translate}=await import('../lib/i18n.mjs');
+  for(const name of ['index.html','login.html','admin.html']){
+    const html=readFileSync(new URL('../public/'+name,import.meta.url),'utf8');
+    assert.equal(html.match(/class="beta-banner"/g)?.length,1);
+    assert.ok(html.includes('Bétaverzió – tesztelés alatt'));
+    assert.match(html,/<body class="[^"]*\bbeta-testing\b/);
+  }
+  assert.equal(translate('Bétaverzió – tesztelés alatt','en'),'Beta version – testing in progress');
+});
+
 test('publishable documentation has complete anchors, full-image guidance and no local/private dependencies',()=>{
   const html=readFileSync(new URL('../public/help.html',import.meta.url),'utf8');
   assert.ok(html.includes('lang="hu"'));assert.ok(html.includes('a képen látható teljes ehető étel és ital'));

@@ -1,5 +1,9 @@
 # Ellenőrzés
 
+## Fekete–sárga bétaállapot-jelzés, 2026-11-11
+
+**16/16 célzott dokumentációs, fordítási és hitelesítési teszt sikeres**, kihagyás nélkül; az alkalmazás- és MkDocs-build sikeres. A bétafelirat a belépési, napló- és adminforrásban egyszer szerepel. A helyi Chrome-próba öt szélességen ellenőrizte a belépés előtti és utáni elrendezést, a 28 pixeles csíkos sávot, az angol feliratot és az asztali oldalsáv eltolását. A lábléc és a mobilmenü elérhető marad; nincs vízszintes kilógás vagy szkripthiba. Képek: `outputs/beta-smoke/`. Valódi mobilkészülékes és teljes regressziós futás nem történt; fizetős AI/GPU-kérés nem indult.
+
 ## Egységes lábléc és két nyelvű jogi oldalak, 2026-11-11
 
 A célzott hitelesítési, biztonsági, fordítási és dokumentációs futásban **30 teszt sikeres**, két PostgreSQL-változat a helyi PostgreSQL-kapcsolat hiánya miatt jelzett kihagyással futott; sikertelen teszt nincs. A próbák a közös láblécet belépés előtt és után, a nyelvhez rögzített nyilvános jogi útvonalakat, a HEAD-válaszokat, a CSP-t és a privát végpontok változatlan védelmét ellenőrzik. A MkDocs strict build és az alkalmazásbuild sikeres; a Docker buildbemenetei a négy nyilvános jogi Markdown-forrást is tartalmazzák, a generált helyi HTML-t nem veszik át.
