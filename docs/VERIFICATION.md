@@ -1,5 +1,13 @@
 # Ellenőrzés
 
+## Egységes lábléc és két nyelvű jogi oldalak, 2026-11-11
+
+A célzott hitelesítési, biztonsági, fordítási és dokumentációs futásban **30 teszt sikeres**, két PostgreSQL-változat a helyi PostgreSQL-kapcsolat hiánya miatt jelzett kihagyással futott; sikertelen teszt nincs. A próbák a közös láblécet belépés előtt és után, a nyelvhez rögzített nyilvános jogi útvonalakat, a HEAD-válaszokat, a CSP-t és a privát végpontok változatlan védelmét ellenőrzik. A MkDocs strict build és az alkalmazásbuild sikeres; a Docker buildbemenetei a négy nyilvános jogi Markdown-forrást is tartalmazzák, a generált helyi HTML-t nem veszik át.
+
+A célzott helyi Chrome-próba magyar és angol nyelven, öt szélességen (320/390/768/1024/1440 px) ellenőrizte a belépési és a bejelentkezett láblécet, a hivatkozások nyelvváltását, az egyező betűtípust és a jogi oldalak tördelését. A mobilmenü nem takarja a lábléc linkjeit; nincs oldalszintű vízszintes kilógás vagy böngészős szkripthiba. A képernyőképek az `outputs/footer-smoke/` könyvtárban vannak. Az AI-szolgáltatókhoz nem indult kérés; az OAuth-folyamat szimulált.
+
+A nyilvános adatkezelési és felhasználási oldalak jól láthatóan felülvizsgálati tervezetek; közzétételük nem igazolja a teljes GDPR-megfelelőséget és nem lépteti hatályba a feltételeket. Teljes PostgreSQL-regressziót, valódi mobilkészülékes és valódi Google-belépési próbát ehhez a felületi változáshoz nem ismételtünk.
+
 ## Két nyelvű GDPR-dokumentumtervezetek, 2026-11-11
 
 Hét jogi dokumentum készült: magyar/angol adatkezelési tájékoztató és felhasználási feltételek, forrásolt jogi kutatás, belső eljárásrend és állapotjegyzék. A 24 helyi dokumentumhivatkozás, a két nyelv számozott szakaszainak egyezése és az UTF-8 tartalom ellenőrzése sikeres. A MkDocs strict build, az alkalmazásbuild és a három meglévő technikai dokumentációs teszt sikeres. A generált adatvédelmi fejezet tartalmazza az új tárolási tényeket és a nyitott kérdéseket; a jogi tervezetek nem válnak automatikusan hatályos alkalmazásoldalakká.

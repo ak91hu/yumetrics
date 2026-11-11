@@ -18,6 +18,10 @@
 !docs/
 !docs/technical/
 !docs/technical/**
+!docs/legal/
+!docs/legal/PRIVACY-*.md
+!docs/legal/TERMS-*.md
 !docs/theme/
 !docs/theme/**
 public/technical-docs/
+public/legal/

@@ -32,6 +32,8 @@ npm run build
 
 A Python-verzió választható a támogatott környezetből; a példában 3.11 szerepel. Linuxon használható `python3 -m venv work/mkdocs-venv` és `MKDOCS_PYTHON=$PWD/work/mkdocs-venv/bin/python npm run build`.
 
+A dokumentációbuild a `docs/legal/PRIVACY-*.md` és `TERMS-*.md` forrásokból a két nyelvű, alkalmazásstílusú jogi HTML-oldalakat is előállítja a figyelmen kívül hagyott `public/legal/` könyvtárba. Friss checkoutnál ezeket a build után szolgálja ki a fejlesztői szerver. A generált oldalakat ne szerkeszd kézzel; a jogi szöveg Markdown-forrása az irányadó. A generált oldalak HTTP-tesztjéhez is szükséges az előzetes build; nélküle ez az egy célzott teszt jelzett kihagyással fut.
+
 A `mkdocs.yml` tartalmazza a navigációt, a témát, a magyar felületet és a magyar/angol keresőnyelvet. A források a `docs/technical/`, a témasablon a `docs/theme/` könyvtárban vannak. A generált `public/technical-docs/` nem verziókezelt állomány; a Docker-build újragenerálja. A végleges alkalmazáscsomagba a lefordított oldalak kerülnek.
 
 Önálló élő előnézet:

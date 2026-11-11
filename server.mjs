@@ -69,9 +69,10 @@ export function createApp({ db, env = process.env, fetcher = fetch, publicOrigin
             const [name, type] = STATIC_FILES[url.pathname];
             const filename = !user && (url.pathname === '/' || url.pathname === '/index.html') ? 'login.html' : name;
             const isGuide = name === 'help.html', guideLanguage = ['/guide', '/help-en.html'].includes(url.pathname) ? 'en' : 'hu';
+            const isLegal = name.startsWith('legal/'), documentLanguage = isLegal ? (name.endsWith('-en.html') ? 'en' : 'hu') : guideLanguage;
             const localizedPage = ['index.html', 'login.html'].includes(filename);
             const content = isGuide ? guideMarkup(readFileSync(resolve(ROOT, 'public', filename), 'utf8'), guideLanguage) : localizedPage ? readFileSync(resolve(ROOT, 'public', filename), 'utf8').replace('<html lang="hu"', `<html lang="hu" data-default-language="${language}"`) : readFileSync(resolve(ROOT, 'public', filename));
-            response = new Response(incoming.method === 'HEAD' ? null : content, { headers: { 'Content-Type': type, 'Cache-Control': 'no-store', ...(isGuide || localizedPage ? { 'Content-Language': isGuide ? guideLanguage : language, Vary: 'Cookie' } : {}) } });
+            response = new Response(incoming.method === 'HEAD' ? null : content, { headers: { 'Content-Type': type, 'Cache-Control': 'no-store', ...(isGuide || isLegal || localizedPage ? { 'Content-Language': localizedPage ? language : documentLanguage, Vary: 'Cookie' } : {}) } });
             if (db && !isAdmin(user) && (isGuide || localizedPage)) {
               try {
                 const page = isGuide ? 'guide_'+guideLanguage : filename === 'login.html' ? 'login' : 'diary';

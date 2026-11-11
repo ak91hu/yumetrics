@@ -4,6 +4,8 @@
 
 A [két nyelvű adatkezelési és felhasználási tervezetek, jogi kutatás és belső eljárásrend](https://github.com/ak91hu/yumetrics/tree/main/docs/legal) a 2026. november 11-i vizsgálatot rögzítik. Ezek nem hatályba léptetett feltételek és nem teljes GDPR-megfelelőségi igazolás. Az üzemeltető Kovács Ákos, nyilvános adatvédelmi kapcsolata `thisisnotka@gmail.com`. A 18 éves alsó korhatár üzemeltetői döntés; a belépéskor nincs még külön életkor-megerősítés.
 
+A tájékoztató az alkalmazás saját stílusában is elérhető: [magyarul](/adatvedelem), [angolul](/privacy). A belépési oldal és a bejelentkezett napló alján az útmutató és a technikai dokumentáció mellett szerepel; nyelvváltáskor a hivatkozás is a megfelelő nyelvű oldalra vált. A kapcsolódó feltételek a `/feltetelek` és `/terms` útvonalakon olvashatók. Ezek nyilvános GET/HEAD oldalak, nem adnak hozzáférést a naplóhoz vagy az adminhoz. A build az eredeti Markdown-forrásból generálja őket; a belső eljárásrendet nem másolja az alkalmazás publikus fájljai közé.
+
 Hiányzik a különleges adatok esetére szükséges jogalap és kifejezett hozzájárulás igazolt kezelése, az opcionális tartalmi AI-összehasonlítás külön választása, több napló tényleges lejárata, valamint a teljes körű export/törlés kipróbált eljárása. Az önkiszolgáló felület nem feltétlenül kötelező; az érintetti jogok teljesíthetősége igen. A dokumentumok megírása nem módosítja ezeket a folyamatokat és nem töröl éles adatot.
 
 ## Tárolási helyek és szolgáltatói határok

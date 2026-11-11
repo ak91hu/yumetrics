@@ -14,7 +14,7 @@ A jelenlegi működésre **nem állítható igazolt teljes GDPR-megfelelőség**
 | P1 – érintetti jogok | Nincs önkiszolgáló teljes törlés/export; kész, kipróbált kézi eljárás sem igazolt. | Jogosultság-ellenőrzött hozzáférés/export/törlés, kapcsolt adatokkal és mentés-visszaállítási eljárással. Nem feltétel az önkiszolgáló UI. |
 | P1 – korhatár | 18+ üzemeltetői döntés, technikai megerősítés nélkül. | Arányos életkor-megerősítés és kiskorú esetére eljárás; szükségtelen okmánygyűjtés nélkül. |
 | P1 – elszámoltathatóság | Nincs lezárt érdekmérlegelés, hatásvizsgálati előszűrés, szolgáltatói és incidensnyilvántartás. | Az eljárásrend elfogadása, kitöltött nyilvántartások, dokumentált felelős és rendszeres ellenőrzés. |
-| P1 – tájékoztatás | Nincs hatályos két nyelvű jogi oldal és belépés/feltöltés előtti megfelelő hivatkozás. | Véglegesített, valós működést leíró szöveg, nyilvános URL, OAuth-beállítás és a lényeges változások közlése. |
+| P1 – tájékoztatás | A két nyelvű jogi tervezetek a láblécből elérhetők belépés előtt és után, de a véglegesítés és az első adatküldés előtti teljes tájékoztatási folyamat még hiányzik. | Véglegesített, valós működést leíró szöveg, OAuth-beállítás, a szükséges előzetes nyilatkozatok és a lényeges változások közlése. |
 | P1 – szolgáltatói azonosítás | Az üzemeltető nem kíván címet publikálni. | Ektv.-hatály és szolgáltatói minőség jogi vizsgálata; ha címközlés kötelező, valós, jogszerű székhely/telephely/lakcím feltüntetése. Az e-mail önmagában nem feltétlenül elegendő. |
 
 P0 itt elsőként rendezendő feladatot jelöl, nem automatikusan bizonyított jogsértést vagy adatvédelmi incidenst. E dokumentum nem állítja le a szolgáltatást és nem töröl adatot.

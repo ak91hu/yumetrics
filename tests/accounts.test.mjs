@@ -17,7 +17,10 @@ test('Google-only gate, one-use state, durable hashed session, profile and logou
   }
   await start(); t.after(async () => { await new Promise(resolve => server.close(resolve)); await db.close(); });
   assert.equal((await fetch(`${origin}/api/status`)).status, 401);
-  const page = await fetch(origin); assert.ok((await page.text()).includes('google-signin')); assert.ok(page.headers.get('content-security-policy').includes("script-src 'self'"));
+  const page = await fetch(origin), loginHtml = await page.text(); assert.ok(loginHtml.includes('google-signin')); assert.ok(page.headers.get('content-security-policy').includes("script-src 'self'"));
+  const footerLinks = source => [...source.matchAll(/<footer class="site-footer">([\s\S]*?)<\/footer>/g)].flatMap(match=>[...match[1].matchAll(/href="([^"]+)"/g)].map(link=>link[1]));
+  assert.deepEqual(footerLinks(loginHtml), ['/utmutato','/docs/','/adatvedelem']);
+  assert.ok(loginHtml.indexOf('<footer class="site-footer">') > loginHtml.indexOf('</main>'));
   for (const path of ['/.env', '/postgres/0001_initial.sql', '/data/yumetrics.sqlite']) assert.equal((await fetch(origin + path)).status, 404);
   assert.equal((await fetch(`${origin}/api/status`, { headers: { 'oai-authenticated-user-id': 'spoofed' } })).status, 401);
   const begin = await fetch(`${origin}/auth/google`, { redirect: 'manual' }); assert.equal(begin.status, 303);
@@ -26,6 +29,7 @@ test('Google-only gate, one-use state, durable hashed session, profile and logou
   const badState = await fetch(callback.replace(/state=[^&]+/, 'state=wrong'), { headers: { Cookie: stateCookie }, redirect: 'manual' }); assert.equal(badState.headers.get('location'), '/?login=failed');
   const signedIn = await fetch(callback, { headers: { Cookie: stateCookie }, redirect: 'manual' }); assert.equal(signedIn.headers.get('location'), '/');
   const sessionCookie = signedIn.headers.getSetCookie().find(cookie => cookie.startsWith('yumetrics_session=')).split(';')[0];
+  assert.deepEqual(footerLinks(await (await fetch(origin,{headers:{Cookie:sessionCookie}})).text()), ['/utmutato','/docs/','/adatvedelem']);
   assert.ok(signedIn.headers.getSetCookie().some(cookie => cookie.includes('HttpOnly') && cookie.includes('SameSite=Lax')));
   const savedSession = await db.prepare('SELECT * FROM sessions').bind().first(); assert.equal(savedSession.token_hash, tokenHash(sessionCookie.split('=')[1]));
   assert.ok(!JSON.stringify(savedSession).includes(sessionCookie.split('=')[1]));

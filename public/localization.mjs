@@ -43,4 +43,5 @@ function applyLanguage() {
   for (const [element, name, source] of attributes) if (element.isConnected) element.setAttribute(name, t(source));
   for (const select of document.querySelectorAll('[data-language-switch]')) select.value = language;
   for (const link of document.querySelectorAll('a[href="/utmutato"],a[href="/guide"]')) link.href = language === 'en' ? '/guide' : '/utmutato';
+  for (const link of document.querySelectorAll('a[href="/adatvedelem"],a[href="/privacy"]')) link.href = language === 'en' ? '/privacy' : '/adatvedelem';
 }

@@ -2,7 +2,7 @@
 
 Vizsgálati dátum: **2026. november 11.** · Vizsgált alkalmazásverzió: `5ac096fb6fcca62ad39dd22b6e1db93e33b6098f`.
 
-**Állapot: felülvizsgálandó dokumentumtervezet, nem megfelelőségi tanúsítvány és nem hatályba léptetett ÁSZF.** A csomag a tényleges működést és a szükséges változtatásokat külön kezeli. Nem állítja, hogy egy tájékoztató elkészítése önmagában jogszerűvé teszi a jelenlegi adatkezelést. A tervezetek nem kerülnek be automatikusan a webalkalmazás vagy a MkDocs nyilvános jogi menüjébe; a forráskódtárban dokumentumtervezetként olvashatók.
+**Állapot: felülvizsgálandó dokumentumtervezet, nem megfelelőségi tanúsítvány és nem hatályba léptetett ÁSZF.** A csomag a tényleges működést és a szükséges változtatásokat külön kezeli. Nem állítja, hogy egy tájékoztató elkészítése önmagában jogszerűvé teszi a jelenlegi adatkezelést. A két nyelvű adatkezelési tájékoztató és felhasználási feltételek az alkalmazás stílusában, jól látható tervezeti jelzéssel is olvashatók: [magyar tájékoztató](https://yumetrics.app/adatvedelem), [English notice](https://yumetrics.app/privacy), [magyar feltételek](https://yumetrics.app/feltetelek), [English terms](https://yumetrics.app/terms). Az adatkezelési hivatkozás belépés előtt és után is a láblécben szerepel. A közzététel nem lépteti hatályba a tervezett feltételeket.
 
 | Dokumentum | Tartalom |
 | --- | --- |
@@ -27,6 +27,6 @@ Vizsgálati dátum: **2026. november 11.** · Vizsgált alkalmazásverzió: `5ac
 2. Meg kell valósítani és ellenőrizni a korhatárkezelést, az elkülönített opcionális AI-összehasonlítási cél kezelését, a megőrzési határidőket és a teljes körű érintetti kérelmek végrehajtását. Az önkiszolgáló felület hiánya önmagában nem jogsértés; a kérelmek tényleges teljesíthetősége nélkülözhetetlen.
 3. A szolgáltatói szerződésekből meg kell állapítani az adattovábbítási garanciákat, az OpenCode végfelhasználói alkalmazásba építésének engedélyét, a modelloldali megőrzést és az önálló fejlesztési felhasználás korlátozását.
 4. Az üzemeltetőnek el kell fogadnia az eljárásrendet és a megőrzési tervet, el kell végeznie az érdekmérlegelést és a hatásvizsgálati előszűrést; szükség esetén a teljes hatásvizsgálatot is.
-5. Magyar adatvédelmi és szolgáltatási jogban jártas szakemberrel célszerű ellenőriztetni a végleges szöveget és a működést. Ezután kell rögzíteni a hatálybalépés dátumát, közzétenni a két nyelvű oldalakat, belinkelni őket belépés és feltöltés előtt, és a Google OAuth hozzájárulási képernyőjén is beállítani az adatvédelmi URL-t.
+5. Magyar adatvédelmi és szolgáltatási jogban jártas szakemberrel célszerű ellenőriztetni a végleges szöveget és a működést. Ezután kell rögzíteni a hatálybalépés dátumát, a nyilvános tervezet helyére a végleges két nyelvű szöveget tenni, az első adatküldés előtti tájékoztatást ellenőrizni, és a Google OAuth hozzájárulási képernyőjén is beállítani az adatvédelmi URL-t.
 
-E dokumentációváltozás nem töröl felhasználói adatot, nem módosítja a megőrzést, nem vezet be új hozzájárulást, és nem változtatja meg a szolgáltatói fiókok beállításait.
+A dokumentumok közzététele nem töröl felhasználói adatot, nem módosítja a megőrzést, nem vezet be új hozzájárulást, és nem változtatja meg a szolgáltatói fiókok beállításait.

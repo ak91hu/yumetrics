@@ -7,6 +7,22 @@ import {once} from 'node:events';
 import {technicalDocumentation} from '../lib/http.mjs';
 import {createApp} from '../server.mjs';
 
+test('built legal pages stay public, language-specific and protected by the application CSP',async t=>{
+  if(!existsSync(new URL('../public/legal/privacy-hu.html',import.meta.url))){t.skip('Run npm run build to test the generated legal pages.');return;}
+  const server=createApp({env:{}});server.listen(0,'127.0.0.1');await once(server,'listening');t.after(()=>new Promise(resolve=>server.close(resolve)));
+  const origin=`http://127.0.0.1:${server.address().port}`;
+  for(const [path,language,label] of [['/adatvedelem','hu','Még nem hatályos'],['/privacy','en','Not yet in force'],['/feltetelek','hu','Felelősségkizárás'],['/terms','en','Exclusion of liability']]){
+    const response=await fetch(origin+path,{headers:{Cookie:`yumetrics_language=${language==='en'?'hu':'en'}`}}),html=await response.text();
+    assert.equal(response.status,200);assert.equal(response.headers.get('Content-Language'),language);
+    assert.ok(html.includes(`lang="${language}"`));assert.ok(html.includes(label));assert.ok(html.includes('thisisnotka@gmail.com'));
+    assert.ok(!html.includes('<script'));assert.ok(!/href="(?!https?:\/\/)[^"#]*\.md(?:["#])/.test(html));
+    assert.ok(response.headers.get('content-security-policy').includes("script-src 'self'"));
+    const head=await fetch(origin+path,{method:'HEAD'});assert.equal(head.status,200);assert.equal(await head.text(),'');
+    assert.equal((await fetch(origin+path,{method:'POST'})).status,404);
+  }
+  for(const path of ['/legal/privacy-hu.html','/docs/legal/README.md','/api/meals?month=2026-11','/admin'])assert.ok([401,404].includes((await fetch(origin+path)).status));
+});
+
 test('technical documentation serves HTML and local assets without exposing source or parent files',async t=>{
   const directory=mkdtempSync(join(tmpdir(),'yumetrics-docs-'));assert.ok(directory.startsWith(join(tmpdir(),'yumetrics-docs-')));
   t.after(()=>rmSync(directory,{recursive:true,force:true}));
