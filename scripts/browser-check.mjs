@@ -111,6 +111,7 @@ try {
     throw new Error(`Browser condition not met: ${expression}`);
   }
   async function screenshot(name, full = true) {
+    await evaluate('document.fonts.ready.then(() => true)');
     await evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
     const metrics=await send('Page.getLayoutMetrics'),size=full?metrics.cssContentSize:metrics.cssLayoutViewport;
     const width=size.width??size.clientWidth,height=size.height??size.clientHeight;
@@ -668,6 +669,24 @@ try {
   await send('Emulation.setEmulatedMedia',{media:'print'});
   assert.equal(await evaluate("getComputedStyle(document.querySelector('.toc')).display"),'none');
   await send('Emulation.setEmulatedMedia',{media:'screen'});
+  await send('Page.navigate',{url:origin+'/docs/'});
+  await waitFor("document.querySelector('h1')?.textContent.includes('technikai dokumentációja')");
+  assert.equal(await evaluate('document.documentElement.lang'),'hu');
+  assert.ok(await evaluate("[...document.scripts].every(script=>script.src && new URL(script.src).origin===location.origin)"),'MkDocs runs only same-origin external scripts under the existing CSP');
+  for(const page of ['','nutrition/','database/','api/','operations/']){
+    await send('Page.navigate',{url:origin+'/docs/'+page});
+    await waitFor("location.pathname === '/docs/"+page+"' && !!document.querySelector('.rst-content h1')");
+    for(const width of [320,390,768,1024,1440]){await viewport(width,1000,width<768);assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth'),'Technical documentation '+page+' fits '+width);}
+  }
+  await send('Page.navigate',{url:origin+'/docs/'});await waitFor("!!document.querySelector('.rst-content h1')");
+  await viewport(1440,1100,false);await screenshot('technical-docs-desktop.png',false);
+  await viewport(390,844,true);await screenshot('technical-docs-mobile.png',false);
+  await evaluate("document.querySelector('[data-toggle=wy-nav-top]').click()");
+  await waitFor("document.querySelector('.wy-nav-side').classList.contains('shift')");
+  await screenshot('technical-docs-menu-mobile.png',false);
+  await send('Page.navigate',{url:origin+'/docs/search.html?q=lease'});
+  await waitFor("document.querySelector('#mkdocs-search-results a')?.getAttribute('href')?.includes('/docs/')");
+  assert.ok(await evaluate("document.querySelector('#mkdocs-search-results').textContent.includes('lease')"),'MkDocs local search works with its same-origin worker');
   const adminClient=testGoogleClient({email:'thisisnotka@gmail.com',sub:'admin-browser-fixture',name:'Akos Kovacs'});
   Object.assign(googleClient,adminClient); googleClient.callbackOrigin=origin;
   await send('Page.navigate',{url:origin+'/auth/google'});
@@ -826,6 +845,8 @@ try {
   result.checks.push('owner AI response search, paired comparison at five widths, escaped model text and JSON export; mocked providers only');
   result.checks.push('prominent camera and gallery actions, rear-camera capture attributes, immediate pending-upload status and persistent processing/completion notices');
   result.checks.push('owner-only topbar administration link, grouped desktop navigation and mobile section picker, filter reset and three settings groups', 'immediately completed weekly challenge feedback survives a background profile refresh');
+  result.checks.push('public MkDocs pages at five widths, local scripts under unchanged CSP, mobile navigation and local full-text search');
+  result.screenshots.push('technical-docs-desktop.png','technical-docs-mobile.png','technical-docs-menu-mobile.png');
   result.screenshots.push('owner-topbar-mobile.png');
   result.screenshots.push('upload-in-progress.png');
   result.screenshots.push('badges-mobile.png','admin-overview-desktop.png','admin-overview-mobile.png','admin-settings-desktop.png','admin-settings-mobile.png','admin-audit-desktop.png');

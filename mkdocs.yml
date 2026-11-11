@@ -1,0 +1,46 @@
+site_name: Yumetrics · Technikai dokumentáció
+site_description: A Yumetrics architektúrája, képfeldolgozása, tápértékszámítása és üzemeltetése.
+site_url: https://yumetrics.app/docs/
+repo_url: https://github.com/ak91hu/yumetrics
+repo_name: Forráskód
+edit_uri: ""
+docs_dir: docs/technical
+site_dir: public/technical-docs
+strict: true
+theme:
+  name: readthedocs
+  locale: hu
+  custom_dir: docs/theme
+  highlightjs: false
+  navigation_depth: 3
+  sticky_navigation: true
+plugins:
+  - search:
+      lang: [hu, en]
+markdown_extensions:
+  - admonition
+  - tables
+  - fenced_code
+  - toc:
+      permalink: true
+extra_css:
+  - assets/yumetrics.css
+nav:
+  - Áttekintés: index.md
+  - Felépítés és adatfolyam:
+      - Architektúra: architecture.md
+      - Böngésző és képfeltöltés: frontend.md
+      - Feldolgozási állapotgép: processing.md
+  - Felismerés és számítás:
+      - AI-szolgáltatók és Modal: ai.md
+      - Tápértékek és források: nutrition.md
+  - Adatok és hozzáférés:
+      - Adatmodell és migrációk: database.md
+      - HTTP API: api.md
+      - Hitelesítés és biztonság: security.md
+      - Adatvédelem és nyelvek: privacy.md
+  - Funkciók és üzemeltetés:
+      - Statisztikák és kihívások: features.md
+      - Admin, naplózás és költségek: administration.md
+      - Telepítés és helyreállítás: operations.md
+      - Fejlesztés és ellenőrzés: development.md

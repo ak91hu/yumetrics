@@ -1,5 +1,13 @@
 # Ellenőrzés
 
+## MkDocs technikai kézikönyv és részletes README, 2026-11-11
+
+**169/169 Node-teszt sikeres**, valódi helyi PostgreSQL-lel, kihagyás nélkül. A három új teszt ellenőrzi a dokumentáció fájlrendszerhatárát, az útvonalak és módszerek kezelését, a privát API-k változatlan védelmét és a 14 fejezet buildbemeneteit. A MkDocs strict build és az alkalmazásbuild sikeres. A build külön ellenőrzi, hogy a generált HTML nem igényel inline vagy külső futtatható szkriptet.
+
+A teljes magyar böngészős próba sikeres; a technikai oldalak, táblázatok, mobilos tartalomjegyzék és helyi kereső is ellenőrzött. A végső magyar témaszövegek és rendszerbetűk után külön, célzott Chrome-próba is sikeres öt szélességen (320/390/768/1024/1440 px). A végleges képek: `outputs/mkdocs-smoke/technical-docs-desktop.png`, `technical-docs-mobile.png`, `technical-docs-menu-mobile.png`. A böngészőben nem történt szkripthiba; a kereső a meglévő CSP mellett, helyi workerrel működik.
+
+Az angol teljes próba a dokumentáció ellenőrzése után, egy későbbi admin-képernyőkép írásakor helyi `ENOSPC` hibával állt meg. Ez nem sikeres teljes angol regressziós futás; a végső dokumentáció célzott próbája külön sikeres. A helyi Docker CLI nem állt rendelkezésre, a tényleges image-buildet a Northflank végzi. Új fizetős AI-, GPU- vagy valódi OAuth-próba nem indult.
+
 ## Adminnavigáció, dokumentáció és indulási naplók, 2026-11-10
 
 **166/166 Node-teszt sikeres**, valódi helyi PostgreSQL-lel, kihagyás nélkül; a build és a végső angol Chrome-próba is sikeres. Az új tesztek ellenőrzik a PostgreSQL SSL-módok szigorú normalizálását, a kifejezett kompatibilitási beállítás megőrzését és a titkokat nem tartalmazó, hibás éles konfigurációnál leálló indulást.

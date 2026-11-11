@@ -8,6 +8,7 @@ import { guideMarkup } from '../lib/i18n.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url)), out = resolve(root, 'dist');
 const within = relative(root, out); assert.ok(within && !within.startsWith('..') && !isAbsolute(within) && out === resolve(root, 'dist'));
+execFileSync(process.execPath,[resolve(root,'scripts/build-docs.mjs')],{stdio:'inherit'});
 for (const folder of ['lib', 'public']) for (const name of readdirSync(resolve(root, folder)).filter(name => name.endsWith('.mjs'))) execFileSync(process.execPath, ['--check', resolve(root, folder, name)]);
 execFileSync(process.execPath, ['--check', resolve(root, 'server.mjs')]);
 for (const [file] of Object.values(STATIC_FILES)) assert.ok(existsSync(resolve(root, 'public', file)), `Missing asset: ${file}`);

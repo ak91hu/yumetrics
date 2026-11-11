@@ -11,6 +11,8 @@
 
 # Generated builds and framework state
 /dist/
+/public/technical-docs/
+/docs/theme/locales/**/*.mo
 /.next/
 /.vinext/
 /out/

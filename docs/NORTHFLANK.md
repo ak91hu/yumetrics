@@ -63,7 +63,7 @@ Közvetlen primary PostgreSQL-kapcsolatot használj. Ha PgBouncert vezetsz be, a
 
 A felhasználói művelet csak adatbázis-commit után kap sikeres választ. `synchronous_commit=on` szerepel a PostgreSQL-kapcsolaton. Az elemzés `202` válasza már feltöltött Cloudinary-fotót és adatbázisba írt feldolgozási feladatot jelent. A worker a Cloudinaryból olvassa vissza a képet, a bájtok nem kerülnek PostgreSQL-be.
 
-Ha elemzés közben áll le az app, a feladat lease-e legfeljebb kb. 90 másodperc után újra felvehető. Szívverés tartja életben; a mentést a lease tokenje védi. Egy korábbi worker késői válasza nem írhatja felül a feladatot átvevő worker eredményét. Három ismételt megszakítás után a feladat hibásként, megőrzött fotókkal látható; kézzel újrapróbálható. A külső AI-hívás a leállás miatt megismétlődhet és újra számlázódhat; szolgáltatói pontosan-egyszer végrehajtást nem állítunk.
+Ha elemzés közben áll le az app, a futó feladat lease-e körülbelül 90 másodpercig él, szívverés hosszabbítja. A lejárt, megszakadt elemzést a rendszer hibásnak jelöli: új, számlázható AI-kérés csak kézi újrapróbálással indul. A mentést egyedi lease-token védi, ezért egy korábbi worker késői válasza nem írhatja felül az aktuális állapotot. Az egyéb feltöltési/törlési állapotok helyreállítási szabályai ettől eltérhetnek. Szolgáltatói pontosan-egyszer végrehajtást nem állítunk; a már elküldött, de megszakadt hívás is számlázódhat. Az aktuális állapotgép a [technikai dokumentációban](technical/processing.md) található.
 
 Törlésnél előbb tartós törlési feladat készül, aztán a Cloudinary-képek törlődnek, végül az adatbázis-bejegyzés. Megszakadásnál az idempotens törlés folytatódik. A képtár hibájánál a bejegyzés és a képazonosítók megmaradnak, a törlés újrapróbálható.
 

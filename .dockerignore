@@ -12,3 +12,12 @@
 !drizzle/**
 !scripts/
 !scripts/build.mjs
+!scripts/build-docs.mjs
+!scripts/requirements-docs.txt
+!mkdocs.yml
+!docs/
+!docs/technical/
+!docs/technical/**
+!docs/theme/
+!docs/theme/**
+public/technical-docs/

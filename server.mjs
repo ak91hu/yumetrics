@@ -8,7 +8,7 @@ import { api, json } from './lib/api.mjs';
 import { authRoute, authConfigured, currentUser } from './lib/auth.mjs';
 import { openPostgresDatabase } from './lib/database.mjs';
 import { startJobRunner } from './lib/jobs.mjs';
-import { SECURITY_HEADERS, STATIC_FILES } from './lib/http.mjs';
+import { SECURITY_HEADERS, STATIC_FILES, technicalDocumentation } from './lib/http.mjs';
 import { guideMarkup, requestLanguage, translateSystemMessage } from './lib/i18n.mjs';
 import { requestCountry, requestAddress } from './lib/geoip.mjs';
 import { secureStoredPhotos } from './lib/photos.mjs';
@@ -63,6 +63,7 @@ export function createApp({ db, env = process.env, fetcher = fetch, publicOrigin
             }
             response = await api(request, { db, env, userId: user?.id, user, fetcher, wake });
           }
+          else if (url.pathname==='/docs'||url.pathname.startsWith('/docs/')) response=technicalDocumentation(url.pathname,incoming.method,resolve(ROOT,'public','technical-docs'));
           else if (['/admin', '/admin.html'].includes(url.pathname) && !isAdmin(user)) response = json({ error: 'Ehhez a felülethez nincs hozzáférésed.' }, user ? 403 : 401);
           else if (STATIC_FILES[url.pathname] && ['GET', 'HEAD'].includes(incoming.method)) {
             const [name, type] = STATIC_FILES[url.pathname];

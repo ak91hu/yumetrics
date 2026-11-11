@@ -1,0 +1,56 @@
+msgid ""
+msgstr ""
+"Language: hu\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Search docs"
+msgstr "Keresés a dokumentációban"
+
+msgid "Search the Docs"
+msgstr "Keresés a dokumentációban"
+
+msgid "Type search term here"
+msgstr "Írd be a keresett kifejezést"
+
+msgid "Search Results"
+msgstr "Keresési találatok"
+
+msgid "Searching..."
+msgstr "Keresés folyamatban…"
+
+msgid "No results found"
+msgstr "Nincs találat. Próbálj másik kifejezést."
+
+msgid "Previous"
+msgstr "Előző"
+
+msgid "Next"
+msgstr "Következő"
+
+msgid "Docs"
+msgstr "Dokumentáció"
+
+msgid "Edit"
+msgstr "Szerkesztés"
+
+msgid "Versions"
+msgstr "Verziók"
+
+msgid "Navigation menu"
+msgstr "Tartalomjegyzék"
+
+msgid "Mobile navigation menu"
+msgstr "Mobilos tartalomjegyzék"
+
+msgid "Footer Navigation"
+msgstr "Lapozás"
+
+msgid "Breadcrumb Navigation"
+msgstr "Oldal helye a dokumentációban"
+
+msgid "Page not found"
+msgstr "Az oldal nem található"
+
+msgid "Logo"
+msgstr "Embléma"

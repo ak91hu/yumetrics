@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block libs %}{% endblock %}
+{% block mobile_nav %}
+  <button class="docs-menu" type="button" data-toggle="wy-nav-top" aria-label="Tartalomjegyzék megnyitása vagy bezárása">☰</button>
+  <a href="{{ nav.homepage.url|url }}">Yumetrics · Dokumentáció</a>
+{% endblock %}
+{% block scripts %}
+  <script src="{{ 'js/jquery-3.6.0.min.js'|url }}"></script>
+  <script src="{{ 'assets/docs.js'|url }}"></script>
+  <script src="{{ 'js/theme_extra.js'|url }}"></script>
+  <script src="{{ 'js/theme.js'|url }}"></script>
+  {% for script in config.extra_javascript %}{{ script|script_tag }}{% endfor %}
+{% endblock %}
+{% block footer %}
+  {% if page and (page.previous_page or page.next_page) %}
+  <nav class="rst-footer-buttons" aria-label="Lapozás">
+    {% if page.next_page %}<a class="btn btn-neutral float-right" href="{{ page.next_page.url|url }}">Következő: {{ page.next_page.title }}</a>{% endif %}
+    {% if page.previous_page %}<a class="btn btn-neutral" href="{{ page.previous_page.url|url }}">Előző: {{ page.previous_page.title }}</a>{% endif %}
+  </nav>
+  {% endif %}
+  <p class="docs-back"><a href="/">Vissza az alkalmazásba</a> · <a href="/utmutato">Felhasználói útmutató</a></p>
+  <p>Yumetrics · A dokumentáció <a href="https://www.mkdocs.org/">MkDocs</a> és Read the Docs témával készült.</p>
+{% endblock %}

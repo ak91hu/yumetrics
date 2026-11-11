@@ -2,6 +2,12 @@ FROM node:24-bookworm-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
+COPY scripts/requirements-docs.txt /tmp/requirements-docs.txt
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-venv \
+    && python3 -m venv /opt/mkdocs \
+    && /opt/mkdocs/bin/pip install --no-cache-dir -r /tmp/requirements-docs.txt \
+    && rm -rf /var/lib/apt/lists/*
+ENV MKDOCS_PYTHON=/opt/mkdocs/bin/python
 COPY . .
 RUN npm run build
 

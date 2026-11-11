@@ -4,11 +4,76 @@ A 2026. november 10-i döntések, javítások, költségfeltételek és még csa
 
 ![Yumetrics — your food, in numbers](public/brand-banner.svg)
 
-**[Élő alkalmazás](https://yumetrics.app)** · **[Magyar útmutató](https://yumetrics.app/utmutato)** · **[English guide](https://yumetrics.app/guide)**
+**[Élő alkalmazás](https://yumetrics.app)** · **[Magyar útmutató](https://yumetrics.app/utmutato)** · **[English guide](https://yumetrics.app/guide)** · **[MkDocs technikai dokumentáció](https://yumetrics.app/docs/)**
 
-Frissítve: 2026. november 9. · AI-módszerváltozat: `food-v15-optional-view`.
+Frissítve: 2026. november 11. · AI-módszerváltozat: `food-v17-label-preparation`.
 
 Magyar és angol nyelvű étkezési napló Google-belépéssel, fotó alapján becsült tápértékekkel és javítható összetevőkkel. Az első AI-becslés a képen látható **teljes ehető étel és ital 100%-ából** indul ki; a naplóba mentendő mennyiséget a piszkozatban ellenőrizheted és javíthatod. A fotós elemzés nem közvetlen kalóriamérés: a felismerést, a mennyiségi becslést, a tápértékforrást és a számítást külön kezeljük.
+
+## Hogyan működik az alkalmazás?
+
+A Yumetrics az étkezés dokumentálását és az ellenőrizhető számítást kapcsolja össze. A fénykép vizuális bizonyíték, az AI javítható javaslatot készít, a tápértékeket pedig rögzített szabályok számolják. A felhasználó tudja megadni azokat az információkat – például az étel lemért tömegét vagy a hozzáadott olajat –, amelyek a képből nem olvashatók ki megbízhatóan.
+
+### Egy étkezés teljes életútja
+
+1. **Belépés.** A Google igazolja a fiók azonosságát, a szerver helyi munkamenetet hoz létre. A napló több eszközről ugyanazzal a fiókkal érhető el; a Google-jelszó nem kerül az alkalmazáshoz.
+2. **Adatrögzítés.** Egy fénykép kötelező, a második opcionális. Telefonon külön kamera- és képkiválasztási lehetőség van. Dátum, étkezéstípus, megjegyzés, ismert tömeg és más kiegészítő adat segítheti az értelmezést.
+3. **Képelőkészítés.** A böngésző dekódolja, legfeljebb 2048 pixeles hosszabb oldalra méretezi és JPEG-ként újrarajzolja a képet. Az eredeti EXIF/GPS-metaadatokat nem másolja át. A szerver a formátumot, a méretet és a két kép azonosságát is ellenőrzi.
+4. **Tartós feltöltés.** A képek védett Cloudinary-tárolásba, a bejegyzés és a feldolgozási feladat PostgreSQL-be kerül. A `202 Accepted` válasz ezt igazolja; nem jelenti, hogy az AI már elkészült. A háttérfeldolgozás a felugró ablak bezárása után is folytatódik.
+5. **Felismerés és ellenőrzés.** A Modalon futó opcionális Food-R1 8B rövid ételnévjavaslatokat ad. Az OpenCode-on elért Gemini 3.8 Flash az eredeti képekből önállóan ellenőrzi ezeket, felismeri a további elemeket, és strukturált elemzést ad. A segéd mennyiségét és kalóriabecslését nem vesszük át.
+6. **Számítás és piszkozat.** A szerver ellenőrzi az egységeket, a forrásokat és a számszerű összefüggéseket. Összetevőnként kiszámolja az adagra jutó tápanyagokat és azok összegét. Az elkészült elemzés piszkozat; a felület tetején jól látható jelzés nyitja meg az ellenőrzést.
+7. **Javítás és mentés.** Az ételnév, a tömeg, a forrás és a recept módosítható. A végleges mentés külön művelet. A revízióellenőrzés megakadályozza, hogy egy régi böngészőablak észrevétlenül felülírjon újabb adatot.
+8. **Napló és visszajelzés.** A mentett étkezésekből naptár, napi összesítés, időszaki átlagok, fejlődés és heti haladás készül. Ezekhez nincs szükség további AI-hívásra.
+
+```text
+Fotó + ismert adatok
+  → biztonságos képfeltöltés és tartós feladat
+  → Food-R1 névjavaslat (opcionális)
+  → OpenCode/Gemini képelemzés
+  → szerveroldali validálás és számítás
+  → javítható piszkozat → felhasználói mentés
+  → saját napló, összesítések és jutalmak
+```
+
+### Mit tesz az AI, és mit számol a program?
+
+| Feladat | Felelős |
+| --- | --- |
+| Látható ételek, elkészítés, adag és nem látható hozzávalók bizonytalansága | AI, a felhasználó által ellenőrizhető javaslatként |
+| Food-R1-jelöltek elfogadása vagy elvetése az eredeti fotók alapján | OpenCode/Gemini |
+| Címkeadat átalakítása, referenciaérték ellenőrzése | Szerveroldali programkód |
+| Tápanyagok adagra vetítése, ételenkénti és teljes összeg | Determinisztikus számítás |
+| Saját recept arányosítása lemért kész tömegre | Determinisztikus számítás |
+| Végleges név, mennyiség és mentési jóváhagyás | Felhasználó |
+
+A Food-R1 nem kötelező második vélemény minden körülmény között. Hibás segédválasz, időtúllépés vagy belső keretkorlát esetén az önálló OpenCode-elemzés folytatódhat. A fő elemzés hibáját nem fedjük el kitalált ételadatokkal. Megszakadt elemzés után új, számlázható kéréshez kézi újrapróbálás szükséges.
+
+## Technikai felépítés és tartós adatok
+
+| Réteg | Megoldás és feladat |
+| --- | --- |
+| Böngésző | Natív HTML/CSS/JavaScript ES-modulok; fotó-előkészítés, napló, szerkesztés, nyelvváltás |
+| Webszerver | Node.js 24+, natív HTTP-szerver és JSON API, háttérworker ugyanabban a folyamatban |
+| Alkalmazásadatok | Northflank PostgreSQL: felhasználók, munkamenetek, étkezések, feladatsor, beállítások, naplók és látogatottság |
+| Képek | Cloudinary `authenticated` tárolás; saját, jogosultságot ellenőrző képvégpontok |
+| AI | Modal Food-R1 segéd + OpenCode/Gemini; külön naplózott hívások |
+| Tápértékadatok | Termékcímke, 44 beépített USDA-referencia, opcionális élő FoodData Central |
+| Üzemeltetés | GitHub main → Northflank Docker-build → nem rootként futó Node-image |
+| Technikai dokumentáció | MkDocs strict build → statikus `/docs/` oldalak, helyi keresővel |
+
+Az alkalmazáskonténer cseréje nem törli a PostgreSQL-ben és a Cloudinaryban őrzött adatokat. A fotók tényleges bájtjai nem az adatbázisban vannak; a képek és az adatbázis mentését ezért együtt kell megtervezni. A még el nem küldött böngészős kép nem tartós mentés.
+
+A feladatsort lease és egyedi végrehajtási token védi, az azonos beküldés ismétlése input hash alapján felismerhető. Ez nem jelent a külső AI-szolgáltatóknál pontosan egyszeri számlázási garanciát. A részleges hibákat és a megszakításokat megőrizzük; az állapot az adminban visszakereshető.
+
+A napló saját adatai csak a tulajdonosnak és a jogosult adminnak hozzáférhetők. Az átlagos felhasználó nem lát szolgáltatói állapotlistát vagy kulcsokat. A látogatásmérés saját, adatbázisba mentett napi összesítéseket készít, egyedi látogatói profil nélkül; nem egy külső analitikai oldal memóriájára támaszkodik.
+
+### Részletes MkDocs-kézikönyv
+
+A [nyilvános technikai dokumentáció](https://yumetrics.app/docs/) az alkalmazás láblécéből is elérhető. Külön fejezetben tárgyalja az architektúrát, a kliens és szerver adatfolyamát, az állapotgépet, az AI-adaptereket, a tápértékalgoritmusokat, a teljes adatmodellt, a HTTP API-t, a hitelesítést, az adatvédelmet, a kihívásokat, az adminisztrációt, a költségbecslést, a telepítést és az ellenőrzést.
+
+Forrása: [docs/technical](docs/technical/index.md); konfigurációja: [mkdocs.yml](mkdocs.yml). A generált fájlok nem kerülnek Gitbe, minden alkalmazásbuild újra előállítja őket. A MkDocs nem külön éles szolgáltatás, és a dokumentáció olvasása nem indít AI-hívást.
+
+A dokumentációs oldal magyar nyelvű, helyi keresővel, mobilos tartalomjegyzékkel és a kódhoz vezető hivatkozásokkal. A szolgáltatói válaszok archívuma továbbra is kizárólag az adminfelületen érhető el: a nyilvános kézikönyv nem tesz közzé személyes adatot vagy éles naplót.
 
 ## A számítás módszere és az AI szerepe
 
@@ -84,7 +149,7 @@ A hét hétfőtől vasárnapig, magyarországi idő szerint tart. A háromnapos 
 
 A naplózást ötszintű növényes fejlődés, hat jelvény és egy gördülő hétnapos cél ösztönzi. A fejlődés különböző mentett napokra épül, a régebbi napok is számítanak; az étkezések energiatartalma nem befolyásolja a jutalmat. A kihagyás nem von le fejlődési napot, a törlés vagy dátummódosítás viszont újraszámítja a jelvényeket. A főoldali kártya és a mentés utáni visszajelzés a meglévő profiladatokból működik, új AI-kérés nélkül.
 
-Google-belépés után tölts fel két fotót ugyanarról az egész adagról (felülről és ferdén oldalról), csomagolt terméknél a teljes csomagról és az olvasható címkéről, majd nézd át és mentsd a piszkozatot. A kiegészítő adatokat csak akkor add meg, ha ismered őket. A feldolgozás a fotó tartós feltöltése után a háttérben folytatódik. Az eredmény később is javítható.
+Google-belépés után tölts fel egy fotót az egész adagról; opcionálisan adj hozzá második nézetet, csomagolt terméknél olvasható címkefotót. Ezután nézd át és mentsd a piszkozatot. A kiegészítő adatokat csak akkor add meg, ha ismered őket. A feldolgozás a fotó tartós feltöltése után a háttérben folytatódik. Az eredmény később is javítható.
 
 A **Fiókom** nézetben mai energiaösszesítés, választható 7/30/365 napos átlagok, étkezésenkénti és étkezéstípus szerinti bontás, valamint megnyitható hétnapos lista segíti az áttekintést. A részletek összecsukhatók, az időszakváltás nem jár AI-kéréssel. A nézet a Google-nevet, e-mail-címet, csatlakozást, mentett étkezéseket, aktív napokat és naplózási sorozatokat mutatja. A 365 napos, zöld aktivitási naptárból megnyithatók az adott nap bejegyzései. Az energia- és makróátlagok csak a ténylegesen naplózott napokra vonatkoznak. Piszkozat, hibás vagy törlés alatt álló elemzés és jövőbeli nap nem növeli a statisztikát; üres naplóhoz nem készülnek mintaadatok.
 
@@ -125,6 +190,9 @@ Kulcsok és OAuth-beállítás: [API-KEYS.md](docs/API-KEYS.md). Telepítés, me
 ```powershell
 npm ci
 npm test
+py -3.11 -m venv work/mkdocs-venv
+& work/mkdocs-venv/Scripts/python.exe -m pip install -r scripts/requirements-docs.txt
+$env:MKDOCS_PYTHON = (Resolve-Path work/mkdocs-venv/Scripts/python.exe).Path
 npm run build
 ```
 
@@ -132,7 +200,7 @@ A PostgreSQL-integrációs tesztekhez külön tesztadatbázis kapcsolatát kell 
 
 A tesztek a teljes adagot, a receptszámítást, a tápértékforrások kezelését, a Google-belépési határokat, a felhasználók elkülönítését, az adatmegőrzést, a profil statisztikáit és a mobilos/asztali működést ellenőrzik. Részletes bizonyítékok és a nem ellenőrzött területek: [VERIFICATION.md](docs/VERIFICATION.md).
 
-A legutóbbi review hét javított találatcsoportját, a konkrét hibapéldákat és az ellenőrzés határait a [2026. november 9-i review](docs/REVIEW-2026-11-09.md) rögzíti.
+A korábbi review hét javított találatcsoportját a [2026. november 9-i jelentés](docs/REVIEW-2026-11-09.md), a későbbi címke- és elkészítésjavításokat a [2026. november 10-i felülvizsgálat](docs/CODE-REVIEW-2026-11-10.md) rögzíti. A legfrissebb ellenőrzési eredmények a [VERIFICATION.md](docs/VERIFICATION.md) elején találhatók.
 
 A publikálható útmutató forrása a [public/help.html](public/help.html). A build önálló magyar és angol HTML-csomagot készít a `dist/documentation` könyvtárban. Közzététel: [PUBLISHING.md](docs/PUBLISHING.md). Arculati elemek: [ASSETS.md](docs/ASSETS.md).
 
@@ -156,7 +224,7 @@ A forrástár két README-je: ez az alkalmazásleírás és a [GeoIP-adatbázis 
 
 ## Teljes kódellenőrzés
 
-A 2026. november 9-i teljes review tíz hibát tárt fel; mindet javítottuk. A javítások megőrzik a lassú válasz közben végzett szerkesztést, védik az összetevők USDA-forrásválasztását, megállítják az elavult feldolgozóból induló AI-kérést, és egységesítik a tápértékek ellenőrzését. A heti kihívás választása, a törlés és az energiakeret mentése is kapott versenyhelyzetet vizsgáló böngészős próbát. Részletek, reprodukciók és korlátok: [teljes review](docs/CODE-REVIEW-2026-11-09.md). Az aktuális ellenőrzés 130 sikeres Node-tesztet tartalmaz, helyi PostgreSQL-lel, kihagyás nélkül; a böngészős próba saját ideiglenes profilja futás után törlődik.
+A 2026. november 9-i teljes review tíz hibát tárt fel; mindet javítottuk. A javítások megőrzik a lassú válasz közben végzett szerkesztést, védik az összetevők USDA-forrásválasztását, megállítják az elavult feldolgozóból induló AI-kérést, és egységesítik a tápértékek ellenőrzését. A heti kihívás választása, a törlés és az energiakeret mentése is kapott versenyhelyzetet vizsgáló böngészős próbát. Részletek, reprodukciók és korlátok: [teljes review](docs/CODE-REVIEW-2026-11-09.md). Az akkori ellenőrzés 130 sikeres Node-tesztet tartalmazott, helyi PostgreSQL-lel, kihagyás nélkül; a böngészős próba saját ideiglenes profilja futás után törlődik.
 
 ## Mért képelemzési költség és pontosság
 

@@ -1,0 +1,26 @@
+:root { color-scheme: light; }
+body,input,button { font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+.rst-content h1,.rst-content h2,.rst-content h3,.rst-content h4 { font-family:Georgia,"Times New Roman",serif; }
+body,.wy-body-for-nav,.wy-nav-content-wrap { background:#f7f6ef; }
+.wy-nav-content { max-width:1100px; background:#fffef9; color:#2f3c32; }
+.wy-side-nav-search,.wy-nav-top { background:#536847; }
+.wy-nav-side { background:#303e32; }
+.wy-menu-vertical header,.wy-menu-vertical p.caption { color:#d7e4c8; }
+.wy-menu-vertical a { color:#efeee5; }
+a { color:#425e35; }
+a:visited { color:#5b663e; }
+.wy-menu-vertical a:visited { color:#efeee5; }
+.wy-menu-vertical li.current a { color:#35422e; }
+.wy-side-nav-search input[type=text] { border-color:#d7dfcd; }
+.rst-content h1,.rst-content h2,.rst-content h3 { color:#34462e; }
+.rst-content pre,.rst-content code { overflow-wrap:anywhere; }
+.rst-content pre { overflow-x:auto; }
+.rst-content .section ul,.rst-content .section ol { margin-bottom:1em; }
+.wy-table-responsive table td,.wy-table-responsive table th { white-space:normal; }
+.rst-content table { font-size:.92rem; }
+.docs-back { padding-top:1rem; border-top:1px solid #dce1d1; }
+.docs-menu { float:left; border:0; background:transparent; color:#fff; font-size:1.5rem; padding:.15rem .4rem; cursor:pointer; }
+.rst-footer-buttons { display:flex; flex-wrap:wrap; gap:.6rem; }
+.rst-footer-buttons a { float:none!important; white-space:normal; }
+.wy-nav-content,.rst-content { min-width:0; }
+@media(max-width:768px) { .wy-nav-content { padding:1.2rem; } .rst-content h1 { font-size:1.65rem; overflow-wrap:anywhere; } }
