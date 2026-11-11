@@ -1,5 +1,19 @@
 # Adatvédelem, megőrzés, nyelvek és látogatottság
 
+## Jogi dokumentáció és a megfelelőség állapota
+
+A [két nyelvű adatkezelési és felhasználási tervezetek, jogi kutatás és belső eljárásrend](https://github.com/ak91hu/yumetrics/tree/main/docs/legal) a 2026. november 11-i vizsgálatot rögzítik. Ezek nem hatályba léptetett feltételek és nem teljes GDPR-megfelelőségi igazolás. Az üzemeltető Kovács Ákos, nyilvános adatvédelmi kapcsolata `thisisnotka@gmail.com`. A 18 éves alsó korhatár üzemeltetői döntés; a belépéskor nincs még külön életkor-megerősítés.
+
+Hiányzik a különleges adatok esetére szükséges jogalap és kifejezett hozzájárulás igazolt kezelése, az opcionális tartalmi AI-összehasonlítás külön választása, több napló tényleges lejárata, valamint a teljes körű export/törlés kipróbált eljárása. Az önkiszolgáló felület nem feltétlenül kötelező; az érintetti jogok teljesíthetősége igen. A dokumentumok megírása nem módosítja ezeket a folyamatokat és nem töröl éles adatot.
+
+## Tárolási helyek és szolgáltatói határok
+
+Az alkalmazás és a PostgreSQL az ellenőrzött Northflank-metaadatok szerint Google Cloud `europe-west2`, **London, Egyesült Királyság** régióban fut. A heti adatbázismentés jelenlegi megőrzése hét nap; a mentési objektumok pontos helye külön ellenőrizendő. A Cloudinary-képek EGT-n belüli kizárólagos tárolását nem igazoltuk.
+
+A Modal-megvalósítás aszinkron `spawn` Functions-hívást használ, régiórögzítés nélkül. A szolgáltató dokumentációja amerikai platformtárolást és legfeljebb hét napos bemenet-/kimenetmegőrzést ír le. A `single_use_containers` és a GPU leállása a számítás életciklusát kezeli; nem igazolja a platformon tárolt payload azonnali törlését. A modellfájlokat tartalmazó Volume ettől külön állomány. Forrás: [Modal adatrezidencia](https://modal.com/docs/guide/data-residency), [megőrzés](https://modal.com/docs/guide/security).
+
+Az üzemeltető a Northflank, Cloudinary, Modal és OpenCode DPA-jának elfogadását megerősítette; az alkalmazandó példányokat és mellékleteket nem vizsgáltuk. Az OpenCode inference és a mögöttes Google-modell pontos szerződéses hatálya, megőrzése és továbbítási garanciája még ellenőrizendő. Az Egyesült Királyság EGT-n kívüli ország; a megfelelő uniós megfelelőségi határozat alkalmazható, más továbbításokhoz külön garanciaértékelés kell. A jogi dokumentáció a Google-belépés, Google-profilkép, GitHub Pages-közvetítő és a kapcsolattartó Gmail-fiók adatútját is elkülöníti.
+
 ## Milyen adat hová kerül?
 
 | Adat | Tárolás vagy feldolgozó |

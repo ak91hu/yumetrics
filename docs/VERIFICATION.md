@@ -1,5 +1,11 @@
 # Ellenőrzés
 
+## Két nyelvű GDPR-dokumentumtervezetek, 2026-11-11
+
+Hét jogi dokumentum készült: magyar/angol adatkezelési tájékoztató és felhasználási feltételek, forrásolt jogi kutatás, belső eljárásrend és állapotjegyzék. A 24 helyi dokumentumhivatkozás, a két nyelv számozott szakaszainak egyezése és az UTF-8 tartalom ellenőrzése sikeres. A MkDocs strict build, az alkalmazásbuild és a három meglévő technikai dokumentációs teszt sikeres. A generált adatvédelmi fejezet tartalmazza az új tárolási tényeket és a nyitott kérdéseket; a jogi tervezetek nem válnak automatikusan hatályos alkalmazásoldalakká.
+
+A kutatás elsődleges jogforrásokra, hatósági és szolgáltatói dokumentációra, a kódra és olvasással ellenőrzött telepítési/mentési metaadatokra támaszkodik. A négy fő DPA elfogadása üzemeltetői nyilatkozat, nem az aláírt dokumentumok független ellenőrzése. Teljes GDPR-megfelelőség, ügyvédi felülvizsgálat, tényleges hozzájárulási/törlési folyamat és szolgáltatói adatrezidencia-tanúsítás nem történt. Éles adatot nem módosítottunk; új AI/GPU-hívás nem indult. A dokumentációs változás miatt a teljes alkalmazástesztsort és böngészős regressziót nem ismételtük.
+
 ## MkDocs technikai kézikönyv és részletes README, 2026-11-11
 
 **169/169 Node-teszt sikeres**, valódi helyi PostgreSQL-lel, kihagyás nélkül. A három új teszt ellenőrzi a dokumentáció fájlrendszerhatárát, az útvonalak és módszerek kezelését, a privát API-k változatlan védelmét és a 14 fejezet buildbemeneteit. A MkDocs strict build és az alkalmazásbuild sikeres. A build külön ellenőrzi, hogy a generált HTML nem igényel inline vagy külső futtatható szkriptet.

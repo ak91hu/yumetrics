@@ -8,6 +8,8 @@ A 2026. november 10-i döntések, javítások, költségfeltételek és még csa
 
 Frissítve: 2026. november 11. · AI-módszerváltozat: `food-v17-label-preparation`.
 
+Adatvédelmi dokumentáció: [magyar és angol tájékoztató, felhasználási feltételek, jogi kutatás és belső GDPR-eljárásrend](docs/legal/README.md). **Felülvizsgálati tervezetek, nem hatályos ÁSZF vagy megfelelőségi igazolás.** A csomag a tényleges tárolási helyeket és a még rendezendő hozzájárulási, megőrzési, törlési és szolgáltatói szerződéses kérdéseket is bemutatja. Az üzemeltető Kovács Ákos; a tervezett korhatár 18 év. A dokumentálás önmagában nem vezette be a szükséges műszaki folyamatokat.
+
 Magyar és angol nyelvű étkezési napló Google-belépéssel, fotó alapján becsült tápértékekkel és javítható összetevőkkel. Az első AI-becslés a képen látható **teljes ehető étel és ital 100%-ából** indul ki; a naplóba mentendő mennyiséget a piszkozatban ellenőrizheted és javíthatod. A fotós elemzés nem közvetlen kalóriamérés: a felismerést, a mennyiségi becslést, a tápértékforrást és a számítást külön kezeljük.
 
 ## Hogyan működik az alkalmazás?
