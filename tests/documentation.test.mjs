@@ -20,10 +20,10 @@ test('the beta notice appears once on the login, diary and admin pages and has a
   for(const name of ['index.html','login.html','admin.html']){
     const html=readFileSync(new URL('../public/'+name,import.meta.url),'utf8');
     assert.equal(html.match(/class="beta-banner"/g)?.length,1);
-    assert.ok(html.includes('Bétaverzió – tesztelés alatt'));
+    assert.ok(html.includes('Béta verzió - fejlesztés alatt'));
     assert.match(html,/<body class="[^"]*\bbeta-testing\b/);
   }
-  assert.equal(translate('Bétaverzió – tesztelés alatt','en'),'Beta version – testing in progress');
+  assert.equal(translate('Béta verzió - fejlesztés alatt','en'),'Beta version - under development');
 });
 
 test('publishable documentation has complete anchors, full-image guidance and no local/private dependencies',()=>{
