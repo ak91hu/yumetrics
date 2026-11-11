@@ -1,5 +1,9 @@
 # Ellenőrzés
 
+## Keskeny, színátmenetes bétaállapot-jelzés, 2026-11-11
+
+**16/16 célzott teszt és az alkalmazásbuild sikeres.** A helyi Chrome-próba öt szélességen ellenőrizte az új színátmenetet, a 20 pixeles asztali és 18 pixeles mobilmagasságot, a magyar/angol felirat levágásmentes megjelenítését és az oldalsáv megfelelő eltolását. Az elrendezés nem lóg ki vízszintesen, a lábléc elérhető, nincs szkripthiba. A felső biztonsági területet a CSS `safe-area-inset-top` értékkel kezeli; valódi, kijelzőkivágásos telefonon ezt nem ellenőriztük. Képek: `outputs/beta-gradient-smoke/`. Fizetős AI/GPU-kérés nem indult.
+
 ## Fekete–sárga bétaállapot-jelzés, 2026-11-11
 
 **16/16 célzott dokumentációs, fordítási és hitelesítési teszt sikeres**, kihagyás nélkül; az alkalmazás- és MkDocs-build sikeres. A bétafelirat a belépési, napló- és adminforrásban egyszer szerepel. A helyi Chrome-próba öt szélességen ellenőrizte a belépés előtti és utáni elrendezést, a 28 pixeles csíkos sávot, az angol feliratot és az asztali oldalsáv eltolását. A lábléc és a mobilmenü elérhető marad; nincs vízszintes kilógás vagy szkripthiba. Képek: `outputs/beta-smoke/`. Valódi mobilkészülékes és teljes regressziós futás nem történt; fizetős AI/GPU-kérés nem indult.
