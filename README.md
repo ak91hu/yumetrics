@@ -1,10 +1,10 @@
 # Yumetrics
 
-**Legújabb folyamat:** `food-v21-automatic-result` – automatikus felismerés, ingyenes adatforrás-lekérés, egyeztetés és tápérték-összeállítás. A felhasználó először a kész eredményt látja; az adatforrás-kereső és szerkesztő opcionális, alapból csukott részben érhető el. Nincs kötelező forrásválasztás vagy pontosító kérdés. A fennmaradó bizonytalanságot a végeredmény jelzi.
+**Legújabb folyamat:** `food-v22-required-nutrient-fallback` – automatikus felismerés, ingyenes adatforrás-lekérés, egyeztetés és tápérték-összeállítás. A felhasználó először a kész eredményt látja; az adatforrás-kereső és szerkesztő opcionális, alapból csukott részben érhető el. Nincs kötelező forrásválasztás vagy pontosító kérdés. A fennmaradó bizonytalanságot a végeredmény jelzi.
 
 **Aktuális megvalósítás, 2026-11-13:** Gemini 3.5 Flash Lite az alap, egy elemzőkéréssel. Utána USDA/FNDDS, kanadai CNF, svéd, norvég és Open Food Facts adapterek segítik a forrásegyeztetést, tartós gyorsítótárral és kéréskorlátokkal. Food-R1 csak kifejezetten bizonytalan ételazonosságnál indul, legfeljebb egyszer; nincs második Gemini-hívás. [Működés, beállítás és ellenőrzés](docs/FREE-FOOD-INTEGRATION-2026-11-13.md). Az alábbi korábbi kísérletek történeti eredmények, nem az új folyamat pontosságmérései.
 
-A piszkozat kézi forráskeresője is több adatbázist használ: a találat teljes rekordját a szerver ellenőrzi, a kiválasztott étel neve és tápértéke frissül, a mennyiség megmarad. A meglévő Northflank USDA-kulccsal a helyi alkalmazás HTTP-keresése és forrásválasztása is ellenőrzött, új AI-hívás nélkül. A végső tesztfutás: 197 sikeres, 22 kihagyott, 0 hibás teszt; a build sikeres.
+A piszkozat kézi forráskeresője is több adatbázist használ: a találat teljes rekordját a szerver ellenőrzi, a kiválasztott étel neve és tápértéke frissül, a mennyiség megmarad. A meglévő Northflank USDA-kulccsal a helyi alkalmazás HTTP-keresése és forrásválasztása is ellenőrzött, új AI-hívás nélkül. A végső tesztfutás: 200 sikeres, 22 kihagyott, 0 hibás teszt; a build sikeres.
 
 **Friss, valós mérés (2026-11-13):** Food-R1 + Haiku adaptive/high, 4096 token; 4 étkezésből 3 menthető, átlagosan 134 kcal abszolút hiba. A négy ismert díjú hívás kb. 5,01 Ft a Modal-kredittel; a pontosság még nem megfelelő. [Eredmények és korlátok](docs/FOOD-R1-HAIKU-LIVE-2026-11-13.md).
 
@@ -18,7 +18,7 @@ A 2026. november 10-i döntések, javítások, költségfeltételek és még csa
 
 **[Élő alkalmazás](https://yumetrics.app)** · **[Magyar útmutató](https://yumetrics.app/utmutato)** · **[English guide](https://yumetrics.app/guide)** · **[MkDocs technikai dokumentáció](https://yumetrics.app/docs/)**
 
-Frissítve: 2026. november 13. · AI-módszerváltozat: `food-v21-automatic-result`.
+Frissítve: 2026. november 13. · AI-módszerváltozat: `food-v22-required-nutrient-fallback`.
 
 Adatvédelmi dokumentáció: [magyar és angol tájékoztató, felhasználási feltételek, jogi kutatás és belső GDPR-eljárásrend](docs/legal/README.md). **Felülvizsgálati tervezetek, nem hatályos ÁSZF vagy megfelelőségi igazolás.** A csomag a tényleges tárolási helyeket és a még rendezendő hozzájárulási, megőrzési, törlési és szolgáltatói szerződéses kérdéseket is bemutatja. Az üzemeltető Kovács Ákos; a tervezett korhatár 18 év. A dokumentálás önmagában nem vezette be a szükséges műszaki folyamatokat.
 

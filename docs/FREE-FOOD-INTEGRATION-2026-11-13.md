@@ -1,10 +1,12 @@
 # Gemini + ingyenes adatforrások + feltételes Food-R1
 
-Megvalósítva a repositoryban 2026-11-13-án. Éles telepítés és új fizetős AI-pontosságmérés nem történt.
+Megvalósítva a repositoryban 2026-11-13-án. Új fizetős AI-pontosságmérés nem történt.
 
-**Aktuális alapfolyamat: teljesen automatikus összeállítás**, `food-v21-automatic-result`. A felhasználó a kész tápérték-összesítést látja; nincs kötelező forrásválasztás vagy pontosító kérdés. A kézi szerkesztő alapból csukva van, csak külön kérésre nyílik meg. Feltöltés után a folyamatban lévő bejegyzéshez nem nyílik automatikusan szerkesztő; a kész eredmény jelenik meg, amikor minden háttérlépés befejeződött. A naplóba mentés továbbra is felhasználói művelet.
+**Aktuális alapfolyamat: teljesen automatikus összeállítás**, `food-v22-required-nutrient-fallback`. A felhasználó a kész tápérték-összesítést látja; nincs kötelező forrásválasztás vagy pontosító kérdés. A kézi szerkesztő alapból csukva van, csak külön kérésre nyílik meg. Feltöltés után a folyamatban lévő bejegyzéshez nem nyílik automatikusan szerkesztő; a kész eredmény jelenik meg, amikor minden háttérlépés befejeződött. A naplóba mentés továbbra is felhasználói művelet.
 
 Bizonytalan azonosságnál a fő felismerési hipotézishez is használható pontosan illeszkedő adatbázisrekord. Ez a feltételezett étel összetételét adja, nem bizonyítja a vizuális azonosságot. Az ilyen illesztés `provisional_identity` nyomot kap, a bizonyosság alacsony marad, a forrás nincs felhasználó által megerősítettként jelölve, és a mennyiségi tartomány relatív szélessége nem szűkül. A Food-R1 nyers javaslatai belső naplóban maradnak; a felhasználó összesített bizonytalansági jelzést kap. A jelentés kérdéslistája az új automatikus útvonalon üres.
+
+A v22-es javítás minden összetevőhöz kötelező tartalék tápértékbecslést kér ugyanabban a Gemini-válaszban. Így pontos adatbázistalálat nélkül is elkészülhet egy becsültként jelzett eredmény; az illeszkedő referencia és az eredeti olvasható címke továbbra is elsőbbséget élvez. A kimeneti keret 1600 token maradt, és a javítás nem indít újabb AI-hívást. A hibás vagy hiányos tápértékeket továbbra is elutasítjuk.
 
 A korábbi kézi pontosítást leíró részek az opcionális szerkesztőre vonatkoznak. A vizuális böngészőtesztet a számítógép-vezérlés biztonsági ellenőrzése leállította, mert nem tudta megbízhatóan azonosítani a böngésző aktuális URL-jét. Vizuális sikeres tesztet nem állítunk; a megjelenítőmodul és a teljes feldolgozási/mentési útvonal automatizáltan ellenőrzött.
 
@@ -66,7 +68,7 @@ A folyamaton belüli gyorsítótár mellett tartós PostgreSQL/SQLite cache és 
 
 ## Ellenőrzés
 
-A teljes végső szoftverteszt: **219 tesztből 197 sikeres, 22 környezetfüggő kihagyás, 0 hiba**. A kihagyások között a külön teszt-PostgreSQL-kapcsolatot igénylő ellenőrzések vannak; a PostgreSQL-élesítést ez nem igazolja. A kiadási és szigorú dokumentációbuild sikeres. A forrásmegjelenítés külön tesztje ellenőrzi a g/ml-szűrést, a tényleges kiadót, a licencet és a HTML-escape-et. A kézi kereső új végpontjaihoz további tesztek igazolják a bejelentkezést, a közös kéréskorlátot, a forrás kiválasztását, a mentést és újratöltést, valamint a párhuzamos kérésösszevonást.
+A teljes végső szoftverteszt: **222 tesztből 200 sikeres, 22 környezetfüggő kihagyás, 0 hiba**. A kihagyások között a külön teszt-PostgreSQL-kapcsolatot igénylő ellenőrzések vannak; a PostgreSQL-élesítést ez nem igazolja. A kiadási és szigorú dokumentációbuild sikeres. A forrásmegjelenítés külön tesztje ellenőrzi a g/ml-szűrést, a tényleges kiadót, a licencet és a HTML-escape-et. A kézi kereső új végpontjaihoz további tesztek igazolják a bejelentkezést, a közös kéréskorlátot, a forrás kiválasztását, a mentést és újratöltést, valamint a párhuzamos kérésösszevonást.
 
 A célzott szoftvertesztek lefedik a szolgáltatói normalizálást, az egység- és forráshibákat, a hiányzó értékek kezelését, a cache-t, az atomi kvótát, az egyetlen alap AI-kérést, a feltételes Food-R1-et, valamint a piszkozat mentését/újratöltését és a hamisított forrás elutasítását.
 
