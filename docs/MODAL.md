@@ -1,5 +1,9 @@
 # Food-R1 8B és OpenCode együtt
 
+**Aktuális útvonal, 2026-11-13:** a Gemini az első és alapértelmezett elemző. A Food-R1 csak erősen bizonytalan ételazonosság után kap legfeljebb egy hívást. A névjavaslatok megjelennek az ellenőrizendő piszkozatban; nem írják felül automatikusan a Gemini eredményét és nem indítanak új Gemini-kérést. Pusztán széles adagtartomány vagy API-kiesés nem indít Food-R1-et. A konténerbeállításokat ez a változtatás nem módosítja. Az alábbi, előzetes segédfelismerést leíró részek történeti dokumentációk.
+
+**2026-11-13:** a Food-R1 segéd ismét aktív a Flash Lite mellett, konfigurált végponttal és proxy kulcsokkal. A belső havi keret alapértéke 15 USD; explicit 0-val kikapcsolható. A 3 Ft-os költségterv és az átállás: [AI-COSTS.md](AI-COSTS.md).
+
 A Modalon a `zy12123/Food-R1` körülbelül 8 milliárd paraméteres ételspecialista modell fut, az eredeti BF16-súlyokkal, rögzített verzióval. Csak rövid ételneveket javasol. Az OpenCode egyetlen elemzőkérése az eredeti fotókból ellenőrzi ezeket, felismeri a kimaradt elemeket, majd előállítja a napló teljes eredményét. A tápértékeket továbbra is az alkalmazás számolja össze a mennyiségek és a forrásadatok alapján.
 
 A választás és a mérések: [modellkutatás](FOOD-MODELS-2026-11-10.md). A segéd gramm-, kalória- és makrotápanyag-becsléseit nem adjuk tovább. A próbában javasolt, nem igazolható Caesar-öntet nem került a végső étkezésbe.

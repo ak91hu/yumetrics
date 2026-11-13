@@ -1,12 +1,24 @@
 # Yumetrics
 
-A 2026. november 10-i döntések, javítások, költségfeltételek és még csak tervezett modellpróbák összefoglalója: [mai döntések és állapot](docs/DECISIONS-2026-11-10.md). A Food-R1 + OpenCode/Gemini páros változatlan; Qwenre nem történt átállás.
+**Legújabb folyamat:** `food-v21-automatic-result` – automatikus felismerés, ingyenes adatforrás-lekérés, egyeztetés és tápérték-összeállítás. A felhasználó először a kész eredményt látja; az adatforrás-kereső és szerkesztő opcionális, alapból csukott részben érhető el. Nincs kötelező forrásválasztás vagy pontosító kérdés. A fennmaradó bizonytalanságot a végeredmény jelzi.
+
+**Aktuális megvalósítás, 2026-11-13:** Gemini 3.5 Flash Lite az alap, egy elemzőkéréssel. Utána USDA/FNDDS, kanadai CNF, svéd, norvég és Open Food Facts adapterek segítik a forrásegyeztetést, tartós gyorsítótárral és kéréskorlátokkal. Food-R1 csak kifejezetten bizonytalan ételazonosságnál indul, legfeljebb egyszer; nincs második Gemini-hívás. [Működés, beállítás és ellenőrzés](docs/FREE-FOOD-INTEGRATION-2026-11-13.md). Az alábbi korábbi kísérletek történeti eredmények, nem az új folyamat pontosságmérései.
+
+A piszkozat kézi forráskeresője is több adatbázist használ: a találat teljes rekordját a szerver ellenőrzi, a kiválasztott étel neve és tápértéke frissül, a mennyiség megmarad. A meglévő Northflank USDA-kulccsal a helyi alkalmazás HTTP-keresése és forrásválasztása is ellenőrzött, új AI-hívás nélkül. A végső tesztfutás: 197 sikeres, 22 kihagyott, 0 hibás teszt; a build sikeres.
+
+**Friss, valós mérés (2026-11-13):** Food-R1 + Haiku adaptive/high, 4096 token; 4 étkezésből 3 menthető, átlagosan 134 kcal abszolút hiba. A négy ismert díjú hívás kb. 5,01 Ft a Modal-kredittel; a pontosság még nem megfelelő. [Eredmények és korlátok](docs/FOOD-R1-HAIKU-LIVE-2026-11-13.md).
+
+**2026. november 13.:** beépített Food-R1 + Haiku 5.5 jelölt, natív képes API-val és ellenőrizhető segéddöntésekkel. Négy új Nutrition5k-eset előkészítve; új élő pontosságmérés még nincs, a Gemini marad az alapmodell. [Mérési terv és állapot](docs/HAIKU-NUTRITION5K-2026-11-13.md).
+
+**2026. november 12.:** az új alapmodell Gemini 3.5 Flash Lite, étkezésenként egy Food-R1 segédhívással és egy OpenCode-hívással, legfeljebb 1600 kimeneti/gondolkodási tokennel. Cél: 3 Ft alatti elemzés; ez új élő mérés nélkül tervezési becslés. A kérés előtt nincs költségellenőrzés. [Költségterv, módosítások és átállás](docs/AI-COSTS.md).
+
+A 2026. november 10-i döntések, javítások, költségfeltételek és még csak tervezett modellpróbák összefoglalója: [mai döntések és állapot](docs/DECISIONS-2026-11-10.md). Ez történeti összefoglaló; a november 12-i Lite-átállás felülírja az akkori modellválasztást.
 
 ![Yumetrics — your food, in numbers](public/brand-banner.svg)
 
 **[Élő alkalmazás](https://yumetrics.app)** · **[Magyar útmutató](https://yumetrics.app/utmutato)** · **[English guide](https://yumetrics.app/guide)** · **[MkDocs technikai dokumentáció](https://yumetrics.app/docs/)**
 
-Frissítve: 2026. november 11. · AI-módszerváltozat: `food-v17-label-preparation`.
+Frissítve: 2026. november 13. · AI-módszerváltozat: `food-v21-automatic-result`.
 
 Adatvédelmi dokumentáció: [magyar és angol tájékoztató, felhasználási feltételek, jogi kutatás és belső GDPR-eljárásrend](docs/legal/README.md). **Felülvizsgálati tervezetek, nem hatályos ÁSZF vagy megfelelőségi igazolás.** A csomag a tényleges tárolási helyeket és a még rendezendő hozzájárulási, megőrzési, törlési és szolgáltatói szerződéses kérdéseket is bemutatja. Az üzemeltető Kovács Ákos; a tervezett korhatár 18 év. A dokumentálás önmagában nem vezette be a szükséges műszaki folyamatokat.
 
@@ -24,9 +36,9 @@ A Yumetrics az étkezés dokumentálását és az ellenőrizhető számítást k
 
 1. **Belépés.** A Google igazolja a fiók azonosságát, a szerver helyi munkamenetet hoz létre. A napló több eszközről ugyanazzal a fiókkal érhető el; a Google-jelszó nem kerül az alkalmazáshoz.
 2. **Adatrögzítés.** Egy fénykép kötelező, a második opcionális. Telefonon külön kamera- és képkiválasztási lehetőség van. Dátum, étkezéstípus, megjegyzés, ismert tömeg és más kiegészítő adat segítheti az értelmezést.
-3. **Képelőkészítés.** A böngésző dekódolja, legfeljebb 2048 pixeles hosszabb oldalra méretezi és JPEG-ként újrarajzolja a képet. Az eredeti EXIF/GPS-metaadatokat nem másolja át. A szerver a formátumot, a méretet és a két kép azonosságát is ellenőrzi.
+3. **Képelőkészítés.** A böngésző dekódolja, az első fotót legfeljebb 1600, a második részlet-/címkefotót 2048 pixeles hosszabb oldalra méretezi és JPEG-ként újrarajzolja a képet. Az eredeti EXIF/GPS-metaadatokat nem másolja át. A szerver a formátumot, a méretet és a két kép azonosságát is ellenőrzi.
 4. **Tartós feltöltés.** A képek védett Cloudinary-tárolásba, a bejegyzés és a feldolgozási feladat PostgreSQL-be kerül. A `202 Accepted` válasz ezt igazolja; nem jelenti, hogy az AI már elkészült. A háttérfeldolgozás a felugró ablak bezárása után is folytatódik.
-5. **Felismerés és ellenőrzés.** A Modalon futó opcionális Food-R1 8B rövid ételnévjavaslatokat ad. Az OpenCode-on elért Gemini 3.8 Flash az eredeti képekből önállóan ellenőrzi ezeket, felismeri a további elemeket, és strukturált elemzést ad. A segéd mennyiségét és kalóriabecslését nem vesszük át.
+5. **Felismerés és ellenőrzés.** Az OpenCode-on elért Gemini 3.5 Flash Lite a fotókból egyetlen strukturált elemzést ad. Bizonytalan ételazonosságnál a konfigurált Food-R1 további névjavaslatokat adhat; ezek ellenőrzendő javaslatok maradnak. Az adat-API-k a megfelelő tápértékforrás kiválasztását segítik további LLM-hívás nélkül.
 6. **Számítás és piszkozat.** A szerver ellenőrzi az egységeket, a forrásokat és a számszerű összefüggéseket. Összetevőnként kiszámolja az adagra jutó tápanyagokat és azok összegét. Az elkészült elemzés piszkozat; a felület tetején jól látható jelzés nyitja meg az ellenőrzést.
 7. **Javítás és mentés.** Az ételnév, a tömeg, a forrás és a recept módosítható. A végleges mentés külön művelet. A revízióellenőrzés megakadályozza, hogy egy régi böngészőablak észrevétlenül felülírjon újabb adatot.
 8. **Napló és visszajelzés.** A mentett étkezésekből naptár, napi összesítés, időszaki átlagok, fejlődés és heti haladás készül. Ezekhez nincs szükség további AI-hívásra.
@@ -34,8 +46,9 @@ A Yumetrics az étkezés dokumentálását és az ellenőrizhető számítást k
 ```text
 Fotó + ismert adatok
   → biztonságos képfeltöltés és tartós feladat
-  → Food-R1 névjavaslat (opcionális)
   → OpenCode/Gemini képelemzés
+  → csak bizonytalan ételazonosságnál: Food-R1-javaslatok
+  → helyi referencia / ingyenes adat-API-k, gyorsítótárral
   → szerveroldali validálás és számítás
   → javítható piszkozat → felhasználói mentés
   → saját napló, összesítések és jutalmak
@@ -83,7 +96,7 @@ A dokumentációs oldal magyar nyelvű, helyi keresővel, mobilos tartalomjegyz�
 
 ## A számítás módszere és az AI szerepe
 
-1. **Fotó és vizuális leltár.** Egy fotó kötelező, a második opcionális. Egy másik szögből készült kép segíthet a felismerés és az adagbecslés pontosításában; csomagolt terméknél az olvasható tápértéktábla is hasznos. Az azonos képtartalmat feltöltés előtt elutasítjuk. A Gemini 3.8 Flash a feltöltött kép vagy képek és a megadott információk alapján javaslatot tesz az ételre, az összetevőkre, az elkészítési állapotra és a g-ban vagy ml-ben megadott ehető mennyiségekre. A köretet, szószt és italt is számba kell vennie. Megkülönbözteti a látható vagy megadott elemeket a feltételezésektől, például a nem látható olajtól. Egyetlen részletes AI-kérés tartalmazza a képek ellenőrzését, a leltárt, az adag- és tápértékbecslést, valamint a végső ellenőrzést.
+1. **Fotó és vizuális leltár.** Egy fotó kötelező, a második opcionális. Egy másik szögből készült kép segíthet a felismerés és az adagbecslés pontosításában; csomagolt terméknél az olvasható tápértéktábla is hasznos. Az azonos képtartalmat feltöltés előtt elutasítjuk. A Gemini 3.5 Flash Lite a feltöltött kép vagy képek és a megadott információk alapján javaslatot tesz az ételre, az összetevőkre, az elkészítési állapotra és a g-ban vagy ml-ben megadott ehető mennyiségekre. A köretet, szószt és italt is számba kell vennie. Megkülönbözteti a látható vagy megadott elemeket a feltételezésektől, például a nem látható olajtól. Egyetlen részletes AI-kérés tartalmazza a képek ellenőrzését, a leltárt, az adag- és tápértékbecslést, valamint a végső ellenőrzést.
 2. **Ellenőrzés és forrásválasztás ugyanabban a válaszban.** Az AI ellenőrzi az adag azonosságát, az eltérő szöget, a képminőséget, a kihagyott/duplázott összetevőket és az elkészítést. A 44 USDA-rekord közül javasolhat megfelelő forrást; a szerver annak rögzített értékeit használja. Nyers referencia nem párosítható elkészített összetevőhöz.
 3. **Tápértékek ugyanabban az AI-válaszban.** Minden összetevőhöz az egységének megfelelő 100 g-os vagy 100 ml-es tápérték is érkezik. Olvasható, az adott termékre és állapotra vonatkozó címkénél a szerver az eredeti címkeértékeket alakítja át; egyébként megfelelő USDA-forrást vagy számszerűen ellenőrzött AI-becslést használ. A részleges címkét és a becsült értékeket külön jelzi. Hiányos vagy ellentmondó válaszra nem indít kiegészítő AI-hívást. A megszakadt elemzéshez új, szolgáltatói költséggel járó kérés csak kifejezett kézi újrapróbáláskor indul; azonos feltöltés ismétlése nem küld új kérést.
 4. **Mennyiség pontosítása.** Mérleg nélkül a grammok képi becslések. A megadott teljes ételtömegből levonjuk a külön lemért nem ehető részt, majd az összetevőket az így kapott ehető mennyiséghez arányosítjuk. A hús, köret és zsiradék egymáshoz viszonyított aránya ettől még becsült marad. Milliliteres tétel mellett a grammos össztömeget nem osztjuk szét sűrűség feltételezésével; az össztömeget ilyenkor hagyd üresen. Két fotó ugyanannak az adagnak két nézete; a mennyiséget nem duplázzuk.
@@ -234,7 +247,7 @@ A 2026. november 9-i teljes review tíz hibát tárt fel; mindet javítottuk. A 
 
 ## Mért képelemzési költség és pontosság
 
-A v14 alapmodellje Gemini 3.8 Flash. A végső, négy étkezéses páros mérésben a szolgáltatói költség 24,4%-kal csökkent. A kalóriahiba tömegadat nélkül 96,36-ról 88,48 kcal-ra mérséklődött; ismert össztömegnél lényegében azonos maradt: 52,07 és 52,12 kcal. A nyolc helyzet együttes hibája 74,22-ről 70,30 kcal-ra csökkent. A részmutatók nem mind javultak, a kis minta nem általános pontossági garancia.
+A v14 alapmodellje Gemini 3.5 Flash Lite. A végső, négy étkezéses páros mérésben a szolgáltatói költség 24,4%-kal csökkent. A kalóriahiba tömegadat nélkül 96,36-ról 88,48 kcal-ra mérséklődött; ismert össztömegnél lényegében azonos maradt: 52,07 és 52,12 kcal. A nyolc helyzet együttes hibája 74,22-ről 70,30 kcal-ra csökkent. A részmutatók nem mind javultak, a kis minta nem általános pontossági garancia.
 
 Az OpenCode a két fényképet egyetlen kérésben kapja meg. A kiválasztott USDA- és címkeértékeket a szerver tölti ki; a modellnek ezeket nem kell újra leírnia. A teljes, elvetett próbákat is tartalmazó mérés 44 új hívása 1,1475516 USD volt. Módszer, pontos részmutatók, képlenyomatok és korlátok: [AI-EFFICIENCY-2026-11-09.md](docs/AI-EFFICIENCY-2026-11-09.md).
 

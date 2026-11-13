@@ -63,6 +63,7 @@ Egy ételfotó nem szükségképpen egészségügyi adat. A rendszeres napló, a
 | **Google** | Google-belépés, fiókadatok átadása; a profilkép böngészős betöltésekor hálózati adatok; külön az üzemeltető Gmail-levelezése | A belépési/fiókszolgáltatásnál jellemzően önálló adatkezelő, nem azonos a modellfeldolgozási szereppel. [Adatvédelmi irányelvek](https://policies.google.com/privacy), [OIDC](https://developers.google.com/identity/openid-connect/openid-connect) |
 | **GitHub Pages / GitHub** | A jelenlegi Google-belépés statikus közvetítőoldala: IP-cím, technikai kérésadatok, ideiglenes OAuth-válaszparaméterek | A Google-kód beváltása az alkalmazásszerveren történik. A GitHub saját biztonsági IP-naplózást végezhet. [Pages adatgyűjtés](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages), [adatvédelem](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement) |
 | **USDA FoodData Central** | Tápértékkeresés: ételkeresési kifejezés és szerveroldali hálózati adatok | Szándékoltan nem küldünk felhasználói fiókazonosítót vagy képet. A szabad keresőkifejezés tartalmazhat személyes adatot; kérjük, ilyet ne adj meg. [API](https://fdc.nal.usda.gov/api-guide) |
+| **Health Canada CNF, svéd Livsmedelsverket, norvég Matvaretabellen, Open Food Facts** | Nyilvános étel-/tápértékadatok szerveroldali lekérése, OFF esetén a felismert vonalkód alapján | Az adat-API-k nem kapnak ételfotót, felhasználói fiókazonosítót vagy a beírt megjegyzést. A szerver hálózati adatait és a lekért rekordazonosítót/vonalkódot látják. Az adatok helyi gyorsítótárba kerülhetnek. |
 
 A DB-IP országadatbázis **helyben** fut: a látogató IP-címét nem továbbítjuk a DB-IP részére egyedi országfelismerési kérésként. Külső Umami-követőkód nincs. Nincs hirdetési értékesítés vagy felhasználói naplók nyilvános közzététele az alkalmazásban.
 
@@ -106,7 +107,7 @@ A szerver a kijelölt oldalak megnyitásakor az IP-címből országot, a fejléc
 
 ## 10. AI, emberi ellenőrzés és fejlesztési felhasználás
 
-Az AI ételt azonosít és mennyiséget becsül; a program ezekből tápértéket számol. A Food-R1 segédjavaslatát a fő modell az eredeti képekkel együtt ellenőrzi. Több modell használata nem bizonyít önmagában nagyobb pontosságot. Az eredményt a felhasználó javíthatja és jóváhagyhatja; az eredeti elemzés és a legutóbbi javítás is megmaradhat.
+Az AI ételt azonosít és mennyiséget becsül; a program ezekből és a megfelelő adatforrásokból tápértéket számol. Az alapértelmezett Gemini-elemzés után erősen bizonytalan ételazonosságnál a Food-R1 további, ellenőrizendő névjavaslatokat adhat. Ezek nem írják át automatikusan az ételt, a mennyiséget vagy a tápértéket. Több modell használata nem bizonyít önmagában nagyobb pontosságot. Az eredményt a felhasználó javíthatja és jóváhagyhatja; az eredeti elemzés és a legutóbbi javítás is megmaradhat.
 
 A válaszarchívum ismert titkokat és képbájtokat szűr, nem általános személyesadat-anonimizáló. Az adminisztrátor hozzáférhet a naplóhoz, a védett képekhez, válaszokhoz és javításokhoz a feladataihoz szükséges körben; az alkalmazás ezt technikailag lehetővé teszi. A hozzáférés célhoz kötöttségét az üzemeltetésben is biztosítani kell.
 

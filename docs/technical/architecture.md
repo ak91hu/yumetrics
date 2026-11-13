@@ -9,9 +9,9 @@ Böngésző ── HTTPS ── Northflank ingress ── Node.js alkalmazás
                                             ├─ PostgreSQL: fiókok, napló, sor, archívum
                                             ├─ Google: OIDC-hitelesítés
                                             ├─ Cloudinary: védett képek
-                                            ├─ Modal: Food-R1 névjavaslatok
-                                            ├─ OpenCode: Gemini képelemzés
-                                            └─ USDA FoodData Central: referenciaadatok
+                                            ├─ OpenCode: egy Gemini képelemzés
+                                            ├─ Modal: Food-R1 csak bizonytalan azonosságnál
+                                            └─ USDA/CNF/svéd/norvég/OFF: referenciaadatok
 ```
 
 A Northflank végzi a publikus HTTPS-kapcsolat fogadását. Az alkalmazás a konfigurált `APP_ORIGIN` értékét használja kanonikus eredetként. Az ettől eltérő hostra érkező olvasási kéréseket átirányítja, az író kéréseket elutasítja; az állapotellenőrző végpontok a belső hálózatról is használhatók.

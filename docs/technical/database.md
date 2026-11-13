@@ -39,7 +39,7 @@ A profil és admin több összesítő lekérdezést végez. A lapozott adminlist
 
 ## Migrációk
 
-A PostgreSQL-séma jelenlegi sorozata `0001_initial`–`0008_weekly_activity`. A migrációs nevek rögzített listája az adapterben található. Induláskor a szerver session szintű advisory lockot kér, tranzakciót nyit, majd csak a még nem naplózott migrációkat futtatja. Siker után commitol és feloldja a lockot; hibánál rollback és indulási leállás történik.
+A PostgreSQL-séma jelenlegi sorozata `0001_initial`–`0010_food_api_cache`. A migrációs nevek rögzített listája az adapterben található. Induláskor a szerver session szintű advisory lockot kér, tranzakciót nyit, majd csak a még nem naplózott migrációkat futtatja. Siker után commitol és feloldja a lockot; hibánál rollback és indulási leállás történik.
 
 | Migráció | Változás |
 | --- | --- |
@@ -51,6 +51,8 @@ A PostgreSQL-séma jelenlegi sorozata `0001_initial`–`0008_weekly_activity`. A
 | `0006_weekly_challenges` | Heti választás és jutalom |
 | `0007_ai_archive` | Bemeneti metaadat, válasz, eredmény és jóváhagyás |
 | `0008_weekly_activity` | Választás előtti heti tevékenység megőrzése |
+| `0009_low_cost_ai` | Flash Lite alapmodell és 1600 tokenes keret a meglévő AI-beállítások helyett |
+| `0010_food_api_cache` | Tartós adat-API-cache, közös kéréskvóták és külön OFF-termékforrások |
 
 A SQLite-fájlok számozása eltér; a `drizzle/` könyvtár és az adapter listája az irányadó. A név nem jelent futás közbeni ORM-használatot: az alkalmazás saját SQL-adapterrel dolgozik.
 

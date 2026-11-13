@@ -69,7 +69,7 @@ test('a prepared ingredient cannot inherit a raw USDA reference; the single requ
   assert.equal(calls,1);assert.equal(result.analysis.ingredients[0].sourceType,'ai');assert.equal(result.analysis.ingredients[0].referenceKey,null);assert.ok(result.analysis.ingredients[0].portionNote.includes('elkészítési állapota vagy mértékegysége'));
   assert.ok(JSON.parse(lastRequest.contents[0].parts.find(part => part.text).text).context.preparationNotes.includes('főtt tömeg'));
 });
-test('two photos without supplementary fields produce a complete editable estimate with at most one optional question', async () => {
+test('two photos without supplementary fields produce a complete automatic result without follow-up questions', async () => {
   const inventory = visualInventory(base); inventory.dishProfile = 'rakott';
   inventory.questions = ['Milyen tejföl került bele?', 'Mennyi olajat használtál?'];
   const calls = [];
@@ -79,13 +79,13 @@ test('two photos without supplementary fields produce a complete editable estima
   assert.equal(calls.length, 1);
   const context = JSON.parse(calls[0].contents[0].parts.find(part => part.text).text).context;
   assert.ok(!context.dishProfile || context.dishProfile === 'generic'); assert.equal(context.totalWeightG, null); assert.ok(!context.preparationNotes);
-  assert.ok(calls[0].systemInstruction.parts[0].text.includes('questions=[]'));
+  assert.ok(!calls[0].generationConfig.responseJsonSchema.required.includes('questions'));
   assert.ok(calls[0].systemInstruction.parts[0].text.includes('generic means auto-detect'));
   assert.equal(result.analysis.name, base.name); assert.equal(result.analysis.dishProfile, 'rakott');
   assert.equal(result.analysis.ingredients[0].preparation, inventory.ingredients[0].preparation);
   assert.equal(result.analysis.ingredients[0].weightBasis, 'visual');
   assert.ok(totals(result.analysis.ingredients).calories > 0);
-  assert.deepEqual(result.analysis.questions, [inventory.questions[0]]);
+  assert.deepEqual(result.analysis.questions, []);
   const noQuestions = { ...inventory, questions: [] };
   const automatic = await analyze(image, '', { OPENCODE_API_KEY: 'test' }, async (url, request) => Response.json(aiPayloadFor(base, request, noQuestions)), { secondImage });
   assert.deepEqual(automatic.analysis.questions, []);

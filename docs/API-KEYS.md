@@ -25,7 +25,7 @@ Az `APP_ORIGIN=http://127.0.0.1:3000` ehhez tartozik. Élesben a saját HTTPS er
 
 ## OpenCode
 
-Jelentkezz be az [OpenCode Console-ba](https://opencode.ai/console), válaszd ki a workspace-t, hozz létre API-kulcsot és ellenőrizd a modellhez rendelkezésre álló keretet/jogosultságot. Az app `OPENCODE_MODEL=gemini-3.8-flash` értékkel, a natív Google `generateContent` protokollon hív. Az aktuális modell és a fiók hozzáférése a szolgáltatónál ellenőrizendő; a kulcs megadása önmagában nem igazolja a keretet. [Hivatalos modelllista](https://opencode.ai/docs/console/models/).
+Jelentkezz be az [OpenCode Console-ba](https://opencode.ai/console), válaszd ki a workspace-t, hozz létre API-kulcsot és ellenőrizd a modellhez rendelkezésre álló keretet/jogosultságot. Az app `OPENCODE_MODEL=gemini-3.5-flash-lite` értékkel, a natív Google `generateContent` protokollon hív. Az aktuális modell és a fiók hozzáférése a szolgáltatónál ellenőrizendő; a kulcs megadása önmagában nem igazolja a keretet. [Hivatalos modelllista](https://opencode.ai/docs/console/models/).
 
 Ehhez a megvalósításhoz külön Google Gemini API-kulcs vagy OpenAI API-kulcs nem kell: az AI-kérés az OpenCode-on keresztül megy. A Google OAuth-azonosítók ettől különálló, belépési adatok.
 
@@ -40,6 +40,12 @@ A [Cloudinary Console](https://console.cloudinary.com/) megfelelő Product Envir
 ## Northflank
 
 A külön PostgreSQL addon írható primary kapcsolati URI-ját használd. Az app-podhoz a runtime secret group adja `DATABASE_URL` néven; ne build argumentként add át. Az alkalmazás futásához **Northflank platform-API-token nem szükséges**. CLI-s infrastruktúra-kezeléshez külön platformjogosultság kellhet, de azt nem kell a napló `.env` fájljába írni. [PostgreSQL kapcsolati titkok](https://northflank.com/docs/v1/application/databases-and-persistence/deploy-databases-on-northflank/deploy-postgresql-on-northflank).
+
+## Ingyenes adat-API-k
+
+**Ellenőrizve 2026-11-13:** a meglévő USDA-kulcs a Northflank `yumetrics-runtime` titokcsoportjában megvan. A tényleges kulccsal a rekordlekérés, valamint a helyi alkalmazás új HTTP-keresőjében a USDA-keresés és kiválasztás is sikerült. Új USDA-kulcs vagy regisztráció nem szükséges; a kulcs értékét nem tároljuk a repositoryban.
+
+A `FREE_FOOD_APIS=1` alapérték bekapcsolja a USDA/FNDDS, CNF, svéd, norvég és Open Food Facts adaptereket. A `FREE_FOOD_SOURCES` vesszővel elválasztva szűkítheti a forrásokat. CNF, svéd, norvég és OFF olvasáshoz nincs API-kulcs; az USDA élő kereséséhez szükséges a lent leírt saját ingyenes kulcs. Hiányában a 44 helyi USDA-referencia és a többi ingyenes forrás használható. Az adat-API-k nem kapnak fotót, fiókazonosítót vagy szabad megjegyzést. A Food-R1 csak bizonytalan ételazonosságnál indul a Gemini után; nem történik újabb Gemini-elemzés. [Részletes működés](FREE-FOOD-INTEGRATION-2026-11-13.md).
 
 ## USDA
 

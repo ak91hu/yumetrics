@@ -63,6 +63,7 @@ A food photograph is not necessarily health data. A continuing diary, a note or 
 | **Google** | Google sign-in and account details; browser requests for profile images; separately, the operator's Gmail correspondence | Typically an independent controller for account/sign-in services, a role distinct from model processing. [Privacy policy](https://policies.google.com/privacy), [OIDC](https://developers.google.com/identity/openid-connect/openid-connect) |
 | **GitHub Pages / GitHub** | The current static Google sign-in relay receives IP addresses, technical request data and temporary OAuth response parameters | Code redemption happens on the application server. GitHub may retain IP information for security. [Pages collection](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages), [privacy](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement) |
 | **USDA FoodData Central** | Nutrient searches: food search terms and server-side network information | No user account identifier or image is deliberately sent. Free-text search could contain personal information; please do not enter it. [API](https://fdc.nal.usda.gov/api-guide) |
+| **Health Canada CNF, Swedish Food Agency, Norwegian Food Composition Table, Open Food Facts** | Server-side retrieval of public food/nutrient records; OFF uses the recognized barcode | These data APIs receive no meal photos, user account identifiers or entered notes. They see the server's network information and the requested record identifier/barcode. Responses may be cached locally. |
 
 The DB-IP country database runs **locally**. Visitor IP addresses are not sent to DB-IP in individual country-lookup requests. No external Umami tracking script is installed. The application does not sell advertising data or publicly publish user diaries.
 
@@ -106,7 +107,7 @@ For selected pages, the server derives country from the IP address and device, b
 
 ## 10. AI, human review and development use
 
-AI identifies food and estimates quantities; the program calculates nutrients from these results. The main model checks the Food-R1 helper's suggestions against the original images. Combining models does not itself establish greater accuracy. Users can correct and approve the result; the original analysis and latest correction may both remain stored.
+AI identifies food and estimates quantities; the program calculates nutrients from these results and suitable data sources. After the default Gemini analysis, strongly uncertain food identities may trigger Food-R1 for additional, unverified name suggestions. These do not automatically change the food, quantity or nutrient values. Combining models does not itself establish greater accuracy. Users can correct and approve the result; the original analysis and latest correction may both remain stored.
 
 Archive filtering removes recognised secrets and image bytes but does not generally anonymise personal information. The administrator can access diaries, protected images, responses and corrections for necessary operational tasks; the implementation technically permits this access. Purpose limitation must also be enforced operationally.
 

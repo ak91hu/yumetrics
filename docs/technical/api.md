@@ -62,6 +62,12 @@ A `secondImage` elhagyható. Ha szerepel, annak is érvényes, eltérő képtart
 
 A `meal` objektumban többek között `status`, `job`, `analysis`, `totals`, `report`, `photo`, `revision`, `createdAt` és `updatedAt` szerepel. A `photo` az alkalmazás saját képútvonalait tartalmazza, nem közvetlen Cloudinary-letöltőlinket.
 
+## Többforrásos ételkeresés
+
+Bejelentkezés után `GET /api/food-sources/search?q=...` helyi USDA-, USDA/FNDDS-, CNF-, svéd és norvég találatokat ad. A kézi keresőben a részleges névegyezés választható jelölt, nem automatikus ételazonosítás. A találat tartalmazza a `provider`, `id`, `description`, `source`, `foodState`, `quantityUnit` mezőt; tápértéket még nem alkalmaz.
+
+`GET /api/food-sources/{provider}/{id}` ellenőrzi a teljes rekordot és `{key,record}` választ ad. A külső rekord szerveroldali tárolása után választható menthető referenciának. A `provider` csak `local`, `usda`, `cnf`, `slv`, `matvare` lehet. A termékek OFF-adatait az automatikus elemzés érvényes vonalkód alapján kezeli. A keresés és kiválasztás nem indít LLM-kérést. A régi `/api/foods/` útvonalak kompatibilitási célból megmaradtak, a kéréskorlát közös: 30/perc/felhasználó.
+
 ## Admin API
 
 A `/api/admin/` teljes névtere tulajdonosi ellenőrzést végez. Fontos olvasási útvonalak: `overview`, `visitors`, `costs`, `ai-responses`, `logs`, `users`, `meals`, `jobs`, `audit`, `settings`. Egyedi AI-válaszhoz és étkezéshez az azonosítós részletútvonal tartozik. A felhasználók tiltásához, munkameneteik lezárásához és a beállítások módosításához külön író műveletek vannak.

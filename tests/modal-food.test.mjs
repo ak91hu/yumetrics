@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { foodCandidates, recognizeFoods, FOOD_R1_REVISION, MODAL_FOOD_MODEL } from '../lib/modal-food.mjs';
-import { analyze } from '../lib/providers.mjs';
+import { analyze as productionAnalyze } from '../lib/providers.mjs';
 import { recordAiResponse, startModalRequest, modelPricing, estimatedCost } from '../lib/telemetry.mjs';
 import { multiFoodAnalysis, aiPayloadFor, secondImage } from './fixtures.mjs';
 import { openDatabase } from '../lib/database.mjs';
@@ -10,7 +10,10 @@ import { processNextJob } from '../lib/jobs.mjs';
 import { randomUUID } from 'node:crypto';
 
 const photo = 'data:image/jpeg;base64,' + Buffer.concat([Buffer.from([255,216,255,224]),Buffer.alloc(200)]).toString('base64');
-const env = { OPENCODE_API_KEY:'opencode-test', MODAL_FOOD_URL:'https://test-food.modal.run/recognize', MODAL_PROXY_TOKEN_ID:'wk-test', MODAL_PROXY_TOKEN_SECRET:'ws-test' };
+// Explicit historical controls; production's Gemini-first conditional routing is
+// covered in free-food-data.test.mjs and the durable job test below.
+const analyze = (image, notes, env, fetcher, options = {}) => productionAnalyze(image, notes, env, fetcher, { ...options, recognitionBefore: true });
+const env = { OPENCODE_MODEL:'gemini-3.8-flash', MODAL_MONTHLY_BUDGET_USD:'15', OPENCODE_API_KEY:'opencode-test', MODAL_FOOD_URL:'https://test-food.modal.run/recognize', MODAL_PROXY_TOKEN_ID:'wk-test', MODAL_PROXY_TOKEN_SECRET:'ws-test' };
 const result = overrides => ({ model:'zy12123/Food-R1',revision:FOOD_R1_REVISION,answer:'{"foods":["chicken","rice","salad","orange juice"]}',truncated:false,input_tokens:100,output_tokens:20,compute_seconds:30,...overrides });
 
 test('recognizer names are bounded data, with duplicates removed and markup rejected',()=>{
@@ -91,18 +94,18 @@ test('meal jobs retain both usage ledgers, then continue with OpenCode when the 
     if(url.startsWith('https://res.cloudinary.com/'))return new Response(Buffer.from(photo.split(',')[1],'base64'),{headers:{'Content-Type':'image/jpeg'}});
     if(url.endsWith('/upload'))return Response.json({public_id:options.body.get('public_id'),secure_url:`https://res.cloudinary.com/test-cloud/image/authenticated/v1/${options.body.get('public_id')}.jpg`,width:100,height:80});
     if(url===env.MODAL_FOOD_URL){modalCalls++;return Response.json(result());}
-    if(url.startsWith('https://opencode.ai/')){openCodeCalls++;return Response.json(aiPayloadFor(multiFoodAnalysis(),JSON.parse(options.body)));}
+    if(url.startsWith('https://opencode.ai/')){openCodeCalls++;const payload=aiPayloadFor(multiFoodAnalysis(),JSON.parse(options.body));const raw=JSON.parse(payload.candidates[0].content.parts[0].text);raw.ingredients[0].identityUncertain=true;payload.candidates[0].content.parts[0].text=JSON.stringify(raw);return Response.json(payload);}
     throw Error('Unexpected provider');
   };
-  for(const budget of ['15','0']){
+  for(const budget of ['15',undefined,'0']){
     runtime.MODAL_MONTHLY_BUDGET_USD=budget;const id=randomUUID();
     const response=await api(new Request('http://localhost/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,image:photo,day:'2026-11-10',time:'12:00',type:'Ebéd',notes:''})}),{db,env:runtime,userId,fetcher});
     assert.equal(response.status,202,await response.text());await processNextJob({db,env:runtime,fetcher});
-    const meal=await db.prepare('SELECT status,usage FROM meals WHERE id=?').bind(id).first();assert.equal(meal.status,'draft');assert.equal(JSON.parse(meal.usage).recognition.state,budget==='15'?'used':'budget');
+    const meal=await db.prepare('SELECT status,usage FROM meals WHERE id=?').bind(id).first();assert.equal(meal.status,'draft');assert.equal(JSON.parse(meal.usage).recognition.state,budget!=='0'?'used':'disabled');
     const ledger=(await db.prepare('SELECT model,state,cost_usd,request_meta,response_text,response_meta,result_analysis FROM ai_requests WHERE meal_id=?').bind(id).all()).results;
-    assert.equal(ledger.length,budget==='15'?2:1);assert.ok(ledger.every(row=>row.state==='completed'&&row.cost_usd>0));
+    assert.equal(ledger.length,budget!=='0'?2:1);assert.ok(ledger.every(row=>row.state==='completed'&&row.cost_usd>0));
     assert.ok(ledger.every(row=>JSON.parse(row.request_meta).imageHashes.length===1&&row.response_text&&JSON.parse(row.response_meta).provider));
     assert.equal(ledger.filter(row=>row.result_analysis!==null).length,1);
   }
-  assert.equal(modalCalls,1);assert.equal(openCodeCalls,2);
+  assert.equal(modalCalls,2);assert.equal(openCodeCalls,3);
 });

@@ -1,0 +1,319 @@
+{
+  "date": "2026-11-13",
+  "type": "live provider experiment, not mocked",
+  "dataset": "Nutrition5k",
+  "source": "https://github.com/google-research-datasets/Nutrition5k",
+  "license": "CC BY 4.0; Google Research / Nutrition5k authors",
+  "model": "claude-haiku-5-5",
+  "helper": "modal/food-r1-8b",
+  "profile": {
+    "type": "adaptive",
+    "effort": "high",
+    "maxOutputTokens": 4096
+  },
+  "promptVersion": "food-v19-reviewed-recognition",
+  "implementationHashes": {
+    "lib/providers.mjs": "8f93db38143daa71d1002c0f30875a968adcdca97532d676cd5045d82e51cdbd",
+    "lib/meal-models.mjs": "4e327ce553665ab74ecd2a6d944b6a6cc80dfee9509043d0b29b14e814b929df",
+    "lib/recognition-review.mjs": "94f8754277533800a5778c4817795b11615dd6ab986615f6d972eac7eb850aa8",
+    "lib/food-reference.mjs": "fe7ae80819f6209161f1fcef7a12615deca9631a41cc9764e0d3012f37fdc0a0",
+    "lib/domain.mjs": "0a09bf426bac626b2818fcccf93758b538d087479d838cee8c0b67ec15538000",
+    "scripts/benchmark-food-r1-haiku.mjs": "be2e29dcaee1bd76777e377ec273e6e1187e2dca11c4b87f38f582cc53acd955"
+  },
+  "manifestSha256": "e08304168ecd0fdf48661d4dc7291816d81e3b567fdb103b59a1d9ce9988a9ea",
+  "calls": {
+    "liveHaikuSuccessfulHttp200": 4,
+    "liveFoodR1": 4,
+    "additionalEarlierRejectedHaikuHttp400": 2,
+    "replayedFoodR1": 1,
+    "replayExplainer": "The first helper result was reused after a schema-only API rejection; four unique live helper calls total, not five."
+  },
+  "metrics": {
+    "attempted": 4,
+    "valid": 3,
+    "rejected": 1,
+    "kcalMae": 134.04665266666666,
+    "kcalMeanAbsoluteRelativeErrorPercent": 49.61538107666575,
+    "weightMaeG": 210.33333333333334,
+    "within20PercentKcal": 0,
+    "carbohydrateComparison": "Unavailable: model total fibre unknown, cannot convert available carbs to Nutrition5k total carbs without inventing fibre."
+  },
+  "costs": {
+    "haikuProviderReportedUsd": 0.011326299999999997,
+    "estimatedPaidHuf": 5.01068871163784,
+    "perMealPaidHuf": [
+      1.26130992343048,
+      1.2722812980231202,
+      1.2377745553527202,
+      1.2393229348315202
+    ],
+    "modalComputeUsd": 0.0457378272,
+    "modalComputeHuf": 15.009325373952,
+    "modalCreditSnapshotUsd": 29,
+    "allInHufWithoutCreditEstimate": 24.07253193655688,
+    "assumptions": "328.16 HUF/USD, 20 USD topup processing fee allocation, 27% assumed tax; user-reported 29 USD Modal credit covers measured compute. Excludes Modal gateway/idle/storage/platform overhead.",
+    "earlierRejectedRequestCosts": "Unknown: two earlier schema-rejected HTTP 400 responses returned no usage or charge. Not asserted free; excluded from known sum, retained as unknown."
+  },
+  "verdict": "Measured calls fit the paid target while Modal credit covers compute; precision is insufficient to recommend this profile as an accurate default. No direct evidence of improvement over Gemini or Haiku alone because those were not rerun.",
+  "limitations": [
+    "Four exploratory US cafeteria meals, not representative or Hungarian-food validation.",
+    "Public data may overlap training; checkpoint training provenance not established.",
+    "Reference energy/macros are computed from weighed components, not laboratory calorimetry.",
+    "No expert-blinded ingredient annotation. Names were visually reviewed by the assistant; no general 100% recognition claim.",
+    "One run per meal, no confidence intervals. Failed meal excluded from numerical MAE but included in failure and cost counts."
+  ],
+  "meals": [
+    {
+      "id": "dish_1558639876",
+      "state": "completed",
+      "reference": {
+        "calories": 68.18,
+        "protein": 2.767,
+        "carbs": 15.370001,
+        "fat": 0.529,
+        "fiber": null,
+        "sugar": null,
+        "sodium": null,
+        "saturatedFat": null,
+        "edibleWeightG": 215,
+        "method": "weighed_components",
+        "carbohydrateBasis": "total_including_fiber",
+        "provenance": "Nutrition5k official dish metadata; weighed components and USDA-derived nutrients; dish_1558639876"
+      },
+      "predicted": {
+        "calories": 130.9,
+        "protein": 5.3,
+        "carbs": null,
+        "fat": 1.4,
+        "fiber": null,
+        "sugar": null,
+        "sodium": null,
+        "saturatedFat": null,
+        "edibleWeightG": 440
+      },
+      "kcalAbsoluteError": 62.72,
+      "kcalRelativeErrorPercent": 91.99178644763859,
+      "foodR1": [
+        "carrot",
+        "cauliflower",
+        "papaya"
+      ],
+      "finalNames": [
+        "Sárgarépa",
+        "Karfiol",
+        "Sárgadinnye"
+      ],
+      "error": null,
+      "billing": {
+        "openCodeUsd": 0.0028511,
+        "modalComputeUsd": 0.012746340359999999,
+        "creditAppliedUsd": 0.012746340359999999,
+        "grossResourceHuf": 5.1184560285376,
+        "estimatedPaidHuf": 1.26130992343048,
+        "tokenEstimateUsd": 0.0028511000000000005,
+        "providerReportedUsd": 0.0028511,
+        "openCodeCostSource": "provider_reported_charge"
+      },
+      "tokens": {
+        "promptTokenCount": 10971,
+        "candidatesTokenCount": 3508,
+        "cachedContentTokenCount": 0,
+        "cacheCreationTokenCount": 0,
+        "cost": 0.0028511,
+        "costIsEstimate": false
+      },
+      "imageHashes": [
+        "3fb24f0f22f2d364ff5cb6a01c38035c78bb8989c8dadc147ed621d61e7e5168",
+        "b41c86d0d3f97803de767fb4b120ec0caedfa4e96982482d5978939d74cb7ccc"
+      ]
+    },
+    {
+      "id": "dish_1557937157",
+      "state": "completed",
+      "reference": {
+        "calories": 355.25,
+        "protein": 24.341999,
+        "carbs": 14.700001,
+        "fat": 22.122999,
+        "fiber": null,
+        "sugar": null,
+        "sodium": null,
+        "saturatedFat": null,
+        "edibleWeightG": 271,
+        "method": "weighed_components",
+        "carbohydrateBasis": "total_including_fiber",
+        "provenance": "Nutrition5k official dish metadata; weighed components and USDA-derived nutrients; dish_1557937157"
+      },
+      "predicted": {
+        "calories": 428.4,
+        "protein": 25.1,
+        "carbs": null,
+        "fat": 24.1,
+        "fiber": null,
+        "sugar": null,
+        "sodium": null,
+        "saturatedFat": null,
+        "edibleWeightG": 465
+      },
+      "kcalAbsoluteError": 73.14999999999998,
+      "kcalRelativeErrorPercent": 20.591133004926103,
+      "foodR1": [
+        "scrambled eggs",
+        "broccoli",
+        "raspberries",
+        "strawberries",
+        "bacon"
+      ],
+      "finalNames": [
+        "Rántotta",
+        "Brokkoli",
+        "Málna",
+        "Eper",
+        "Bacon"
+      ],
+      "error": null,
+      "billing": {
+        "openCodeUsd": 0.0028759,
+        "modalComputeUsd": 0.01239256044,
+        "creditAppliedUsd": 0.01239256044,
+        "grossResourceHuf": 5.0104979779904,
+        "estimatedPaidHuf": 1.2722812980231202,
+        "tokenEstimateUsd": 0.0028759000000000002,
+        "providerReportedUsd": 0.0028759,
+        "openCodeCostSource": "provider_reported_charge"
+      },
+      "tokens": {
+        "promptTokenCount": 10984,
+        "candidatesTokenCount": 3555,
+        "cachedContentTokenCount": 0,
+        "cacheCreationTokenCount": 0,
+        "cost": 0.0028759,
+        "costIsEstimate": false
+      },
+      "imageHashes": [
+        "41a9962107c0c2521c2a306203297ae75bf55c0863faa70c2b5243fc5064df5e",
+        "ee3388fd4ce1c7cf48543a632958874901d52a41359feac3a6a0e04bbb03465d"
+      ]
+    },
+    {
+      "id": "dish_1562172643",
+      "state": "completed",
+      "reference": {
+        "calories": 734.269958,
+        "protein": 62.869999,
+        "carbs": 17.648001,
+        "fat": 42.559998,
+        "fiber": null,
+        "sugar": null,
+        "sodium": null,
+        "saturatedFat": null,
+        "edibleWeightG": 457,
+        "method": "weighed_components",
+        "carbohydrateBasis": "total_including_fiber",
+        "provenance": "Nutrition5k official dish metadata; weighed components and USDA-derived nutrients; dish_1562172643"
+      },
+      "predicted": {
+        "calories": 468,
+        "protein": 30.2,
+        "carbs": null,
+        "fat": 27.2,
+        "fiber": null,
+        "sugar": null,
+        "sodium": null,
+        "saturatedFat": null,
+        "edibleWeightG": 245
+      },
+      "kcalAbsoluteError": 266.269958,
+      "kcalRelativeErrorPercent": -36.26322377743255,
+      "foodR1": [
+        "egg whites",
+        "bacon",
+        "potatoes, fried"
+      ],
+      "finalNames": [
+        "Sült bacon",
+        "Kevert tojásfehérje",
+        "Sült krumpli"
+      ],
+      "error": null,
+      "billing": {
+        "openCodeUsd": 0.0027979,
+        "modalComputeUsd": 0.01129680864,
+        "creditAppliedUsd": 0.01129680864,
+        "grossResourceHuf": 4.6253195873024,
+        "estimatedPaidHuf": 1.2377745553527202,
+        "tokenEstimateUsd": 0.0027979000000000003,
+        "providerReportedUsd": 0.0027979,
+        "openCodeCostSource": "provider_reported_charge"
+      },
+      "tokens": {
+        "promptTokenCount": 10974,
+        "candidatesTokenCount": 3401,
+        "cachedContentTokenCount": 0,
+        "cacheCreationTokenCount": 0,
+        "cost": 0.0027979,
+        "costIsEstimate": false
+      },
+      "imageHashes": [
+        "54dcec294fb72d90775ad43dd7731cce6a021e13961d360ae31baed73ef4c6bc",
+        "9954aa5e84faf511d0b24c987a5bd275e7d722f8afd5baa0d24e5b7e1ff5f384"
+      ]
+    },
+    {
+      "id": "dish_1558720236",
+      "state": "failed",
+      "reference": {
+        "calories": 887.823059,
+        "protein": 31.913002,
+        "carbs": 60.460999,
+        "fat": 66.440002,
+        "fiber": null,
+        "sugar": null,
+        "sodium": null,
+        "saturatedFat": null,
+        "edibleWeightG": 407,
+        "method": "weighed_components",
+        "carbohydrateBasis": "total_including_fiber",
+        "provenance": "Nutrition5k official dish metadata; weighed components and USDA-derived nutrients; dish_1558720236"
+      },
+      "predicted": null,
+      "kcalAbsoluteError": null,
+      "kcalRelativeErrorPercent": null,
+      "foodR1": [
+        "apple",
+        "almonds",
+        "carrot",
+        "cauliflower"
+      ],
+      "finalNames": [
+        "Alma",
+        "Mandula",
+        "Sárgarépa",
+        "Karfiol"
+      ],
+      "error": "A kapott tápértékadatokat nem sikerült ellenőrizni. Próbáld újra az elemzést.",
+      "billing": {
+        "openCodeUsd": 0.0028014,
+        "modalComputeUsd": 0.009302117759999999,
+        "creditAppliedUsd": 0.009302117759999999,
+        "grossResourceHuf": 3.9718903881216,
+        "estimatedPaidHuf": 1.2393229348315202,
+        "tokenEstimateUsd": 0.0028014,
+        "providerReportedUsd": 0.0028014,
+        "openCodeCostSource": "provider_reported_charge"
+      },
+      "tokens": {
+        "promptTokenCount": 10974,
+        "candidatesTokenCount": 3408,
+        "cachedContentTokenCount": 0,
+        "cacheCreationTokenCount": 0,
+        "cost": 0.0028014,
+        "costIsEstimate": false
+      },
+      "imageHashes": [
+        "d79bf3c50be74300d4f5a9496d14d967047dea11d20ec77f6a70bd79b827944a",
+        "1a25f6ce2dea4bb7bc523ead426c7be104cf4312af88ee07253ea9fa00cc9307"
+      ]
+    }
+  ]
+}

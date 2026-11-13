@@ -123,10 +123,10 @@ test('one detailed AI request includes both photos and returns the whole validat
   assert.ok(prompt.length < 13500, 'Keep the shared prompt below the previous 15,784-character request');
   assert.ok(prompt.includes('compact JSON'));
   assert.ok(prompt.includes('Do not round away data to save space'));
-  for (const food of Object.values(FOOD_REFERENCE)) for (const fact of [food.label, food.description, food.matchNotes].filter(Boolean)) assert.ok(prompt.includes(fact), 'All food identities and substitution cautions reach the model');
-  for (const dish of Object.values(HUNGARIAN_DISHES)) for (const fact of [dish.label, dish.hint]) assert.ok(prompt.includes(fact), 'Hungarian preparation guidance remains complete');
-  assert.equal(call.generationConfig.maxOutputTokens, 10000);
-  assert.equal(Object.hasOwn(call.generationConfig, 'thinkingConfig'), false, 'Do not change the existing model reasoning setting');
+  for (const food of Object.values(FOOD_REFERENCE)) for (const fact of [food.description, food.matchNotes].filter(Boolean)) assert.ok(prompt.includes(fact), 'All food identities and substitution cautions reach the model');
+  for (const dish of Object.values(HUNGARIAN_DISHES)) for (const fact of [dish.label]) assert.ok(prompt.includes(fact), 'Hungarian preparation guidance remains complete');
+  assert.equal(call.generationConfig.maxOutputTokens, 1600);
+  assert.deepEqual(call.generationConfig.thinkingConfig, {thinkingLevel:'MINIMAL'});
   for (const key of ['calories', 'protein', 'carbs', 'fat', 'fiber', 'sugar', 'sodium', 'saturatedFat']) assert.ok(call.generationConfig.responseJsonSchema.properties.ingredients.items.properties.nutrients.required.includes(key), 'An estimated nutrition object must be complete');
 });
 test('compact requests retain a shared language-independent prefix and all billed usage metadata', async () => {
@@ -176,7 +176,7 @@ test('legacy single-photo records stay readable and retry requests explain the r
 test('OpenCode uses the native Gemini route, server-side bearer token and schema', async () => {
   const mock = mockProviders(); const result = await analyze(image, 'Megjegyzés', env, mock.fetcher, { secondImage });
   assert.equal(result.analysis.name, analysis.name);
-  assert.equal(mock.calls[0].url, 'https://opencode.ai/inference/google/v1beta/models/gemini-3.8-flash:generateContent');
+  assert.equal(mock.calls[0].url, 'https://opencode.ai/inference/google/v1beta/models/gemini-3.5-flash-lite:generateContent');
   assert.equal(mock.calls[0].options.headers.Authorization, `Bearer ${env.OPENCODE_API_KEY}`);
   const body = JSON.parse(mock.calls[0].options.body);
   assert.equal(body.contents[0].parts.find(part => part.inlineData).inlineData.mimeType, 'image/jpeg');
@@ -262,9 +262,9 @@ test('database provenance is removed when a value is edited; impossible macro re
   const changed = validateAnalysis({ ...analysis, ingredients: [ingredient] });
   assert.equal(changed.ingredients[0].sourceType, 'user'); assert.equal(changed.ingredients[0].referenceKey, null); assert.equal(changed.ingredients[0].sourceConfirmed, false);
   const inconsistent = structuredClone(changed); inconsistent.ingredients[0].calories = 0; inconsistent.ingredients[0].sugar = 100; inconsistent.ingredients[0].saturatedFat = 100;
-  assert.equal(analysisReport(inconsistent).warnings.filter(w => !w.startsWith('Van AI')).length, 3);
+  assert.equal(analysisReport(inconsistent).warnings.filter(w => !w.startsWith('Az eredmény egyes')).length, 3);
   const mass = { ...changed, ingredients: [{ ...changed.ingredients[0], protein: 60, carbs: 60, fat: 0, fiber: 0, calories: 480, sugar: 0, saturatedFat: 0 }] };
-  assert.equal(analysisReport(mass).warnings.filter(w => !w.startsWith('Van AI')).length, 1, 'Impossible mass composition is flagged even when energy matches');
+  assert.equal(analysisReport(mass).warnings.filter(w => !w.startsWith('Az eredmény egyes')).length, 1, 'Impossible mass composition is flagged even when energy matches');
   assert.equal(analysisReport({ ...analysis, ingredients: [{ ...analysis.ingredients[0], saturatedFat: null }] }).unknown.includes('saturatedFat'), true);
 });
 test('both Cloudinary views are tracked, saved and deleted; old analysis records still load', async t => {

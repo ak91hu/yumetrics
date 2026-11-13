@@ -13,6 +13,9 @@ export function visualInventory(analysis) {
 }
 export function aiPayloadFor(analysis, request, inventory = visualInventory(analysis)) {
   const parsed = { ...inventory, ingredients: inventory.ingredients.map((item, index) => ({ ...item, nutrients: Object.fromEntries(['calories', 'protein', 'carbs', 'fat', 'fiber', 'sugar', 'sodium', 'saturatedFat'].map(key => [key, analysis.ingredients[index]?.[key] ?? null])) })) };
+  const input = request?.contents?.[0]?.parts?.[0]?.text ?? request?.messages?.[0]?.content?.at(-1)?.text;
+  const candidates = input ? JSON.parse(input).untrustedRecognitionCandidates : [];
+  if (candidates?.length) parsed.recognitionReview = candidates.map((_, candidateIndex) => ({ candidateIndex, verdict: 'supported', ingredientIndex: candidateIndex % parsed.ingredients.length }));
   return { candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify(parsed) }] } }], usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 50 } };
 }
 export function testGoogleClient(overrides = {}) {

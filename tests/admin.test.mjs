@@ -87,11 +87,11 @@ for (const dialect of ['sqlite','postgres']) {
     assert.equal((await f.call('/api/analyze',{id:f.other,method:'POST',body})).status,202);
     await processNextJob({db:f.db,env:f.env,fetcher:async(url,options)=>url.startsWith('https://opencode.ai/')?Response.json({candidates:[{finishReason:'MAX_TOKENS',content:{parts:[]}}],usageMetadata:{promptTokenCount:1000,candidatesTokenCount:5,thoughtsTokenCount:100,cachedContentTokenCount:400,privateField:'never-log-this'}}):f.fetcher(url,options)});
     const row=await f.db.prepare('SELECT * FROM ai_requests WHERE meal_id=?').bind(id).first();
-    assert.equal(row.state,'failed');assert.equal(Number(row.http_status),200);assert.ok(Math.abs(row.cost_usd-.00229)<1e-12);assert.ok(!row.usage.includes('never-log-this'));
+    assert.equal(row.state,'failed');assert.equal(Number(row.http_status),200);assert.ok(Math.abs(row.cost_usd-.0004545)<1e-12);assert.ok(!row.usage.includes('never-log-this'));
     assert.equal(JSON.parse(row.response_meta).finishReason,'MAX_TOKENS');assert.notEqual(row.response_text,null);
     const ordinary=await(await f.call('/api/meals/'+id,{id:f.other})).json();assert.equal(ordinary.meal.job.error,undefined);assert.ok(!JSON.stringify(ordinary).includes('cost_usd'));
     await f.db.prepare('DELETE FROM meals WHERE id=?').bind(id).run();
-    const costs=await(await f.call('/api/admin/costs?days=7')).json();assert.equal(Number(costs.summary.requests),1);assert.equal(Number(costs.summary.priced_requests),1);assert.ok(Math.abs(costs.summary.estimated_usd-.00229)<1e-12);
+    const costs=await(await f.call('/api/admin/costs?days=7')).json();assert.equal(Number(costs.summary.requests),1);assert.equal(Number(costs.summary.priced_requests),1);assert.ok(Math.abs(costs.summary.estimated_usd-.0004545)<1e-12);
     const logs=await(await f.call('/api/admin/logs?level=error')).json();assert.equal(logs.total,1);assert.equal(logs.items[0].level,'error');assert.ok(!JSON.stringify(logs).includes('private-ai-key'));
     assert.equal((await f.call('/api/admin/logs?level=invalid')).status,400);assert.equal((await f.call('/api/admin/costs?days=999')).status,400);
   });
@@ -130,13 +130,13 @@ for (const dialect of ['sqlite','postgres']) {
   run('validates persisted settings, rejects stale edits, and applies real analysis limits and AI parameters',async f=>{
     const initial=await f.settings();
     for(const changes of [{hourlyLimit:0},{hourlyLimit:100,dailyLimit:5},{aiTimeoutSeconds:76},{model:'../../secret'},{registrationEnabled:'false'},{unknown:'value'}])assert.equal((await f.save(changes)).status,400);
-    assert.equal((await f.save({hourlyLimit:1,dailyLimit:2,model:'gemini-4-argon',maxOutputTokens:12000,aiTimeoutSeconds:60})).status,200);
+    assert.equal((await f.save({hourlyLimit:1,dailyLimit:2,model:'gemini-4-argon',maxOutputTokens:1400,aiTimeoutSeconds:60})).status,200);
     assert.equal((await f.call('/api/admin/settings',{method:'PATCH',body:{revision:initial.revision,settings:initial.settings}})).status,409);
     const payload=()=>({id:randomUUID(),image,secondImage,day:'2026-11-09',time:'12:00',type:'Ebéd'});
     const first=payload();assert.equal((await f.call('/api/analyze',{id:f.other,method:'POST',body:first})).status,202);
     assert.equal((await f.call('/api/analyze',{id:f.other,method:'POST',body:payload()})).status,429);
     await processNextJob({db:f.db,env:f.env,fetcher:f.fetcher});
-    const ai=f.calls.find(call=>call.url.startsWith('https://opencode.ai/'));assert.ok(ai);assert.equal(JSON.parse(ai.options.body).generationConfig.maxOutputTokens,12000);assert.ok(ai.url.includes('/gemini-4-argon:generateContent'));
+    const ai=f.calls.find(call=>call.url.startsWith('https://opencode.ai/'));assert.ok(ai);assert.equal(JSON.parse(ai.options.body).generationConfig.maxOutputTokens,1400);assert.ok(ai.url.includes('/gemini-4-argon:generateContent'));
     await f.save({analysesEnabled:false});const count=f.calls.length;assert.equal((await f.call('/api/analyze',{method:'POST',body:payload()})).status,503);assert.equal(f.calls.length,count);
     const audit=await(await f.call('/api/admin/audit')).json();assert.equal(audit.total,2);assert.ok(audit.items.every(row=>row.action==='settings.update'));
   });

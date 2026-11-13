@@ -2,7 +2,7 @@
 
 A Yumetrics magyar és angol nyelvű, Google-fiókkal használható étkezési napló. Egy étkezéshez egy kötelező és egy opcionális fényképet fogad. Az AI feladata az ételek azonosítása, az összetevők és mennyiségek becslése, valamint a bizonytalanságok megjelölése. A tápanyagok adagra vetítését és összesítését determinisztikus JavaScript-kód végzi. A felhasználó ellenőrzi és külön művelettel menti az eredményt.
 
-Ez a dokumentáció a **2026. november 11-i forrásállapotot** írja le. A megvalósított működést különbözteti meg az üzemeltetési ajánlásoktól és a jövőbeli lehetőségektől. A korábbi mérések nem tekinthetők automatikusan az aktuális modellpáros hitelesítésének.
+Frissítve a **2026. november 13-i Gemini + ingyenes adatforrások útvonalra**. A korábbi mérések nem tekinthetők automatikusan az aktuális folyamat hitelesítésének. A korábbi modellpárosok és mérések az AI-fejezetben történeti előzményként szerepelnek.
 
 ## A rendszer fő jellemzői
 
@@ -13,9 +13,9 @@ Ez a dokumentáció a **2026. november 11-i forrásállapotot** írja le. A megv
 | Éles adatok | Northflank PostgreSQL; tranzakciók, migrációk, tartós feldolgozási sor |
 | Képtárolás | Cloudinary `authenticated` képek, szerveroldali hozzáférés-ellenőrzéssel |
 | Hitelesítés | Google OpenID Connect, OAuth authorization code, PKCE |
-| Ételnévjavaslatok | Opcionális Food-R1 8B BF16, Modal L40S GPU-n |
-| Teljes képelemzés | OpenCode-on elért Gemini 3.8 Flash, strukturált JSON-válasszal |
-| Tápértékforrás | Ellenőrzött termékcímke, USDA-referencia vagy jelölt becslés |
+| Ételnévjavaslatok | Food-R1 8B csak erősen bizonytalan ételazonosságnál, legfeljebb egyszer |
+| Teljes képelemzés | OpenCode-on elért Gemini 3.5 Flash Lite, egy strukturált JSON-válasszal |
+| Tápértékforrás | Eredeti címke, helyi USDA, USDA/FNDDS, CNF, svéd, norvég, OFF vagy jelölt becslés |
 | Dokumentáció | MkDocs 1.6.1, helyben kiszolgált statikus HTML és keresőindex |
 
 ## Egy étkezés útja
@@ -24,8 +24,9 @@ Ez a dokumentáció a **2026. november 11-i forrásállapotot** írja le. A megv
 Google-belépés → fénykép és kiegészítő adatok
   → böngészős képelőkészítés → tartós képfeltöltés
   → PostgreSQL-feladat → képek visszaolvasása
-  → opcionális Food-R1 ételnévjavaslat
-  → OpenCode/Gemini ellenőrzés az eredeti képekkel
+  → egy OpenCode/Gemini elemzés az eredeti képekkel
+  → csak erősen bizonytalan ételazonosságnál: Food-R1-javaslat
+  → ingyenes adatforrások, pontos egyeztetés és tartós gyorsítótár
   → szerveroldali validálás és tápértékszámítás
   → ellenőrizhető piszkozat → felhasználói javítás és mentés
   → napló, statisztikák, jelvények és heti haladás

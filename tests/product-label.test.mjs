@@ -19,7 +19,7 @@ async function recognize(label, options = {}) {
   Object.assign(inventory.ingredients[0], options.inventory || {});
   let calls = 0, request;
   try {
-    const result = await analyze(image, '', { OPENCODE_API_KEY: 'test' }, async (url, args) => {
+    const result = await analyze(image, '', { OPENCODE_API_KEY: 'test', FREE_FOOD_APIS: '0' }, async (url, args) => {
       calls++; request = JSON.parse(args.body); const payload = aiPayloadFor(analysis, args, inventory);
       if (options.omitNutrients) { const raw = JSON.parse(payload.candidates[0].content.parts[0].text); for (const item of raw.ingredients) item.nutrients = null; payload.candidates[0].content.parts[0].text = JSON.stringify(raw); }
       return Response.json(payload);
