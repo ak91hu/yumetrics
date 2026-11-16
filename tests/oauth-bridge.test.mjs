@@ -28,6 +28,8 @@ test('static callback only forwards to the fixed app, clears the address and sto
   vm.runInNewContext(script, context(`?state=${state}&code=one-use&redirect=https://evil.test`));
   assert.equal(destination, `https://http--yumetrics--dmg6gnvmmd7s.code.run/auth/google/callback?state=${state}&code=one-use`);
   assert.equal(cleared, '/yumetrics/oauth.html');
+  vm.runInNewContext(script, context(`?state=backup.${state}&code=backup-code&redirect=https://evil.test`));
+  assert.equal(destination, `https://yumetrics-backup.ak91hu.workers.dev/auth/google/callback?state=${state}&code=backup-code`);
   destination = undefined;
   vm.runInNewContext(script, context('?state=invalid&code=test'));
   assert.equal(destination, undefined); assert.ok(message.textContent.includes('Yumetrics'));

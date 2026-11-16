@@ -1,0 +1,9 @@
+{
+  "name": "yumetrics-backup",
+  "account_id": "e3d948e1fcee6502352be52ebc2b31ec",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-11-16",
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": { "enabled": false }
+}
