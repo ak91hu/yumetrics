@@ -14,10 +14,13 @@ Yumetrics is a personal food diary with image-based food recognition, estimated 
 
 ## 3. What data does the application process?
 
+**New optional feature:** My account provides a separate opt-in for a visual weekly report to your Google account email address. **Brevo** receives the aggregated diary report and your name and email address to send it through SMTP. There is no automatic subscription; you can disable it in your profile or through the email unsubscribe link. The local delivery queue clears the full message when delivery processing finishes; preferences and delivery status remain. Provider retention, contractual and transfer terms require separate verification. This describes the implementation in development; live sending requires SMTP configuration and deployment.
+
 | Category | Data and source |
 | --- | --- |
 | Google sign-in | Google account identifier (`sub`), verified email address, name and profile-picture URL; internal user identifier |
 | Account and preferences | User-entered daily energy target, language, account status, creation and operational timestamps |
+| Optional weekly email | Subscription state and timestamp, email language, secret unsubscribe token, weekly delivery state and attempts; report content temporarily retained for retries |
 | Food diary | Uploaded food photographs, meal date and time, time zone, meal type, notes, known weight, recipes and other context |
 | AI results | Recognised food names and components, estimated quantities and nutrients, assumptions, uncertainties, original and corrected analysis, approval |
 | Challenges | Weekly selection, activity dates, recipe and weighing events, progress, completion and rewards |

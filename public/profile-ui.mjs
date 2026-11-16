@@ -9,6 +9,7 @@ const dayUnit = count => locale().startsWith('en') && count !== 1 ? t('napok') :
 let data;
 let loadVersion = 0;
 let challengePending = false;
+let reportPending = false;
 let period = 30;
 let profileRequest;
 const plant = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 22V11M12 15C4 16 2 11 3 6c6-1 10 3 9 9ZM12 11c-1-7 3-9 9-9 1 6-3 10-9 9Z"/></svg>';
@@ -66,7 +67,7 @@ export function renderAvatar(element, profile) {
 }
 export async function loadProfile(request, { quiet = false, celebrate = false } = {}) {
   profileRequest=request;
-  if (challengePending) return;
+  if (challengePending || reportPending) return;
   const root = document.querySelector('#profile-summary');
   const version = ++loadVersion, previous = data?.statistics.motivation, previousChallenge=data?.weeklyChallenge;
   if (!quiet) { root.setAttribute('aria-busy', 'true'); root.textContent = t('Statisztikák betöltése…'); }
@@ -114,6 +115,7 @@ export function renderProfile() {
     <div class="profile-identity"><span class="profile-initials" aria-hidden="true"></span><div><h3>${escape(profile.name)}</h3><p>${escape(profile.email)}</p><small>Google-fiókkal bejelentkezve</small></div></div>
     <section class="profile-today" aria-labelledby="profile-today-title"><div class="profile-section-heading"><h3 id="profile-today-title">Mai összesítés</h3><span>${escape(date(s.period.end))}</span></div><p class="profile-energy"><strong>${escape(number(today.calories))}</strong> / ${escape(number(profile.calorieGoal))} kcal</p><label class="sr-only" for="profile-energy-progress">A mai naplózott energia a napi kerethez képest</label><progress id="profile-energy-progress" max="${profile.calorieGoal}" value="${today.calories ?? 0}"></progress><p class="profile-caption">${today.count ? escape(quantity(today.count, '1 naplózott étkezés', '{0} naplózott étkezés')) + ' · ' + escape(remaining >= 0 ? t`${number(remaining)} kcal a beállított keretig` : t`${number(-remaining)} kcal a beállított keret felett`) : t('Ma még nem mentettél étkezést. Ebből nem következik, hogy nem ettél.')}</p><button type="button" class="text-button" data-profile-day="${s.period.end}">Mai nap megnyitása</button><a class="text-button" href="#calorie-goal">Energiakeret módosítása</a></section>
     ${data.weeklyChallenge?challengesMarkup(data.weeklyChallenge):''}
+    <section class="weekly-challenges" aria-labelledby="weekly-report-title"><h3 id="weekly-report-title">Heti emailes összesítő</h3><p class="profile-caption">Vasárnap 20:00-kor, magyarországi idő szerint: napi kalóriagrafikon, heti statisztikák és összehasonlítás az előző héttel. A vasárnap 20:00 utáni étkezéseket nem tartalmazza.</p><p class="profile-caption">Az emailt a Google-fiókod címére küldjük. A küldést a Brevo végzi. Alapból kikapcsolva; bármikor leiratkozhatsz.</p><form id="weekly-report-form"><label class="weekly-report-optin"><input type="checkbox" name="enabled" ${data.weeklyReport?.enabled?'checked':''}> Kérem a heti összesítőt emailben</label><label>Az email nyelve<select name="language"><option value="hu" ${data.weeklyReport?.language!=='en'?'selected':''}>Magyar</option><option value="en" ${data.weeklyReport?.language==='en'?'selected':''}>English</option></select></label><button type="submit" class="button outline" ${reportPending?'disabled':''}>Emailbeállítás mentése</button></form><p id="weekly-report-feedback" role="status" class="profile-caption"></p>${data.weeklyReport?.available?'':html`<p class="profile-caption">A beállításodat elmentjük; a küldés az emailkapcsolat aktiválása után indul.</p>`}<a class="text-button" href="/api/weekly-report/preview?lang=${locale().startsWith('en')?'en':'hu'}" target="_blank" rel="noopener">A heti email előnézete ↗</a></section>
     ${growthMarkup(s.motivation)}
     <h3 class="profile-section-title">A naplód eddig</h3>
     <div class="profile-stats">${metric('Mentett étkezés', life.mealCount)}${metric('Aktív nap', life.activeDays)}${metric('Jelenlegi sorozat', life.currentStreak, dayUnit(life.currentStreak))}${metric('Leghosszabb sorozat', life.longestStreak, dayUnit(life.longestStreak))}</div>
@@ -134,6 +136,7 @@ export function renderProfile() {
   if(feedbackSource)document.querySelector('#weekly-challenge-feedback').textContent=t(feedbackSource);
   const challengeButton = document.querySelector('#weekly-challenge-form button[type=submit]');
   if (challengeButton) challengeButton.disabled = challengePending;
+  if(reportPending)for(const control of document.querySelector('#weekly-report-form').elements)control.disabled=true;
   for(const radio of document.querySelectorAll('#weekly-challenge-form [name=kind]'))radio.checked=!radio.disabled&&radio.value===pendingChoice;
   for (const id of openSections) { const section = document.getElementById(id); if (section) section.open = true; }
   renderAvatar(document.querySelector('.profile-initials'), profile);
@@ -145,6 +148,18 @@ document.addEventListener('change', event => {
   period = Number(event.target.value); renderPeriod();
 });
 document.addEventListener('submit',async event=>{
+  if(event.target.id==='weekly-report-form'){
+    event.preventDefault();if(reportPending)return;
+    const form=event.target,fields=new FormData(form);
+    reportPending=true;for(const control of form.elements)control.disabled=true;
+    try{
+      data.weeklyReport=await profileRequest('/api/weekly-report/preferences',{method:'PATCH',body:JSON.stringify({enabled:fields.has('enabled'),language:fields.get('language')})});
+      renderProfile();
+      document.querySelector('#weekly-report-feedback').textContent=t('Elmentettük a heti email beállítását.');
+    }catch(error){document.querySelector('#weekly-report-feedback').textContent=error.message;}
+    finally{reportPending=false;for(const control of document.querySelector('#weekly-report-form').elements)control.disabled=false;}
+    return;
+  }
   if(event.target.id!=='weekly-challenge-form')return;
   event.preventDefault();if(challengePending)return;
   const form=event.target,button=form.querySelector('button[type=submit]'),version=++loadVersion;

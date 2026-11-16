@@ -16,6 +16,7 @@ import { requestLimit } from './lib/request-limits.mjs';
 import { AppError } from './lib/domain.mjs';
 import { isAdmin, appSettings } from './lib/settings.mjs';
 import { recordPageView } from './lib/visitors.mjs';
+import { startWeeklyReportRunner, unsubscribeReport } from './lib/weekly-reports.mjs';
 import { logEvent, importHistoricalUsage } from './lib/telemetry.mjs';
 export { openDatabase } from './lib/database.mjs';
 
@@ -47,6 +48,7 @@ export function createApp({ db, env = process.env, fetcher = fetch, publicOrigin
           if (db && authConfigured(env, db)) { await db.prepare('SELECT 1 AS ready').bind().first(); response = json({ ready: true }); }
           else response = json({ ready: false }, 503);
         } else if (url.pathname === '/api/auth-status') response = json({ configured: authConfigured(env, db) });
+        else if (url.pathname === '/email/weekly/unsubscribe') response = await unsubscribeReport(request,db);
         else response = await authRoute(request, { db, env, googleClient });
         if (!response) {
           const user = await currentUser(request, db);
@@ -95,7 +97,7 @@ export function createApp({ db, env = process.env, fetcher = fetch, publicOrigin
       response = new Response(JSON.stringify(data), { status: response.status, headers: response.headers });
       response.headers.set('Content-Language', language);
     }
-    for (const [name, value] of Object.entries(SECURITY_HEADERS)) response.headers.set(name, value);
+    for (const [name, value] of Object.entries(SECURITY_HEADERS)) if(name!=='Content-Security-Policy'||!response.headers.has(name)) response.headers.set(name, value);
     if ((publicOrigin || env.APP_ORIGIN)?.startsWith('https:')) response.headers.set('Strict-Transport-Security', 'max-age=31536000');
     const headers = Object.fromEntries(response.headers); const cookies = response.headers.getSetCookie();
     if (cookies.length) headers['set-cookie'] = cookies;
@@ -120,12 +122,16 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     await logEvent(db,{category:'server',event:'server.starting',message:'Az alkalmazás indul; az adatbázis-kapcsolat létrejött.'});
   }
   const runner = db ? startJobRunner({ db, env }) : null;
+  const reports = db ? startWeeklyReportRunner({ db, env }) : null;
   const server = createApp({ db, env, wake: () => runner?.wake() });
   server.listen(port, host, () => console.log(`Yumetrics: http://${host}:${server.address().port} · Google-belépés ${authConfigured(env, db) ? 'beállítva' : 'beállításra vár'}`));
   let stopping = false;
   for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => {
-    if (stopping) return; stopping = true; runner?.stop();
-    const deadline = setTimeout(() => process.exit(0), 25_000); deadline.unref();
-    server.close(async () => { if (!runner?.working) await db?.close(); process.exit(0); });
+    if (stopping) return; stopping = true; runner?.stop(); reports?.stop();
+    const deadline = setTimeout(() => process.exit(0), 55_000); deadline.unref();
+    server.close(async () => {
+      while(runner?.working || reports?.working) await new Promise(resolve=>setTimeout(resolve,100));
+      await db?.close(); process.exit(0);
+    });
   });
 }

@@ -1,5 +1,7 @@
 # Yumetrics
 
+**Heti emailes összesítő:** a Fiókom nézetben bekapcsolható magyar/angol jelentés vasárnap 20:00-kor, napi kalóriagrafikonnal, makrotápanyag- és étkezéstípus-bontással, valamint az előző hét trendjeivel. Brevo SMTP-beállítás és éles telepítés szükséges. [Részletek](docs/WEEKLY-EMAIL.md).
+
 **Legújabb folyamat:** `food-v22-required-nutrient-fallback` – automatikus felismerés, ingyenes adatforrás-lekérés, egyeztetés és tápérték-összeállítás. A felhasználó először a kész eredményt látja; az adatforrás-kereső és szerkesztő opcionális, alapból csukott részben érhető el. Nincs kötelező forrásválasztás vagy pontosító kérdés. A fennmaradó bizonytalanságot a végeredmény jelzi.
 
 **Aktuális megvalósítás, 2026-11-13:** Gemini 3.5 Flash Lite az alap, egy elemzőkéréssel. Utána USDA/FNDDS, kanadai CNF, svéd, norvég és Open Food Facts adapterek segítik a forrásegyeztetést, tartós gyorsítótárral és kéréskorlátokkal. Food-R1 csak kifejezetten bizonytalan ételazonosságnál indul, legfeljebb egyszer; nincs második Gemini-hívás. [Működés, beállítás és ellenőrzés](docs/FREE-FOOD-INTEGRATION-2026-11-13.md). Az alábbi korábbi kísérletek történeti eredmények, nem az új folyamat pontosságmérései.

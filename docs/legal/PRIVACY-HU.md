@@ -14,10 +14,13 @@ A Yumetrics személyes étkezési napló, képalapú ételfelismeréssel, becsü
 
 ## 3. Milyen adatokat kezel az alkalmazás?
 
+**Új, opcionális funkció:** a Fiókom nézetben külön bekapcsolható a grafikonos heti email a Google-fiók címére. Az összesített naplóadatokat és a címzett nevét, emailcímét a küldéshez a **Brevo** SMTP-szolgáltatása kapja meg. Nincs automatikus feliratkozás; a funkció bármikor kikapcsolható a profilban vagy a levél leiratkozási hivatkozásán. A teljes levéltartalmat a helyi küldési sor a lezáráskor törli; a beállítás és a küldési állapot megmarad. A szolgáltatói megőrzési, szerződéses és adattovábbítási feltételek külön ellenőrizendők. Ez a leírás a fejlesztés része; az éles küldéshez SMTP-beállítás és telepítés szükséges.
+
 | Adatkör | Tartalom és forrás |
 | --- | --- |
 | Google-belépés | A Google által átadott fiókazonosító (`sub`), ellenőrzött e-mail-cím, név és profilkép-hivatkozás; saját belső felhasználói azonosító |
 | Fiók és beállítások | Megadott napi energiakeret, nyelv, fiókállapot, létrehozási és működési időpontok |
+| Opcionális heti email | Bekapcsolási állapot és időpont, emailnyelv, titkos leiratkozási token, heti kézbesítési állapot és próbálkozások; a jelentés tartalma átmenetileg az újrapróbálásig |
 | Étkezési napló | Feltöltött ételfotók, étkezési nap és idő, időzóna, étkezéstípus, megjegyzés, ismert tömeg, recept és más kiegészítő adat |
 | AI-eredmények | Felismert ételnevek, összetevők, becsült mennyiségek és tápértékek, feltételezések, bizonytalanságok, eredeti és javított elemzés, jóváhagyás |
 | Kihívások | Heti választás, aktivitási napok, recept- és mérési események, haladás, teljesítés és jutalom |

@@ -87,6 +87,8 @@ A helyi, valódi PostgreSQL-integrációs tesztek ennek alkalmazásfolyamatot cs
 
 ## Saját domain és ingyenes HTTPS
 
+A vasárnapi, bekapcsolható grafikonos heti emailjelentés Brevo SMTP-t használ. A futtatókörnyezetben az `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `WEEKLY_REPORTS_ENABLED` értékeket kell megadni; a helyi `.env` nem kerül az image-be. [Beállítás, időszak és hibakezelés](WEEKLY-EMAIL.md).
+
 A `yumetrics.app` Name.com DNS-zónát használ. A Northflank domainhitelesítő TXT-rekordját meg kell tartani. A gyökérhez ANAME (üres Host vagy `@`) kell, célja `yumetrics.app.ak91-7vzw.dns.northflank.app`; a `www` CNAME célja `www.yumetrics.app.ak91-7vzw.dns.northflank.app`. Mindkét név a `default/yumetrics` szolgáltatás `http` portjához kapcsolódik. A Name.com parkoló A-rekordja helyett az ANAME használatos.
 
 A TLS-t a Northflank automatikus Let’s Encrypt tanúsítványa és megújítása kezeli, külön Certbot vagy fizetős SSL nem kell. A HTTPS ellenőrzésekor érvényes láncot, megfelelő hostnevet és lejáratot kell látni. Az alkalmazás HTTPS eredetnél HSTS-fejlécet ad. A belső `/healthz` és `/readyz` ellenőrzéseket nem irányítja át. A régi hoston érkező módosító kéréseket elutasítja, a böngészős belépés az elsődleges címen történik; a régi domain munkamenetsütije nem kerül át az új domainre, ezért új bejelentkezés szükséges lehet.

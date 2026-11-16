@@ -1,5 +1,13 @@
 # Profilstatisztikák, fejlődés és heti kihívások
 
+## Heti emailes összesítő
+
+A Fiókom nézetben alapból kikapcsolt, külön menthető magyar/angol emailbeállítás és saját adatokat mutató előnézet található. Az SMTP-kapcsolat aktiválása után a szerver vasárnap 20:00-kor, `Europe/Budapest` szerint készít jelentést. Az aktuális és az előző hét hétfő–vasárnap 20:00 közötti mentett étkezéseit hasonlítja össze. A későbbi vasárnapi bejegyzések nem részei a jelentésnek.
+
+A levél napi összehasonlító kalóriagrafikont, összenergiát, naplózott napokra számolt átlagot, adatlefedettséget, makrotápanyagokat és étkezéstípus szerinti energiadiagramot tartalmaz. Külső képszolgáltatás vagy új AI-hívás nélkül készül, Brevo SMTP-küldéssel. A hiányzó adatot nem nullának értelmezi, és a trend nem testsúlyváltozás. Leiratkozás a profilból vagy tokenes emailhivatkozáson lehetséges.
+
+A küldési sor tartós és párhuzamosan foglalható; a bizonytalan SMTP-átadást nem ismétli meg automatikusan. A részletes üzemeltetési leírás a forráskód `docs/WEEKLY-EMAIL.md` fájljában található.
+
 ## A napló statisztikai alapja
 
 A profil összesítései a felhasználó valóban mentett étkezéseire épülnek. A piszkozat, hibás elemzés és törlés alatt álló bejegyzés nem végleges étkezés. Jövőbeli nap nem növeli a tényleges naplózási aktivitást. A napi energia, makrók, étkezéstípusok és időszaki átlagok a mentett, ellenőrzött elemzésből számolódnak.
