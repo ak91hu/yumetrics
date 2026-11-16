@@ -42,3 +42,17 @@
 #weekly-report-form { display: grid; gap: 14px; }
 #weekly-report-form .weekly-report-optin { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; }
 #weekly-report-form .weekly-report-optin input { width: 20px; height: 20px; min-height: 20px; flex: 0 0 20px; margin: 0; accent-color: #28664d; }
+
+.login-header{display:flex;align-items:center;justify-content:space-between;gap:16px}.google-signin-mobile{display:none}
+@media(min-width:651px){.login-header>.google-signin{display:none}}
+@media(max-width:650px){
+  .login-page{--login-action-width:clamp(136px,44vw,184px)}
+  .login-page .login-header{position:fixed;top:var(--beta-height,0px);inset-inline:0;z-index:25;min-height:68px;padding:12px max(20px,env(safe-area-inset-right,0px)) 12px max(20px,env(safe-area-inset-left,0px));background:#f8f5eef5;border-bottom:1px solid #e7e2d6;backdrop-filter:blur(12px)}
+  .login-page .login-layout{padding-top:68px}
+  .login-header .brand{min-width:0;max-width:calc(100% - var(--login-action-width) - 14px)}
+  .login-story .login-header .brand img.brand-wordmark{width:156px;height:auto;max-width:100%}
+  .login-header .google-signin{flex:0 0 var(--login-action-width);width:var(--login-action-width);min-height:44px;margin:0;padding:10px 12px;gap:8px;background:#40543a;border-color:#40543a;color:#fffdf4;font-size:12px;line-height:1.25;text-align:center}
+  .login-header .google-signin:hover{background:#35472f}
+  .login-header .google-signin svg{width:18px;height:18px;padding:2px;background:#fff;border-radius:50%;box-sizing:content-box}
+  .google-signin-desktop{display:none}.google-signin-mobile{display:inline}
+}
