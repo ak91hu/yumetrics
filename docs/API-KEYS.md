@@ -10,6 +10,11 @@ Ellenőrizve: 2026-11-07. A változónevek a jelenlegi kódhoz tartoznak. Helybe
 | Cloudinary | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Cloudinary Console → Product Environment; Settings → API Keys | Képek tartós feltöltése és törlése | Igen, a fotófeltöltéshez |
 | Northflank PostgreSQL | `DATABASE_URL` | Az addon Connection details írható primary `POSTGRES_URI` értéke; secret groupban `DATABASE_URL` alias | Felhasználók, napló, munkamenetek, feladatok és források | Igen; ez kapcsolati titok, nem API-kulcs |
 | USDA FoodData Central | `USDA_API_KEY` | FoodData Central API key signup | Bővebb Foundation/SR Legacy referenciakeresés | Opcionális; a 44 beépített rekord kulcs nélkül is használható |
+| TypeSafe Jev | `JEV_API` | [TypeSafe Console](https://console.typesafe.ai/home) → API keys | Zárt döntések: ételcsoport, adatbázis-tétel kiválasztása, elkészítés, kapuk | Opcionális; nélküle a korábbi pontos egyezéses folyamat fut |
+
+## TypeSafe Jev
+
+A kulcs a [TypeSafe Console](https://console.typesafe.ai/home) felületén készül, és csak a backend használja (`Authorization: Bearer`). Helyben a `.env` `JEV_API` sora, élesben a Northflank `yumetrics-runtime` titokcsoportjának `JEV_API` változója. A modell rögzített verzió (`JEV_MODEL`, alapértéke `jev-1.14.0`); a `jev-latest` alias szándékosan nem engedélyezett, mert észrevétlenül megváltoztatná a döntéseket. Ár: 0,042 USD / millió bemeneti token, a kimenet ingyenes. Részletek: [AI-szolgáltatók](technical/ai.md).
 
 ## Google
 

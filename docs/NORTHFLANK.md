@@ -93,6 +93,14 @@ A `yumetrics.app` Name.com DNS-zónát használ. A Northflank domainhitelesítő
 
 A TLS-t a Northflank automatikus Let’s Encrypt tanúsítványa és megújítása kezeli, külön Certbot vagy fizetős SSL nem kell. A HTTPS ellenőrzésekor érvényes láncot, megfelelő hostnevet és lejáratot kell látni. Az alkalmazás HTTPS eredetnél HSTS-fejlécet ad. A belső `/healthz` és `/readyz` ellenőrzéseket nem irányítja át. A régi hoston érkező módosító kéréseket elutasítja, a böngészős belépés az elsődleges címen történik; a régi domain munkamenetsütije nem kerül át az új domainre, ezért új bejelentkezés szükséges lehet.
 
+## GPT-6 Luna, Jev és Food-R1 (2026-11-17)
+
+A `yumetrics-runtime` titokcsoport:
+- `OPENCODE_MODEL=gpt-6-luna`, ugyanazzal az `OPENCODE_API_KEY` kulccsal;
+- `JEV_API`, a TypeSafe Jev kulcsa.
+
+A `yumetrics-modal` csoport változatlan, a Food-R1 `/estimate` végpont a `MODAL_FOOD_URL` címből képződik. A PostgreSQL `0012_luna_jev` migráció csak additív (`user_correction`, `food_r1_job`, nullázható `meals.refinement`). A 0009-es automatikus modellrögzítést (`gemini-3.5-flash-lite`, 1600 token) feloldja, így utána az `OPENCODE_MODEL` dönt. Ha az admin Beállítások nézetében kézzel más modell van mentve, az megmarad: telepítés után ott ellenőrizd, hogy `gpt-6-luna` és 3000 token látszik-e. A Modal-alkalmazás telepítése: `modal deploy scripts/modal_foodr1.py`, a `yumetrics` Modal-profillal.
+
 ## AI-modell és a v14 kiadása
 
 A Food-R1 segédhez külön `yumetrics-modal` runtime secret group tartozik, kizárólag a `yumetrics` szolgáltatásra korlátozva. A `MODAL_FOOD_URL` a telepített API `/recognize` címe, a `MODAL_PROXY_TOKEN_ID` és `MODAL_PROXY_TOKEN_SECRET` végponthívó hitelesítés. A `MODAL_MONTHLY_BUDGET_USD` belső becsült keret, alapértéke 15. A helyi telepítési API-token nem kerül az alkalmazásba, a proxy kulcsok build argumentokhoz és böngészős kódhoz nem adhatók át. Az OpenCode továbbra is az eredeti fotókból készíti el a teljes elemzést. Részletek: [Modal](MODAL.md#northflank-szerveroldali-hitelesítés).

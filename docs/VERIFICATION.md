@@ -1,5 +1,18 @@
 # Ellenőrzés
 
+## GPT-6 Luna + Jev + Food-R1 eszkaláció, vonalkód, PWA, 2026-11-17
+
+**244 Node-teszt sikeres (31 PostgreSQL-teszt környezeti változó nélkül kihagyva), 9 Python-teszt sikeres a Modal-alkalmazásra, 0 hiba.** Új tesztfájlok: `jev`, `luna`, `refinement`, `barcode`, `calibration`, `photo-transformation`.
+
+Élő próbák:
+- **Luna + USDA + Jev a csülökfotón:** kb. 19 s, Luna 0,00118 USD, Jev 0,00014 USD; 5 tételből 4-nél a Jev által választott rekord számolt.
+- **Jev-gyorsítótár:** ismételt étkezésnél 7/7 válasz a gyorsítótárból.
+- **Cloudinary-transzformáció:** az aláírt, kicsinyített másolat elérhető; aláírás nélkül vagy módosított paraméterrel 401.
+- **Modal `/estimate`:** telepítés után 6/6 lemért tányérra érvényes második becslés.
+- **Böngésző (headless Chrome, mobil):** vonalkód felismerése egy generált EAN-13 fotón ZXinggel, Open Food Facts-lekérés, AI-hívás nélküli eredmény; a pontosító kérdés mentése személyes priorral; manifest és service worker.
+
+Mérés: [Jev-kalibráció és helyességellenőrzés](JEV-CALIBRATION-2026-11-17.md). Nem ellenőrzött: lemért magyar tányérkészlet, a δ kalibrálása (6 < 20 tányér), valódi telefonos kamerás beolvasás.
+
 ## Keskeny, színátmenetes bétaállapot-jelzés, 2026-11-11
 
 **16/16 célzott teszt és az alkalmazásbuild sikeres.** A helyi Chrome-próba öt szélességen ellenőrizte az új színátmenetet, a 20 pixeles asztali és 18 pixeles mobilmagasságot, a magyar/angol felirat levágásmentes megjelenítését és az oldalsáv megfelelő eltolását. Az elrendezés nem lóg ki vízszintesen, a lábléc elérhető, nincs szkripthiba. A felső biztonsági területet a CSS `safe-area-inset-top` értékkel kezeli; valódi, kijelzőkivágásos telefonon ezt nem ellenőriztük. Képek: `outputs/beta-gradient-smoke/`. Fizetős AI/GPU-kérés nem indult.

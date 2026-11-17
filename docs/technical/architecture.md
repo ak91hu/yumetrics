@@ -9,8 +9,9 @@ Böngésző ── HTTPS ── Northflank ingress ── Node.js alkalmazás
                                             ├─ PostgreSQL: fiókok, napló, sor, archívum
                                             ├─ Google: OIDC-hitelesítés
                                             ├─ Cloudinary: védett képek
-                                            ├─ OpenCode: egy Gemini képelemzés
-                                            ├─ Modal: Food-R1 csak bizonytalan azonosságnál
+                                            ├─ OpenCode: egy GPT-6 Luna képelemzés (Cloudinary-transzformált kép)
+                                            ├─ TypeSafe Jev: zárt döntések egy kérésben (Q1–Q6)
+                                            ├─ Modal: Food-R1 második becslés eszkalációnál (feladatsor)
                                             └─ USDA/CNF/svéd/norvég/OFF: referenciaadatok
 ```
 
@@ -27,6 +28,10 @@ A Northflank végzi a publikus HTTPS-kapcsolat fogadását. Az alkalmazás a kon
 | `lib/product-label.mjs`, `food-data.mjs`, `food-reference.mjs` | Címkeértelmezés, külső és beépített tápértékforrások |
 | `lib/jobs.mjs` | Tartós feladatok felvétele, lease, eredménymentés, törlés |
 | `lib/providers.mjs`, `modal-food.mjs`, `photos.mjs` | Szolgáltatói adapterek és képek biztonságos visszaolvasása |
+| `lib/meal-models.mjs` | Modellenkénti kérés-/válaszformátum (Luna Responses, Gemini, Haiku) |
+| `lib/jev.mjs`, `calibration.mjs`, `jev-calibration.json` | Jev-kérdések, gyorsítótár, útvonalválasztás, mért küszöbök |
+| `lib/refinement.mjs`, `corrections.mjs` | Food-R1 eszkalációs feladatsor, δ-egyeztetés, személyes adagszorzó |
+| `lib/barcode.mjs`, `public/barcode-scan.mjs` | Vonalkód-ellenőrzés, Open Food Facts-normalizálás, böngészős felismerés |
 | `lib/database.mjs` | PostgreSQL/SQLite adapter, migrációk és tranzakciók |
 | `lib/admin.mjs`, `telemetry.mjs`, `ai-archive.mjs` | Admin API, naplózás, költség és válaszarchívum |
 | `lib/profile-stats.mjs`, `weekly-challenges.mjs` | Naplózási statisztikák és jutalmak |

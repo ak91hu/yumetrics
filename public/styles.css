@@ -19,3 +19,18 @@
 .ingredient-main>.icon-button{width:100%;min-width:0}
 
 .help-heading{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.help-heading>h3{margin:0}.help-trigger{display:inline-grid;place-items:center;vertical-align:middle;flex:0 0 auto;width:36px;height:36px;padding:6px;border:0;background:transparent;color:#425638;border-radius:50%;cursor:help;font:600 13px/1 var(--sans,sans-serif)}.help-trigger>span{display:grid;place-items:center;width:20px;height:20px;border:1px solid #9aa88b;border-radius:50%;background:#f0f4e8}.help-trigger:hover>span{background:#e0e9d2}.help-trigger:focus-visible{outline:2px solid #425638;outline-offset:2px}.context-help{position:fixed;inset:auto;top:12px;left:12px;margin:0;padding:14px 16px;width:320px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);box-sizing:border-box;overflow:auto;border:1px solid #c7d2b9;border-radius:12px;background:#fffdf8;color:#35472f;box-shadow:0 8px 28px #26351d26;font:400 13px/1.75 var(--sans,sans-serif);text-align:left;letter-spacing:normal;white-space:normal}.context-help::backdrop{background:transparent}.report-metrics .help-heading small{margin:0}.ingredient-heading h3{display:flex;align-items:center;gap:6px}.admin-card .help-heading{font-size:12px}.context-fields>.help-heading{margin:12px 0 3px;font-size:13px}.food-breakdown h3 .help-trigger{margin-left:4px}@media(pointer:coarse){.help-trigger{width:44px;height:44px}}
+
+/* Barcode branch and second-estimate (Food-R1) refinement */
+.barcode-panel{display:grid;gap:8px;margin:14px 0;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--white)}
+.barcode-panel .form-hint{margin:0}
+.barcode-row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+.barcode-row label{flex:1 1 180px}
+.barcode-video{width:100%;max-height:260px;border-radius:12px;background:#000;object-fit:cover}
+.barcode-result{display:grid;gap:8px}
+.barcode-result p{margin:0}
+.barcode-result label.barcode-use{display:flex!important;flex-direction:row;align-items:center;gap:10px;margin:0;font-size:13px!important;text-align:left}.barcode-result label.barcode-use input{width:18px!important;height:18px;min-height:18px!important;flex:0 0 18px;margin:0;padding:0;accent-color:var(--olive)}
+.refinement-note{margin:10px 0;padding:10px 12px;border-radius:12px;background:var(--lime);color:var(--olive-dark)}
+.refinement-form{display:grid;gap:10px;margin:12px 0;padding:14px;border:1px solid var(--olive);border-radius:14px;background:var(--white)}
+.refinement-form h3{margin:0}
+.refinement-form p{margin:0}
+.refinement-form output{font-weight:700;color:var(--olive-dark)}

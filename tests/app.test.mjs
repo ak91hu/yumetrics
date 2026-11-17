@@ -18,7 +18,7 @@ const analysis = { name: 'Csirkés rizs', confidence: 'medium', assumptions: 'Az
   { name: 'Csirkemell', grams: 150, calories: 165, protein: 31, carbs: 0, fat: 3.6, fiber: 0, sugar: 0, sodium: 74 },
   { name: 'Rizs', grams: 120, calories: 130, protein: 2.7, carbs: 28, fat: .3, fiber: null, sugar: 0, sodium: null },
 ] };
-const env = { OPENCODE_API_KEY: 'test-only-opencode', CLOUDINARY_CLOUD_NAME: 'test-cloud', CLOUDINARY_API_KEY: 'test-only-key', CLOUDINARY_API_SECRET: 'test-only-secret' };
+const env = { OPENCODE_MODEL: 'gemini-3.5-flash-lite', OPENCODE_API_KEY: 'test-only-opencode', CLOUDINARY_CLOUD_NAME: 'test-cloud', CLOUDINARY_API_KEY: 'test-only-key', CLOUDINARY_API_SECRET: 'test-only-secret' };
 function mockProviders({ cloudFailure = false, destroyFailure = false, aiPayload = null, inventory = visualInventory(analysis) } = {}) {
   const calls = [];
   const fetcher = async (url, options) => {

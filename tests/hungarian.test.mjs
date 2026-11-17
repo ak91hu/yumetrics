@@ -65,7 +65,7 @@ test('a prepared ingredient cannot inherit a raw USDA reference; the single requ
   const inventory=visualInventory({...base,ingredients:[base.ingredients[0]]});inventory.ingredients[0].referenceKey='fdc-169756';inventory.ingredients[0].foodState='prepared';inventory.dishProfile='teszta';
   let calls=0,lastRequest;
   const fetcher=async(url,request)=>{calls++;lastRequest=JSON.parse(request.body);return Response.json(aiPayloadFor({...base,ingredients:[base.ingredients[0]]},request,inventory));};
-  const result=await analyze(image,'Teszt',{OPENCODE_API_KEY:'test'},fetcher,{secondImage,context:{dishProfile:'teszta',preparationNotes:'A tészta főtt tömegét adtam meg.'}});
+  const result=await analyze(image,'Teszt',{OPENCODE_MODEL:'gemini-3.5-flash-lite', OPENCODE_API_KEY:'test'},fetcher,{secondImage,context:{dishProfile:'teszta',preparationNotes:'A tészta főtt tömegét adtam meg.'}});
   assert.equal(calls,1);assert.equal(result.analysis.ingredients[0].sourceType,'ai');assert.equal(result.analysis.ingredients[0].referenceKey,null);assert.ok(result.analysis.ingredients[0].portionNote.includes('elkészítési állapota vagy mértékegysége'));
   assert.ok(JSON.parse(lastRequest.contents[0].parts.find(part => part.text).text).context.preparationNotes.includes('főtt tömeg'));
 });
@@ -73,7 +73,7 @@ test('two photos without supplementary fields produce a complete automatic resul
   const inventory = visualInventory(base); inventory.dishProfile = 'rakott';
   inventory.questions = ['Milyen tejföl került bele?', 'Mennyi olajat használtál?'];
   const calls = [];
-  const result = await analyze(image, '', { OPENCODE_API_KEY: 'test' }, async (url, request) => {
+  const result = await analyze(image, '', { OPENCODE_MODEL: 'gemini-3.5-flash-lite', OPENCODE_API_KEY: 'test' }, async (url, request) => {
     calls.push(JSON.parse(request.body)); return Response.json(aiPayloadFor(base, request, inventory));
   }, { secondImage });
   assert.equal(calls.length, 1);
@@ -87,7 +87,7 @@ test('two photos without supplementary fields produce a complete automatic resul
   assert.ok(totals(result.analysis.ingredients).calories > 0);
   assert.deepEqual(result.analysis.questions, []);
   const noQuestions = { ...inventory, questions: [] };
-  const automatic = await analyze(image, '', { OPENCODE_API_KEY: 'test' }, async (url, request) => Response.json(aiPayloadFor(base, request, noQuestions)), { secondImage });
+  const automatic = await analyze(image, '', { OPENCODE_MODEL: 'gemini-3.5-flash-lite', OPENCODE_API_KEY: 'test' }, async (url, request) => Response.json(aiPayloadFor(base, request, noQuestions)), { secondImage });
   assert.deepEqual(automatic.analysis.questions, []);
 });
 test('server save normalises recipe nutrients, keeps the original photo analysis and is owner-scoped',async t=>{

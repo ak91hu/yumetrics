@@ -26,7 +26,7 @@ const ingredient = { name: 'Teszt avokádó', grams: 100, calories: 160, protein
 const avatarUrl = 'https://lh3.googleusercontent.com/a/browser-avatar';
 const avatarSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#547a93"/><circle cx="32" cy="24" r="12" fill="#f3d4b4"/><path d="M8 64a24 24 0 0 1 48 0" fill="#f3d4b4"/></svg>';
 let providerCalls = 0, aiRequests = 0, failFirstAnalysis = true; const storedPhotos = new Map(), googleClient = testGoogleClient({ picture: avatarUrl });
-const env = { NODE_ENV: 'production', USDA_API_KEY:'test-usda', GOOGLE_CLIENT_ID: 'test-client', GOOGLE_CLIENT_SECRET: 'test-secret', OPENCODE_API_KEY: 'browser-test', CLOUDINARY_CLOUD_NAME: 'test-cloud', CLOUDINARY_API_KEY: 'browser-test', CLOUDINARY_API_SECRET: 'browser-test' };
+const env = { NODE_ENV: 'production', USDA_API_KEY:'test-usda', GOOGLE_CLIENT_ID: 'test-client', GOOGLE_CLIENT_SECRET: 'test-secret', OPENCODE_MODEL: 'gemini-3.5-flash-lite', OPENCODE_API_KEY: 'browser-test', CLOUDINARY_CLOUD_NAME: 'test-cloud', CLOUDINARY_API_KEY: 'browser-test', CLOUDINARY_API_SECRET: 'browser-test' };
 let runner, analysisGate, releaseAnalysis;
 const db = openDatabase(':memory:');
 const fetcher = async (url, options) => {

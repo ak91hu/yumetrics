@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {archiveText,archiveJson,readAiResponse,imageHashes} from '../lib/ai-archive.mjs';
 
 test('archives redact credentials, encoded credentials, bearer tokens and images before limiting text',()=>{
-  const env={OPENCODE_API_KEY:'private-key',DATABASE_URL:'postgres://user:password@db/app',MODAL_PROXY_TOKEN_SECRET:'ws-private12345',OTHER_SECRET:'quote"slash\\value'};
+  const env={OPENCODE_MODEL:'gemini-3.5-flash-lite', OPENCODE_API_KEY:'private-key',DATABASE_URL:'postgres://user:password@db/app',MODAL_PROXY_TOKEN_SECRET:'ws-private12345',OTHER_SECRET:'quote"slash\\value'};
   const raw=JSON.stringify({name:'Rice',key:env.OPENCODE_API_KEY,encoded:env.OTHER_SECRET,image:'data:image/png;base64,YWJjZA==',auth:'Bearer abc.def',db:env.DATABASE_URL});
   const saved=archiveText(raw,env);for(const value of Object.values(env))assert.ok(!saved.text.includes(value));
   assert.ok(!saved.text.includes('YWJjZA=='));assert.ok(!saved.text.includes('abc.def'));assert.equal(saved.redacted,true);
@@ -25,7 +25,7 @@ test('Modal output and generation provenance are stored even when the returned f
   const limited=await readAiResponse(Response.json({candidates:[{finishReason:'MAX_TOKENS',content:{parts:[{text:'{"name":'}]}}]}),{},'opencode');assert.equal(limited.archive.responseTruncated,true);
 });
 test('HTTP errors, malformed JSON and bounded partial responses remain inspectable without exposing hidden content',async()=>{
-  const error=await readAiResponse(Response.json({error:{message:'Rejected private-key',status:'DENIED'}},{status:403}),{OPENCODE_API_KEY:'private-key'},'opencode');assert.match(error.archive.responseText,/Rejected/);assert.ok(!error.archive.responseText.includes('private-key'));
+  const error=await readAiResponse(Response.json({error:{message:'Rejected private-key',status:'DENIED'}},{status:403}),{OPENCODE_MODEL:'gemini-3.5-flash-lite', OPENCODE_API_KEY:'private-key'},'opencode');assert.match(error.archive.responseText,/Rejected/);assert.ok(!error.archive.responseText.includes('private-key'));
   const broken=await readAiResponse(new Response('{broken'),{},'opencode');assert.equal(broken.archive.responseText,'{broken');
   const hidden=await readAiResponse(new Response('{"thought":true,"text":"PRIVATE'),{},'opencode');assert.ok(!hidden.archive.responseText.includes('PRIVATE'));
   const incompletePart=await readAiResponse(new Response('{"candidates":[{"content":{"parts":[{"text":"PRIVATE'),{},'opencode');assert.ok(!incompletePart.archive.responseText.includes('PRIVATE'));

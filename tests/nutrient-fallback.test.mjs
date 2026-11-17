@@ -11,7 +11,7 @@ const cake = {
   ingredients: [{ name: 'Kakaós piskótatekercs', grams: 80, quantityUnit: 'g', foodState: 'prepared',
     calories: 350, protein: 5, carbs: 45, fat: 17, fiber: null, sugar: null, sodium: null, saturatedFat: null }],
 };
-const env = { OPENCODE_API_KEY: 'fixture', FREE_FOOD_SOURCES: 'cnf' };
+const env = { OPENCODE_MODEL: 'gemini-3.5-flash-lite', OPENCODE_API_KEY: 'fixture', FREE_FOOD_SOURCES: 'cnf' };
 
 function payload() {
   const inventory = visualInventory(cake);

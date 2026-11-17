@@ -44,6 +44,6 @@ test('legacy saved quantities survive validation; a new full-image marker is exp
 test('API rejects partial-photo analysis before storing a job, uploading or requesting AI',async t=>{
   const db=openDatabase(':memory:');t.after(()=>db.close());let calls=0;
   const image='data:image/jpeg;base64,'+Buffer.concat([Buffer.from([255,216,255,224]),Buffer.alloc(200)]).toString('base64');
-  const response=await api(new Request('http://localhost/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:randomUUID(),image,secondImage,day:'2026-11-07',time:'12:00',type:'Ebéd',context:{consumedPercent:50}})}),{db,env:{OPENCODE_API_KEY:'test',CLOUDINARY_CLOUD_NAME:'test-cloud',CLOUDINARY_API_KEY:'test',CLOUDINARY_API_SECRET:'test'},userId:'alice',fetcher:()=>{calls++;throw Error('Unexpected provider call');}});
+  const response=await api(new Request('http://localhost/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:randomUUID(),image,secondImage,day:'2026-11-07',time:'12:00',type:'Ebéd',context:{consumedPercent:50}})}),{db,env:{OPENCODE_MODEL:'gemini-3.5-flash-lite', OPENCODE_API_KEY:'test',CLOUDINARY_CLOUD_NAME:'test-cloud',CLOUDINARY_API_KEY:'test',CLOUDINARY_API_SECRET:'test'},userId:'alice',fetcher:()=>{calls++;throw Error('Unexpected provider call');}});
   assert.equal(response.status,400);assert.equal(calls,0);assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM meals').bind().first()).n,0);
 });

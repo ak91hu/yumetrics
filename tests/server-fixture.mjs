@@ -6,7 +6,7 @@ import { secondImage, aiPayloadFor, testGoogleClient } from './fixtures.mjs';
 
 const image = Buffer.concat([Buffer.from([255,216,255,224]),Buffer.alloc(200)]);
 const db = await openPostgresDatabase(process.env.TEST_DATABASE_URL);
-const env = { GOOGLE_CLIENT_ID:'test-client',GOOGLE_CLIENT_SECRET:'test-secret',OPENCODE_API_KEY:'test-ai',CLOUDINARY_CLOUD_NAME:'test-cloud',CLOUDINARY_API_KEY:'test-key',CLOUDINARY_API_SECRET:'test-secret' };
+const env = { GOOGLE_CLIENT_ID:'test-client',GOOGLE_CLIENT_SECRET:'test-secret',OPENCODE_MODEL:'gemini-3.5-flash-lite', OPENCODE_API_KEY:'test-ai',CLOUDINARY_CLOUD_NAME:'test-cloud',CLOUDINARY_API_KEY:'test-key',CLOUDINARY_API_SECRET:'test-secret' };
 const googleClient = testGoogleClient({ sub:process.env.TEST_GOOGLE_SUB });
 const fetcher = async (url, options) => {
   if(url.startsWith('https://res.cloudinary.com/')) return new Response(url.includes('-angle')?Buffer.from(secondImage.split(',')[1],'base64'):image,{headers:{'Content-Type':'image/jpeg'}});

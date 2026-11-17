@@ -11,7 +11,7 @@ test('automatic assembly publishes only the completed result and saves it withou
   const db=openDatabase(':memory:');t.after(()=>db.close());const userId=randomUUID(),mealId=randomUUID(),time=new Date().toISOString();
   await db.prepare('INSERT INTO users(id,google_sub,email,name,created_at,updated_at) VALUES(?,?,?,?,?,?)').bind(userId,userId,'automatic@example.test','Test',time,time).run();
   const photo='data:image/jpeg;base64,'+Buffer.concat([Buffer.from([255,216,255,224]),Buffer.alloc(200)]).toString('base64');
-  const env={OPENCODE_API_KEY:'fixture',FREE_FOOD_SOURCES:'cnf',MODAL_FOOD_URL:'https://test-food.modal.run/recognize',MODAL_PROXY_TOKEN_ID:'fixture',MODAL_PROXY_TOKEN_SECRET:'fixture',CLOUDINARY_CLOUD_NAME:'test-cloud',CLOUDINARY_API_KEY:'fixture',CLOUDINARY_API_SECRET:'fixture'};
+  const env={OPENCODE_MODEL:'gemini-3.5-flash-lite', OPENCODE_API_KEY:'fixture',FREE_FOOD_SOURCES:'cnf',MODAL_FOOD_URL:'https://test-food.modal.run/recognize',MODAL_PROXY_TOKEN_ID:'fixture',MODAL_PROXY_TOKEN_SECRET:'fixture',CLOUDINARY_CLOUD_NAME:'test-cloud',CLOUDINARY_API_KEY:'fixture',CLOUDINARY_API_SECRET:'fixture'};
   const input={name:'Gouda sajt',confidence:'medium',ingredients:[{name:'Gouda sajt',grams:50,quantityUnit:'g',foodState:'as_sold',calories:999,protein:1,carbs:1,fat:1,fiber:null,sugar:null,sodium:null,saturatedFat:null}]};
   const inventory=visualInventory(input);Object.assign(inventory.ingredients[0],{lookupQuery:'Cheese, gouda',identityUncertain:true,alternatives:['Más sajt']});
   const values=Object.entries({208:357,203:24.94,205:2.22,204:28,291:0,269:2.22,307:819,606:17.614}).map(([id,value])=>({food_code:109,nutrient_name_id:Number(id),nutrient_value:value}));

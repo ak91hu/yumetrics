@@ -13,7 +13,7 @@ import { secondImage, aiPayloadFor } from './fixtures.mjs';
 const connection = process.env.TEST_DATABASE_URL;
 if (connection && !new URL(connection).pathname.endsWith('_test')) throw new Error('Use a dedicated _test database.');
 const image = 'data:image/jpeg;base64,'+Buffer.concat([Buffer.from([255,216,255,224]),Buffer.alloc(200)]).toString('base64');
-const env={OPENCODE_API_KEY:'test',CLOUDINARY_CLOUD_NAME:'test-cloud',CLOUDINARY_API_KEY:'test',CLOUDINARY_API_SECRET:'test'};
+const env={OPENCODE_MODEL:'gemini-3.5-flash-lite', OPENCODE_API_KEY:'test',CLOUDINARY_CLOUD_NAME:'test-cloud',CLOUDINARY_API_KEY:'test',CLOUDINARY_API_SECRET:'test'};
 const analysis={name:'Teszt',confidence:'medium',assumptions:'Teszt',ingredients:[{name:'Hús',grams:100,calories:200,protein:25,carbs:0,fat:11,fiber:0,sugar:0,sodium:70}]};
 const fetcher=async(url,options)=>url.startsWith('https://res.cloudinary.com/')?new Response(Buffer.from((url.includes('-angle')?secondImage:image).split(',')[1],'base64'),{headers:{'Content-Type':'image/jpeg'}}):url.endsWith('/upload')?Response.json({public_id:options.body.get('public_id'),secure_url:`https://res.cloudinary.com/test-cloud/image/authenticated/v1/${options.body.get('public_id')}.jpg`,width:100,height:80}):url.endsWith('/destroy')?Response.json({result:'ok'}):Response.json(aiPayloadFor(analysis,options));
 async function seed(db,id) {const now=new Date().toISOString();await db.prepare('INSERT INTO users(id,google_sub,email,name,created_at,updated_at) VALUES(?,?,?,?,?,?)').bind(id,id,'test@example.test','Test',now,now).run();}

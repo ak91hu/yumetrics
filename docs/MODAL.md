@@ -55,6 +55,10 @@ A `GET /health` csak CPU-n ellenőrzi a védett végpontot. A `POST /recognize` 
 
 A modell a kész étellistánál megáll. A 160 új tokenes korlátot elérő, használhatatlan válasz, időtúllépés, hibás verzió vagy hálózati hiba esetén az OpenCode önállóan folytatja, újabb segédhívás nélkül. A gateway 45 másodperc után törli a függő modellhívást és leállítja annak konténerét. A hitelesítés nélküli kérést a Modal a gateway és a GPU előtt elutasítja.
 
+### `/estimate`: második becslés eszkalációhoz
+
+A `POST /estimate` ugyanazt a törzset várja, mint a `/recognize`. Külön prompttal (`food-r1-estimate-v1`) tételenként nevet, ehető grammot és kcal-t, valamint `total_kcal` összeget ad, legfeljebb 480 új tokennel. A Node-adapter a modellt, a revíziót, a `mode=estimate` mezőt és a csonkolást ellenőrzi. Az összeget a gateway és a Node is a tételekből számolja; a modell saját `total_kcal` értéke nem kötelező, és nem is fogadjuk el. A végpontot a `food_r1_job` feladatsor hívja (`lib/refinement.mjs`), nem az elemzés kérése, ezért a gateway itt 160 másodpercig vár a hideg GPU-ra (a `/recognize` 45 másodperce változatlan). Telepítve: 2026-11-17, `modal deploy scripts/modal_foodr1.py`, a `yumetrics` Modal-profillal.
+
 ## Költségek
 
 A 2026. november 10-i ellenőrzéskor mindkét konténerszám nulla, a modellkötet körülbelül 16,35 GiB volt. Ez belefér az [árlista](https://modal.com/pricing) 1 TiB-os ingyenes Volume-keretébe, így kérés nélkül az elvárt üresjárati díj 0 USD/nap. Ez nem teljes napos számlázási mérés. Más feltöltések, tesztek, egészségellenőrzések, további tárhely és más alkalmazások eltérő fogyasztást okozhatnak.

@@ -2,7 +2,7 @@
 
 A Yumetrics magyar és angol nyelvű, Google-fiókkal használható étkezési napló. Egy étkezéshez egy kötelező és egy opcionális fényképet fogad. Az AI feladata az ételek azonosítása, az összetevők és mennyiségek becslése, valamint a bizonytalanságok megjelölése. A tápanyagok adagra vetítését és összesítését determinisztikus JavaScript-kód végzi. A felhasználó ellenőrzi és külön művelettel menti az eredményt.
 
-Frissítve a **2026. november 13-i Gemini + ingyenes adatforrások útvonalra**. A korábbi mérések nem tekinthetők automatikusan az aktuális folyamat hitelesítésének. A korábbi modellpárosok és mérések az AI-fejezetben történeti előzményként szerepelnek.
+Frissítve a **2026. november 17-i GPT-6 Luna + Jev útvonalra** (architektúraterv: képelemzés → ingyenes adat-API-k → egy Jev-kérés → determinisztikus számítás; bizonytalanságnál Food-R1 második becslés). A korábbi mérések nem tekinthetők automatikusan az aktuális folyamat hitelesítésének. A korábbi modellpárosok és mérések az AI-fejezetben történeti előzményként szerepelnek.
 
 ## A rendszer fő jellemzői
 
@@ -13,8 +13,11 @@ Frissítve a **2026. november 13-i Gemini + ingyenes adatforrások útvonalra**.
 | Éles adatok | Northflank PostgreSQL; tranzakciók, migrációk, tartós feldolgozási sor |
 | Képtárolás | Cloudinary `authenticated` képek, szerveroldali hozzáférés-ellenőrzéssel |
 | Hitelesítés | Google OpenID Connect, OAuth authorization code, PKCE |
-| Ételnévjavaslatok | Food-R1 8B csak erősen bizonytalan ételazonosságnál, legfeljebb egyszer |
-| Teljes képelemzés | OpenCode-on elért Gemini 3.5 Flash Lite, egy strukturált JSON-válasszal |
+| Zárt döntések | TypeSafe Jev (`jev-1.14.0`): ételcsoport, adatbázis-tétel, elkészítés, rejtett zsiradék, szósz, vegyes étel; mért küszöbökkel |
+| Második becslés | Food-R1 8B a Modalon, csak eszkalált étkezésnél, tartós feladatsorból (`/estimate`) |
+| Teljes képelemzés | OpenCode-on elért GPT-6 Luna, szigorú JSON-sémával, a Cloudinaryban tárolt eredeti fotó aláírt, kicsinyített másolatából |
+| Vonalkód | Böngészős felismerés (BarcodeDetector / ZXing) és Open Food Facts, AI-hívás nélkül |
+| Telepíthető webapp | PWA-manifest, ikonok, gyorsítótár nélküli service worker |
 | Tápértékforrás | Eredeti címke, helyi USDA, USDA/FNDDS, CNF, svéd, norvég, OFF vagy jelölt becslés |
 | Dokumentáció | MkDocs 1.6.1, helyben kiszolgált statikus HTML és keresőindex |
 
@@ -24,9 +27,10 @@ Frissítve a **2026. november 13-i Gemini + ingyenes adatforrások útvonalra**.
 Google-belépés → fénykép és kiegészítő adatok
   → böngészős képelőkészítés → tartós képfeltöltés
   → PostgreSQL-feladat → képek visszaolvasása
-  → egy OpenCode/Gemini elemzés az eredeti képekkel
-  → csak erősen bizonytalan ételazonosságnál: Food-R1-javaslat
-  → ingyenes adatforrások, pontos egyeztetés és tartós gyorsítótár
+  → vonalkód a fotón és Open Food Facts-tápérték esetén: címke × mennyiség, AI nélkül
+  → egyébként egy GPT-6 Luna elemzés (Cloudinary-transzformált kép)
+  → ingyenes adatforrások jelöltjei + egy Jev-kérés (Q1–Q6), gyorsítótárral
+  → gyors ág, vagy eszkalációnál Food-R1 második becslés a háttérben
   → szerveroldali validálás és tápértékszámítás
   → ellenőrizhető piszkozat → felhasználói javítás és mentés
   → napló, statisztikák, jelvények és heti haladás

@@ -1,0 +1,50 @@
+[
+  {
+    "id": "dish_1558639876",
+    "source": "https://github.com/google-research-datasets/Nutrition5k",
+    "fastKcal": 104.7,
+    "foodR1Kcal": 132,
+    "truthKcal": 68.18,
+    "path": "fast"
+  },
+  {
+    "id": "dish_1557937157",
+    "source": "https://github.com/google-research-datasets/Nutrition5k",
+    "fastKcal": 544,
+    "foodR1Kcal": 600,
+    "truthKcal": 355.25,
+    "path": "fast"
+  },
+  {
+    "id": "dish_1558641320",
+    "source": "https://github.com/google-research-datasets/Nutrition5k",
+    "fastKcal": 210.9,
+    "foodR1Kcal": 235,
+    "truthKcal": 211.589996,
+    "path": "escalated"
+  },
+  {
+    "id": "dish_1562172643",
+    "source": "https://github.com/google-research-datasets/Nutrition5k",
+    "fastKcal": 776.6,
+    "foodR1Kcal": 624,
+    "truthKcal": 734.269958,
+    "path": "escalated"
+  },
+  {
+    "id": "dish_1558720236",
+    "source": "https://github.com/google-research-datasets/Nutrition5k",
+    "fastKcal": 806,
+    "foodR1Kcal": 780.9,
+    "truthKcal": 887.823059,
+    "path": "fast"
+  },
+  {
+    "id": "dish_1565811139",
+    "source": "https://github.com/google-research-datasets/Nutrition5k",
+    "fastKcal": 369,
+    "foodR1Kcal": 240,
+    "truthKcal": 902.200012,
+    "path": "escalated"
+  }
+]

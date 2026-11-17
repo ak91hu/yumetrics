@@ -56,12 +56,12 @@ test('AI output language survives durable context and does not change quantity o
   const image='data:image/jpeg;base64,'+Buffer.concat([Buffer.from([255,216,255,224]),Buffer.alloc(200)]).toString('base64');
   const base={name:'A meal',confidence:'medium',assumptions:'Test',ingredients:[{name:'Ingredient',grams:100,calories:100,protein:2,carbs:20,fat:1,fiber:1,sugar:0,sodium:1,saturatedFat:null}]};
   const calls=[];const fetcher=async(url,request)=>{calls.push(JSON.parse(request.body));return Response.json(aiPayloadFor(base,request));};
-  const result=await analyze(image,'User notes',{OPENCODE_API_KEY:'test'},fetcher,{secondImage,context:{language:'en',totalWeightG:600,inedibleWeightG:200}});
+  const result=await analyze(image,'User notes',{OPENCODE_MODEL:'gemini-3.5-flash-lite', OPENCODE_API_KEY:'test'},fetcher,{secondImage,context:{language:'en',totalWeightG:600,inedibleWeightG:200}});
   assert.ok(calls[0].systemInstruction.parts[0].text.includes('OUTPUT LANGUAGE: English'));
   assert.ok(calls[0].systemInstruction.parts[0].text.includes('JSON keys, enum values, reference IDs'));
   assert.equal(JSON.parse(calls[0].contents[0].parts.find(part=>part.text).text).context.language,'en');
   assert.equal(result.analysis.ingredients[0].grams,400);assert.equal(result.analysis.portionScope,'full_image');assert.ok(result.analysis.assumptions.includes('remaining 400 g edible food'));
-  const hungarian=await analyze(image,'User notes',{OPENCODE_API_KEY:'test'},fetcher,{secondImage,context:{language:'hu',totalWeightG:600,inedibleWeightG:200}});
+  const hungarian=await analyze(image,'User notes',{OPENCODE_MODEL:'gemini-3.5-flash-lite', OPENCODE_API_KEY:'test'},fetcher,{secondImage,context:{language:'hu',totalWeightG:600,inedibleWeightG:200}});
   const hungarianPrompt=calls[1].systemInstruction.parts[0].text;
   for(const rule of ['természetes, választékos, gördülékeny magyar nyelven','tegezve','kerüld a tükörfordítást, szóismétlést','ünnepélyességet'])assert.ok(hungarianPrompt.includes(rule));
   assert.equal(calls.length,2,'The language policy must not add another AI request');

@@ -45,6 +45,25 @@ A worker visszaolvassa a védett képeket, meghívja a beállított felismerőke
 
 A `PATCH /api/meals/:id` csak szerkeszthető állapotban és megfelelő `revision` mellett működik. A sikeres mentés növeli a revíziót, `saved` állapotot állít be, és ugyanabban a tranzakcióban frissíti a heti aktivitást és kihívást.
 
+## Vonalkódos ág
+
+Ha a feltöltés `barcode` mezőt tartalmaz (böngészőben felismert kód + Open Food Facts 100 g/ml-es értékek + a felhasználó mennyisége), a worker a képek biztonságos tárolása után **AI-hívás nélkül** állítja elő a piszkozatot (`model=barcode/open-food-facts`, `usage.pipeline.path=barcode`).
+
+## Food-R1 eszkalációs feladatsor
+
+Az `escalated` útvonalú elemzés mentésével ugyanabban a tranzakcióban sor kerül a `food_r1_job` táblába, és a bejegyzés `refinement` mezője `pending` lesz. Külön runner dolgozza fel, 5 másodperces ütemezéssel. PostgreSQL-ben `FOR UPDATE SKIP LOCKED` és 240 másodperces lease mellett veszi fel a feladatot, majd a Modal `/estimate` végpontot hívja.
+
+```text
+food_r1_job:  queued → running → done
+                  ↑        └──→ queued (hiba: 30 s · 2^n, legfeljebb 6 óra; 4. hibánál riasztás)
+                  └── 8. hiba után: failed (a gyors eredmény marad)
+refinement:   pending → reconciled (|eltérés| ≤ δ, átlag, szélesített sáv)
+                      → question → answered (adagcsúszka + elkészítés, személyes prior)
+                      → failed / unavailable
+```
+
+A pontosított eredmény csak akkor írja felül a piszkozatot, ha a felhasználó még nem szerkesztette vagy mentette (a revízió nem változott). A belső havi Modal-keret elérése nem számít hibának: a feladat 6 óra múlva folytatódik.
+
 ## Törlés és leállás
 
 A törlés előbb tartós `delete` feladatot hoz létre. A worker eltávolítja a Cloudinary-képeket, majd az étkezést. Ha a képtár nem érhető el, a bejegyzés és a képazonosítók megmaradnak, hogy a művelet később folytatható legyen. Az AI-archívumot az étkezés törlése nem törli automatikusan.

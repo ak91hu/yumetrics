@@ -131,7 +131,7 @@ test('concurrent large requests stay bounded and release their slots after finis
     if(url.startsWith('https://res.cloudinary.com/'))return new Response(Buffer.from(image.split(',')[1],'base64'),{headers:{'Content-Type':'image/jpeg'}});
     const key=options.body.get('public_id');return Response.json({public_id:key,secure_url:photoFor(key.split('/')[1]).url,width:10,height:10});
   };
-  const server=createApp({db,env:{...env,OPENCODE_API_KEY:'test'},fetcher});server.listen(0,'127.0.0.1');await once(server,'listening');
+  const server=createApp({db,env:{...env,OPENCODE_MODEL:'gemini-3.5-flash-lite', OPENCODE_API_KEY:'test'},fetcher});server.listen(0,'127.0.0.1');await once(server,'listening');
   const origin=`http://127.0.0.1:${server.address().port}`;
   t.after(async()=>{unblock();await new Promise(resolve=>server.close(resolve));await db.close();});
   const waitStarted=async count=>{while(started<count)await new Promise(resolve=>notify=resolve);observed=started;};

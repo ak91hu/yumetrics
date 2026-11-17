@@ -102,7 +102,7 @@ test('each free provider is connected independently and food data requests conta
       const vals={1008:['kcal',356],1003:['g',25],1005:['g',2],1004:['g',27],1079:['g',0],1093:['mg',819],1258:['g',17]};
       return Response.json({fdcId:123,description:'Cheese, gouda',dataType:'SR Legacy',foodNutrients:Object.entries(vals).map(([id,[unit,amount]])=>({nutrient:{id:Number(id),unitName:unit},amount}))});
     };
-    const data=await enrichFoodData({ingredients:[item()]},{FREE_FOOD_SOURCES:source,USDA_API_KEY:'test-usda',OPENCODE_API_KEY:'SECRET_IMAGE'},fetcher);
+    const data=await enrichFoodData({ingredients:[item()]},{FREE_FOOD_SOURCES:source,USDA_API_KEY:'test-usda',OPENCODE_MODEL:'gemini-3.5-flash-lite', OPENCODE_API_KEY:'SECRET_IMAGE'},fetcher);
     assert.equal(data.matches.get(0)?.record.source,source);assert.ok(calls.length>0);
   }
 });
@@ -145,7 +145,7 @@ function geminiPayload(overrides={}) {
   Object.assign(inventory,overrides);
   return aiPayloadFor(analysis,null,inventory);
 }
-const baseEnv={OPENCODE_API_KEY:'test',FREE_FOOD_APIS:'0',MODAL_FOOD_URL:'https://test-food.modal.run/recognize',MODAL_PROXY_TOKEN_ID:'test',MODAL_PROXY_TOKEN_SECRET:'test'};
+const baseEnv={OPENCODE_MODEL:'gemini-3.5-flash-lite', OPENCODE_API_KEY:'test',FREE_FOOD_APIS:'0',MODAL_FOOD_URL:'https://test-food.modal.run/recognize',MODAL_PROXY_TOKEN_ID:'test',MODAL_PROXY_TOKEN_SECRET:'test'};
 test('default path sends exactly one Gemini request and no Food-R1 for clear identities or mere portion uncertainty', async () => {
   let calls=0;const result=await analyze(photo,'',baseEnv,async url=>{calls++;assert.ok(url.includes(':generateContent'));return Response.json(geminiPayload({confidence:'low'}));});
   assert.equal(calls,1);assert.equal(result.usage.recognition.state,'not_needed');
@@ -232,7 +232,7 @@ test('an incomplete original label is enriched by OFF in the one-Gemini flow wit
   const analysis={name:'Drink',confidence:'medium',ingredients:[{...item({quantityUnit:'ml',productLabel:label}),...nutrients}]};
   const inventory=visualInventory(analysis);Object.assign(inventory.ingredients[0],item({quantityUnit:'ml',productLabel:label}));
   let gemini=0,off=0;
-  const result=await analyze(photo,'',{OPENCODE_API_KEY:'test',FREE_FOOD_SOURCES:'off'},async(url,options)=>{
+  const result=await analyze(photo,'',{OPENCODE_MODEL:'gemini-3.5-flash-lite', OPENCODE_API_KEY:'test',FREE_FOOD_SOURCES:'off'},async(url,options)=>{
     if(url.startsWith('https://opencode.ai/')){gemini++;return Response.json(aiPayloadFor(analysis,JSON.parse(options.body),inventory));}
     off++;assert.ok(url.startsWith('https://world.openfoodfacts.org/'));return Response.json({product:offProduct()});
   });

@@ -2,9 +2,22 @@
 
 **Heti emailes összesítő:** a Fiókom nézetben bekapcsolható magyar/angol jelentés vasárnap 20:00-kor, napi kalóriagrafikonnal, makrotápanyag- és étkezéstípus-bontással, valamint az előző hét trendjeivel. Brevo SMTP-beállítás és éles telepítés szükséges. [Részletek](docs/WEEKLY-EMAIL.md).
 
-**Legújabb folyamat:** `food-v22-required-nutrient-fallback` – automatikus felismerés, ingyenes adatforrás-lekérés, egyeztetés és tápérték-összeállítás. A felhasználó először a kész eredményt látja; az adatforrás-kereső és szerkesztő opcionális, alapból csukott részben érhető el. Nincs kötelező forrásválasztás vagy pontosító kérdés. A fennmaradó bizonytalanságot a végeredmény jelzi.
+**Legújabb folyamat (2026-11-17): GPT-6 Luna + TypeSafe Jev.** Az architektúraterv szerint fotónként egy fizetős képelemzés fut. A többi lépés ingyenes adat-API-kból és a Jev olcsó, zárt döntéseiből áll, a kalóriát mindig kód számolja.
 
-**Aktuális megvalósítás, 2026-11-13:** Gemini 3.5 Flash Lite az alap, egy elemzőkéréssel. Utána USDA/FNDDS, kanadai CNF, svéd, norvég és Open Food Facts adapterek segítik a forrásegyeztetést, tartós gyorsítótárral és kéréskorlátokkal. Food-R1 csak kifejezetten bizonytalan ételazonosságnál indul, legfeljebb egyszer; nincs második Gemini-hívás. [Működés, beállítás és ellenőrzés](docs/FREE-FOOD-INTEGRATION-2026-11-13.md). Az alábbi korábbi kísérletek történeti eredmények, nem az új folyamat pontosságmérései.
+1. **Képelemzés.** GPT-6 Luna az OpenCode-on, szigorú JSON-sémával. A modell a Cloudinaryban tárolt eredeti fotó aláírt, kicsinyített másolatát kapja. Hibás vagy hiányos válasznál egyszer újrapróbál.
+2. **Jelöltek.** USDA, CNF és beépített referenciák, gyorsítótárral.
+3. **Egy Jev-kérés hat kérdéssel.** Ételcsoport, adatbázis-tétel, elkészítés, rejtett zsiradék, szósz, vegyes étel. A küszöböket mérés alapján állítottuk be.
+4. **Útvonal.** A gyors ág azonnal eredményt ad. Bizonytalanságnál a háttérben lefut a Food-R1 második kalóriabecslése: közeli eredménynél átlagol, nagy eltérésnél a felhasználót kérdezi meg (adagcsúszka és elkészítés).
+5. **Személyes adagszorzó.** A felhasználó javításaiból tanul.
+
+Ezen felül:
+- **Vonalkódos ág:** a fotón talált vagy beírt kódhoz az Open Food Facts címkeértékei és a megadott mennyiség számol, AI nélkül.
+- **Telepíthető webapp (PWA):** telefonon a kezdőképernyőre tehető.
+- **Költségek:** élő próbán egy elemzés kb. 0,0012 USD (Luna) + 0,00014 USD (Jev).
+
+Részletek: [AI-folyamat](docs/technical/ai.md), [Jev-kalibráció és helyességellenőrzés](docs/JEV-CALIBRATION-2026-11-17.md), [Modal Food-R1](docs/MODAL.md). Az alábbi korábbi bejegyzések történeti eredmények, nem az új folyamat pontosságmérései.
+
+**Korábbi megvalósítás, 2026-11-13:** Gemini 3.5 Flash Lite egy elemzőkéréssel, utána USDA/FNDDS, kanadai CNF, svéd, norvég és Open Food Facts adapterek. [Működés, beállítás és ellenőrzés](docs/FREE-FOOD-INTEGRATION-2026-11-13.md). A Gemini- és Haiku-adapter megmaradt, az adminban választható.
 
 A piszkozat kézi forráskeresője is több adatbázist használ: a találat teljes rekordját a szerver ellenőrzi, a kiválasztott étel neve és tápértéke frissül, a mennyiség megmarad. A meglévő Northflank USDA-kulccsal a helyi alkalmazás HTTP-keresése és forrásválasztása is ellenőrzött, új AI-hívás nélkül. A végső tesztfutás: 200 sikeres, 22 kihagyott, 0 hibás teszt; a build sikeres.
 
@@ -20,7 +33,7 @@ A 2026. november 10-i döntések, javítások, költségfeltételek és még csa
 
 **[Élő alkalmazás](https://yumetrics.app)** · **[Magyar útmutató](https://yumetrics.app/utmutato)** · **[English guide](https://yumetrics.app/guide)** · **[MkDocs technikai dokumentáció](https://yumetrics.app/docs/)**
 
-Frissítve: 2026. november 13. · AI-módszerváltozat: `food-v22-required-nutrient-fallback`.
+Frissítve: 2026. november 17. · AI-módszerváltozat: `food-v23-luna-jev`, döntési réteg: `jev-decisions-v1` (`jev-1.14.0`).
 
 Adatvédelmi dokumentáció: [magyar és angol tájékoztató, felhasználási feltételek, jogi kutatás és belső GDPR-eljárásrend](docs/legal/README.md). **Felülvizsgálati tervezetek, nem hatályos ÁSZF vagy megfelelőségi igazolás.** A csomag a tényleges tárolási helyeket és a még rendezendő hozzájárulási, megőrzési, törlési és szolgáltatói szerződéses kérdéseket is bemutatja. Az üzemeltető Kovács Ákos; a tervezett korhatár 18 év. A dokumentálás önmagában nem vezette be a szükséges műszaki folyamatokat.
 
@@ -38,9 +51,9 @@ A Yumetrics az étkezés dokumentálását és az ellenőrizhető számítást k
 
 1. **Belépés.** A Google igazolja a fiók azonosságát, a szerver helyi munkamenetet hoz létre. A napló több eszközről ugyanazzal a fiókkal érhető el; a Google-jelszó nem kerül az alkalmazáshoz.
 2. **Adatrögzítés.** Egy fénykép kötelező, a második opcionális. Telefonon külön kamera- és képkiválasztási lehetőség van. Dátum, étkezéstípus, megjegyzés, ismert tömeg és más kiegészítő adat segítheti az értelmezést.
-3. **Képelőkészítés.** A böngésző dekódolja, az első fotót legfeljebb 1600, a második részlet-/címkefotót 2048 pixeles hosszabb oldalra méretezi és JPEG-ként újrarajzolja a képet. Az eredeti EXIF/GPS-metaadatokat nem másolja át. A szerver a formátumot, a méretet és a két kép azonosságát is ellenőrzi.
+3. **Képelőkészítés és vonalkód.** A böngésző dekódolja a képet, és az eredeti felbontáson vonalkódot keres. Ehhez a natív `BarcodeDetector`, annak hiányában a beépített ZXing fut. Ezután közel eredeti méretben (legfeljebb 3072 px) JPEG-ként újrarajzolja a képet, a 4 MB-os korláthoz igazítva. Az eredeti EXIF/GPS-metaadatokat nem másolja át. A modellnek szánt kisebb változatot később a Cloudinary-transzformáció készíti. A szerver a formátumot, a méretet és a két kép azonosságát is ellenőrzi.
 4. **Tartós feltöltés.** A képek védett Cloudinary-tárolásba, a bejegyzés és a feldolgozási feladat PostgreSQL-be kerül. A `202 Accepted` válasz ezt igazolja; nem jelenti, hogy az AI már elkészült. A háttérfeldolgozás a felugró ablak bezárása után is folytatódik.
-5. **Felismerés és ellenőrzés.** Az OpenCode-on elért Gemini 3.5 Flash Lite a fotókból egyetlen strukturált elemzést ad. Bizonytalan ételazonosságnál a konfigurált Food-R1 további névjavaslatokat adhat; ezek ellenőrzendő javaslatok maradnak. Az adat-API-k a megfelelő tápértékforrás kiválasztását segítik további LLM-hívás nélkül.
+5. **Felismerés, döntések és ellenőrzés.** Vonalkód és Open Food Facts-tápérték esetén nincs AI-hívás: a címkeérték és a megadott mennyiség számol. Egyébként az OpenCode-on elért GPT-6 Luna a kicsinyített képekből egyetlen strukturált elemzést ad. Az adat-API-k jelölteket gyűjtenek, és egy TypeSafe Jev-kérés zárt döntéseket hoz: ételcsoport, adatbázis-tétel („egyik sem” lehetőséggel), elkészítés, rejtett zsiradék, szósz és vegyes étel. Bizonytalanságnál az étkezés eszkalált lesz, és a háttérben a Food-R1 független második kalóriabecslést készít.
 6. **Számítás és piszkozat.** A szerver ellenőrzi az egységeket, a forrásokat és a számszerű összefüggéseket. Összetevőnként kiszámolja az adagra jutó tápanyagokat és azok összegét. Az elkészült elemzés piszkozat; a felület tetején jól látható jelzés nyitja meg az ellenőrzést.
 7. **Javítás és mentés.** Az ételnév, a tömeg, a forrás és a recept módosítható. A végleges mentés külön művelet. A revízióellenőrzés megakadályozza, hogy egy régi böngészőablak észrevétlenül felülírjon újabb adatot.
 8. **Napló és visszajelzés.** A mentett étkezésekből naptár, napi összesítés, időszaki átlagok, fejlődés és heti haladás készül. Ezekhez nincs szükség további AI-hívásra.
@@ -48,11 +61,12 @@ A Yumetrics az étkezés dokumentálását és az ellenőrizhető számítást k
 ```text
 Fotó + ismert adatok
   → biztonságos képfeltöltés és tartós feladat
-  → OpenCode/Gemini képelemzés
-  → csak bizonytalan ételazonosságnál: Food-R1-javaslatok
-  → helyi referencia / ingyenes adat-API-k, gyorsítótárral
-  → szerveroldali validálás és számítás
+  → vonalkód + Open Food Facts? → címkeérték × mennyiség, AI nélkül
+  → különben: GPT-6 Luna (Cloudinary-transzformált kép)
+  → ingyenes adat-API-k jelöltjei → egy Jev-kérés (Q1–Q6), gyorsítótárral
+  → szerveroldali validálás és számítás (személyes adagszorzóval)
   → javítható piszkozat → felhasználói mentés
+  → eszkalációnál a háttérben: Food-R1 második becslés → átlag vagy kérdés
   → saját napló, összesítések és jutalmak
 ```
 
@@ -61,7 +75,8 @@ Fotó + ismert adatok
 | Feladat | Felelős |
 | --- | --- |
 | Látható ételek, elkészítés, adag és nem látható hozzávalók bizonytalansága | AI, a felhasználó által ellenőrizhető javaslatként |
-| Food-R1-jelöltek elfogadása vagy elvetése az eredeti fotók alapján | OpenCode/Gemini |
+| Ételcsoport, adatbázis-tétel, elkészítés, rejtett zsiradék, szósz, vegyes étel – zárt döntések | TypeSafe Jev (egy kérés, mért küszöbökkel) |
+| Független második kalóriabecslés eszkalációnál | Food-R1 (Modal), a kód veti össze |
 | Címkeadat átalakítása, referenciaérték ellenőrzése | Szerveroldali programkód |
 | Tápanyagok adagra vetítése, ételenkénti és teljes összeg | Determinisztikus számítás |
 | Saját recept arányosítása lemért kész tömegre | Determinisztikus számítás |
@@ -77,7 +92,8 @@ A Food-R1 nem kötelező második vélemény minden körülmény között. Hibá
 | Webszerver | Node.js 24+, natív HTTP-szerver és JSON API, háttérworker ugyanabban a folyamatban |
 | Alkalmazásadatok | Northflank PostgreSQL: felhasználók, munkamenetek, étkezések, feladatsor, beállítások, naplók és látogatottság |
 | Képek | Cloudinary `authenticated` tárolás; saját, jogosultságot ellenőrző képvégpontok |
-| AI | Modal Food-R1 segéd + OpenCode/Gemini; külön naplózott hívások |
+| AI | OpenCode/GPT-6 Luna képelemzés + TypeSafe Jev döntések + Modal Food-R1 második becslés; külön naplózott hívások és költségek |
+| Kliens | Telepíthető PWA, vonalkód-olvasás (BarcodeDetector / ZXing), Open Food Facts közvetlenül a böngészőből |
 | Tápértékadatok | Termékcímke, 44 beépített USDA-referencia, opcionális élő FoodData Central |
 | Üzemeltetés | GitHub main → Northflank Docker-build → nem rootként futó Node-image |
 | Technikai dokumentáció | MkDocs strict build → statikus `/docs/` oldalak, helyi keresővel |
@@ -198,11 +214,14 @@ A titkok kizárólag Northflank futtatási változóként kerülnek az alkalmaz�
 | `APP_ORIGIN` | Az alkalmazás éles HTTPS-alapcíme |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google OAuth-webkliens |
 | `GOOGLE_REDIRECT_URI` | A Google-nél regisztrált visszatérő cím |
-| `OPENCODE_API_KEY`, `OPENCODE_MODEL` | Szerveroldali AI-hozzáférés; alapmodell: `gemini-3.8-flash` |
-| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Képtárolás |
-| `USDA_API_KEY` | FoodData Central keresés a beépített referenciákon túl |
+| `OPENCODE_API_KEY`, `OPENCODE_MODEL` | Szerveroldali AI-hozzáférés; alapmodell: `gpt-6-luna` |
+| `JEV_API`, `JEV_MODEL` | TypeSafe Jev döntési réteg; rögzített `jev-1.14.0` |
+| `MODEL_IMAGE_MAX_SIDE` | A modellnek küldött Cloudinary-másolat mérete (alapérték 1600 px) |
+| `MODAL_FOOD_URL`, `MODAL_PROXY_TOKEN_ID`, `MODAL_PROXY_TOKEN_SECRET`, `MODAL_MONTHLY_BUDGET_USD` | Food-R1 (külön `yumetrics-modal` titokcsoport) |
+| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Képtárolás és aláírt transzformáció |
+| `USDA_API_KEY` | FoodData Central keresés; a Jev adatbázis-jelöltjeinek fő forrása |
 
-A fotók a Cloudinaryban hitelesítést igénylő tárolást használnak. A böngésző a saját alkalmazás `/api/meals/:id/photo/primary` és `/api/meals/:id/photo/additional` útvonalán kéri le őket; a szerver minden kérésnél ellenőrzi a tulajdonosi vagy adminjogot. Közvetlen szolgáltatói képlinket az API nem ad a felhasználónak. A fotók a naplóban csak a tulajdonosuknak és az alkalmazás tulajdonosának érhetők el, bejelentkezés után. A képek feltöltéskor újrarajzolt, átméretezett JPEG-ek; eredeti EXIF/GPS-adatot nem archiválunk.
+A fotók a Cloudinaryban hitelesítést igénylő tárolást használnak. A böngésző a saját alkalmazás `/api/meals/:id/photo/primary` és `/api/meals/:id/photo/additional` útvonalán kéri le őket; a szerver minden kérésnél ellenőrzi a tulajdonosi vagy adminjogot. Közvetlen szolgáltatói képlinket az API nem ad a felhasználónak. A fotók a naplóban csak a tulajdonosuknak és az alkalmazás tulajdonosának érhetők el, bejelentkezés után. A képek feltöltéskor újrarajzolt, legfeljebb 3072 px-es JPEG-ek; eredeti EXIF/GPS-adatot nem archiválunk. A modellek csak aláírt Cloudinary-transzformációval kapnak kicsinyített másolatot; aláírás nélkül vagy módosított paraméterrel a kép nem érhető el.
 
 Kulcsok és OAuth-beállítás: [API-KEYS.md](docs/API-KEYS.md). Telepítés, mentési javaslatok, helyreállítás és adatmodell: [NORTHFLANK.md](docs/NORTHFLANK.md).
 
@@ -215,6 +234,14 @@ py -3.11 -m venv work/mkdocs-venv
 & work/mkdocs-venv/Scripts/python.exe -m pip install -r scripts/requirements-docs.txt
 $env:MKDOCS_PYTHON = (Resolve-Path work/mkdocs-venv/Scripts/python.exe).Path
 npm run build
+```
+
+Jev-kalibráció és Food-R1 δ-párok (fizetős, néhány cent; kulcsok a környezetből):
+
+```powershell
+node scripts/calibrate-jev.mjs --q2-limit 200 --write          # θ_item, θ_dish → lib/jev-calibration.json
+node scripts/collect-delta-pairs.mjs work/nutrition5k-haiku-v2/cases.json
+node scripts/calibrate-jev.mjs --from outputs/jev-calibration-measured.json --delta-pairs outputs/delta-pairs.json --write
 ```
 
 A PostgreSQL-integrációs tesztekhez külön tesztadatbázis kapcsolatát kell megadni a `TEST_DATABASE_URL` folyamatváltozóban. Az admin PostgreSQL-próbáihoz egy másik, `_admin_test` végű tesztadatbázis kapcsolata szükséges `TEST_ADMIN_DATABASE_URL` néven. A megfelelő változó nélkül az adott PostgreSQL-próbák kimaradnak. A tesztekhez ne használj éles adatbázist. A böngészős ellenőrzés `node scripts/browser-check.mjs` paranccsal fut, headless Chrome-ban. A `TEST_LANGUAGE=hu|en` és `TEST_DEVICE=mobile|desktop` választja ki a nyelvet és a kezelőfelületet.
@@ -263,7 +290,15 @@ A feltöltés és a háttérelemzés ablakában kiemelt OK gomb is van. Ez az ab
 
 A Onesvibe domainazonosító meta tag a bejelentkezés nélküli és a bejelentkezett kezdőlap HTML-fejlécében is szerepel, így a külső ellenőrzéshez nem kell belépés vagy JavaScript.
 
-## Food-R1 és OpenCode együtt
+## Food-R1 második becslés (2026-11-17)
+
+Eszkalált étkezésnél (vegyes étel, meg nem erősített ételcsoport, „egyik sem” vagy bizonytalan adatbázis-tétel) a háttérben a Food-R1 a Modal `/estimate` végpontján tételenként grammot és kcal-t ad. A kód összeveti a gyors eredménnyel:
+- Ha a két érték legfeljebb δ arányban tér el, az átlagot használja, szélesített sávval.
+- Nagyobb eltérésnél a felület adagcsúszkát és elkészítési módot kér. A válasz személyes priorként mentődik.
+
+A feladatsor tartós, növekvő várakozással próbálkozik újra, és tartós hiba esetén hibanaplóval riaszt. Mérések és korlátok: [kalibrációs jelentés](docs/JEV-CALIBRATION-2026-11-17.md).
+
+## Food-R1 és OpenCode együtt (korábbi névsegéd)
 
 A Food-R1 8B a Modalon rövid ételnév-javaslatokat ad, az OpenCode pedig egyetlen kérésben, az eredeti fotókból ellenőrzi őket és elkészíti a teljes elemzést. A tápértékszámítás és a külön mentés változatlan. Hibás segédválasz vagy a belső havi keret elérése esetén az önálló OpenCode-elemzés folytatódik. A két hívás költsége az adminban külön látszik; a Modal becslése csak a mért modellbetöltési és feldolgozási erőforrásrészt tartalmazza.
 

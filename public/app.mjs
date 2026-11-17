@@ -1,4 +1,4 @@
-import { photoDimensions } from '/photo-preparation.mjs';
+import { encodingSteps, UPLOAD_MAX_DATA_URL } from '/photo-preparation.mjs';
 import { t, html, initializeLanguage, getLanguage, locale, messageSource } from '/localization.mjs';
 import { totals, NUTRIENTS, OPTIONAL_NUTRIENTS, TYPES, validateAnalysis, validateImages, metadata } from '/domain.mjs';
 import { FOOD_REFERENCE } from '/food-reference.mjs';
@@ -6,6 +6,8 @@ import { REFERENCE_STATES } from '/hungarian-food.mjs';
 import { installAnalysisUI, dishGuidance, reportMarkup, ingredientMarkup, refreshReport, recipeMarkup } from '/analysis-ui.mjs';
 import { loadProfile, renderProfile, renderAvatar, renderMotivation } from '/profile-ui.mjs';
 import { helpMarkup } from '/context-help.mjs';
+import { detectBarcodes, lookupProduct, startCameraScan } from '/barcode-scan.mjs';
+import { validBarcode } from '/barcode.mjs';
 
 const $ = selector => document.querySelector(selector);
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -40,7 +42,7 @@ const saltNumber = n => n === null || !Number.isFinite(n) ? '—' : new Intl.Num
 const integer = n => new Intl.NumberFormat(locale(), { maximumFractionDigits: 0 }).format(n);
 const dateLabel = day => new Intl.DateTimeFormat(locale(), { month: 'short', day: 'numeric', weekday: 'short' }).format(asDate(day));
 const goal = 2000;
-const state = { selected: today(), month: today().slice(0, 7), meals: [], status: null, goal, photo: null, secondPhoto: null, busy: false, edit: null, dirty: false, deleting: null, loadVersion: 0, uploadId: null, pendingOpenId: null, recipeEditing: false, recipeBackup: null };
+const state = { selected: today(), month: today().slice(0, 7), meals: [], status: null, goal, photo: null, secondPhoto: null, busy: false, edit: null, dirty: false, deleting: null, loadVersion: 0, uploadId: null, pendingOpenId: null, recipeEditing: false, recipeBackup: null, barcode: { codes: [], product: null, message: '' }, stopScan: null };
 const foodRequests = new WeakMap();
 const savingMeals = new Set();
 let toastTimer, photoVersion = 0, secondPhotoVersion = 0, processingPhotos = 0, settingsVersion = 0, renderedDrafts = '';
@@ -75,6 +77,9 @@ async function loadMonth() {
     const readyToOpen = pending?.analysis && pending.status === 'draft';
     if (readyToOpen) { state.pendingOpenId = null; openMeal(pending.id); }
     if (newlyReady || readyToOpen) hideToast();
+    // A finished second estimate replaces the open, unedited result automatically.
+    const refreshed = $('#meal-dialog').open && !state.dirty && state.edit?.analysis && state.meals.find(meal => meal.id === state.edit.id);
+    if (refreshed && JSON.stringify(refreshed.refinement) !== JSON.stringify(state.edit.refinement)) { state.edit = structuredClone(refreshed); renderDetail(); }
     if ($('#meal-dialog').open && !state.dirty && state.edit && !state.edit.analysis) {
       const updated = state.meals.find(meal => meal.id === state.edit.id);
       if (updated) { state.edit = structuredClone(updated); renderDetail(); }
@@ -184,9 +189,50 @@ $('#logout-button').addEventListener('click', async () => {
   state.redirectingToLogin = true;
   try { await request('/api/logout', { method: 'POST' }); window.location.reload(); } catch (error) { state.redirectingToLogin = false; toast(error.message); }
 });
+// Barcode branch: a code on the photo, typed or scanned; label values × quantity, no AI.
+let barcodeVersion = 0;
+function resetBarcode() { barcodeVersion++; state.stopScan?.(); state.stopScan = null; state.barcode = { codes: [], product: null, message: '' }; $('#barcode-input').value = ''; renderBarcode(); }
+function renderBarcode() {
+  const box = $('#barcode-result'), { codes, product, message } = state.barcode;
+  const choice = codes.length > 1 ? `<label>${escape(t('Több vonalkódot találtunk. Melyik termékről van szó?'))}<select id="barcode-choice"><option value="">${escape(t('Válassz…'))}</option>${codes.map(code => `<option ${product?.code === code ? 'selected' : ''}>${escape(code)}</option>`).join('')}</select></label>` : '';
+  let body = message ? `<p>${escape(t(message))}</p>` : '';
+  if (product?.per100) {
+    const name = [product.brand, product.name].filter(Boolean).join(' ') || t('Vonalkódos termék');
+    body = `<p><strong>${escape(name)}</strong> · ${integer(product.per100.calories)} kcal / 100 ${escape(product.unit)} <small>(Open Food Facts, ${escape(product.code)})</small></p>
+      <label>${escape(t(product.unit === 'ml' ? 'Elfogyasztott mennyiség (ml)' : 'Elfogyasztott mennyiség (g)'))}<input type="number" id="barcode-quantity" min="1" max="5000" step="any" value="${escape(product.suggestedQuantity ?? '')}" required></label>
+      <label class="barcode-use"><input type="checkbox" id="barcode-use" checked> ${escape(t('Vonalkód alapján számolj (AI-elemzés nélkül)'))}</label>`;
+  }
+  box.innerHTML = choice + body; box.hidden = !box.innerHTML;
+  $('#barcode-choice')?.addEventListener('change', event => { if (event.target.value) selectBarcode(event.target.value); });
+}
+async function selectBarcode(code) {
+  const version = ++barcodeVersion; $('#barcode-input').value = code;
+  state.barcode = { ...state.barcode, product: null, message: 'A termékadatok keresése…' }; renderBarcode();
+  try {
+    const product = await lookupProduct(code, getLanguage(), request);
+    if (version !== barcodeVersion) return;
+    state.barcode = { ...state.barcode, product, message: product?.per100 ? '' : product ? 'Ehhez a termékhez nincs teljes tápértékadat az Open Food Facts adatbázisban; a fotóelemzés fut.' : 'Ez a vonalkód nem szerepel az Open Food Facts adatbázisban; a fotóelemzés fut.' };
+  } catch (error) { if (version === barcodeVersion) state.barcode = { ...state.barcode, product: null, message: error.message }; }
+  if (version === barcodeVersion) renderBarcode();
+}
+async function findPhotoBarcode(image, version) {
+  try {
+    const codes = await Promise.race([detectBarcodes(image), new Promise(resolve => setTimeout(() => resolve([]), 5000))]);
+    if (version !== photoVersion || !codes.length) return;
+    state.barcode = { ...state.barcode, codes };
+    if (codes.length === 1) await selectBarcode(codes[0]); else { state.barcode.message = ''; renderBarcode(); }
+  } catch { /* No barcode: the photo goes to image analysis. */ }
+}
+$('#barcode-lookup').addEventListener('click', () => { const code = $('#barcode-input').value.trim(); if (!validBarcode(code)) { state.barcode = { ...state.barcode, product: null, message: 'Érvénytelen vonalkód. 8, 12, 13 vagy 14 számjegyet adj meg.' }; renderBarcode(); return; } state.barcode.codes = [code]; selectBarcode(code); });
+$('#barcode-scan').addEventListener('click', async () => {
+  if (state.stopScan) { state.stopScan(); state.stopScan = null; return; }
+  try { state.stopScan = await startCameraScan($('#barcode-video'), code => { state.stopScan = null; state.barcode.codes = [code]; selectBarcode(code); }); }
+  catch { state.barcode = { ...state.barcode, message: 'A kamera nem érhető el. Írd be a vonalkódot kézzel.' }; renderBarcode(); }
+});
+$('#upload-dialog').addEventListener('close', () => { state.stopScan?.(); state.stopScan = null; });
 function openUpload() {
   if (state.busy) { show('#upload-dialog'); return; }
-  state.photo = null; state.secondPhoto = null; state.uploadId = crypto.randomUUID(); photoVersion++; secondPhotoVersion++;
+  state.photo = null; state.secondPhoto = null; state.uploadId = crypto.randomUUID(); photoVersion++; secondPhotoVersion++; resetBarcode();
   $('#upload-form').reset(); $('#upload-day').value = state.selected; $('#upload-time').value = new Date().toTimeString().slice(0, 5);
   $('#upload-form').querySelectorAll('details').forEach(element => { element.open = false; });
   const hour = new Date().getHours(); $('#upload-type').value = hour < 11 ? 'Reggeli' : hour < 16 ? 'Ebéd' : hour < 22 ? 'Vacsora' : 'Kisétkezés';
@@ -215,11 +261,17 @@ async function choosePhoto(file, secondary = false) {
     const image = new Image(); image.src = objectUrl;
     try { await image.decode(); } catch { throw new Error(t('A böngésző nem tudja megnyitni ezt a képet. Ha HEIC- vagy HEIF-fájlt választottál, alakítsd át JPEG-formátumra, majd töltsd fel újra.')); }
     if (!image.naturalWidth || image.naturalWidth * image.naturalHeight > 50_000_000) throw new Error(t('A kép túl nagy felbontású. Legfeljebb 50 megapixeles képet válassz.'));
-    const canvas = document.createElement('canvas');
-    Object.assign(canvas, photoDimensions(image.naturalWidth, image.naturalHeight, secondary));
-    const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL('image/jpeg', .92);
-    if (dataUrl.length > 5_590_000) throw new Error(t('A tömörített kép túl nagy. Válassz kisebb fotót.'));
+    // Original resolution: a shrunken photo can make the barcode unreadable.
+    if (!secondary) { state.barcode = { codes: [], product: null, message: '' }; renderBarcode(); await findPhotoBarcode(image, version); }
+    // Near-original upload; the analysis uses a smaller Cloudinary-derived copy made on the server.
+    let dataUrl = null, drawn = '';
+    const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d');
+    for (const step of encodingSteps(image.naturalWidth, image.naturalHeight)) {
+      if (drawn !== `${step.width}x${step.height}`) { Object.assign(canvas, { width: step.width, height: step.height }); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.drawImage(image, 0, 0, canvas.width, canvas.height); drawn = `${step.width}x${step.height}`; }
+      const candidate = canvas.toDataURL('image/jpeg', step.quality);
+      if (candidate.length <= UPLOAD_MAX_DATA_URL) { dataUrl = candidate; break; }
+    }
+    if (!dataUrl) throw new Error(t('A tömörített kép túl nagy. Válassz kisebb fotót.'));
     if (version !== (secondary ? secondPhotoVersion : photoVersion)) return;
     if (dataUrl === (secondary ? state.photo : state.secondPhoto)) throw new Error(t('Ugyanazt a képet választottad kétszer. Készíts másik nézetet, csomagolt terméknél olvasható címkefotót.'));
     if (secondary) { state.secondPhoto = dataUrl; $('#second-photo-preview').src = dataUrl; $('.second-preview-wrap').hidden = false; }
@@ -245,7 +297,10 @@ $('#upload-form').addEventListener('submit', async event => {
   setUploadBusy(true);
   const id = state.uploadId;
   try {
-    const payload = { id, image: state.photo, secondImage: state.secondPhoto, context: { language: getLanguage(), dishProfile: $('#dish-profile').value, preparationNotes: $('#preparation-notes').value, totalWeightG: $('#context-weight').value ? Number($('#context-weight').value) : null, inedibleWeightG: Number($('#context-inedible').value), plateDiameterCm: $('#context-diameter').value ? Number($('#context-diameter').value) : null }, day: $('#upload-day').value, time: $('#upload-time').value, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, type: $('#upload-type').value, notes: $('#upload-notes').value };
+    const product = state.barcode.product;
+    const barcode = product?.per100 && $('#barcode-use')?.checked ? { code: product.code, name: product.name, brand: product.brand, unit: product.unit, per100: product.per100, quantity: Number($('#barcode-quantity').value) } : undefined;
+    if (barcode && !(barcode.quantity > 0 && barcode.quantity <= 5000)) throw new Error(t('Add meg az elfogyasztott mennyiséget (1–5000).'));
+    const payload = { id, image: state.photo, secondImage: state.secondPhoto, ...(barcode ? { barcode } : {}), context: { language: getLanguage(), dishProfile: $('#dish-profile').value, preparationNotes: $('#preparation-notes').value, totalWeightG: $('#context-weight').value ? Number($('#context-weight').value) : null, inedibleWeightG: Number($('#context-inedible').value), plateDiameterCm: $('#context-diameter').value ? Number($('#context-diameter').value) : null }, day: $('#upload-day').value, time: $('#upload-time').value, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, type: $('#upload-type').value, notes: $('#upload-notes').value };
     const { meal } = await request('/api/analyze', { method: 'POST', body: JSON.stringify(payload) });
 
     state.meals = [...state.meals.filter(item => item.id !== meal.id), meal];
@@ -280,6 +335,9 @@ function renderDetail() {
   const adjustmentsOpen = state.recipeEditing || previousAdjustments?.dataset.mealId === meal.id && previousAdjustments.open;
   $('#meal-detail').innerHTML = html`<form id="detail-form"><div class="detail-top"><img src="${escape(meal.photo.url)}" alt="${escape(analysis.name)}"><div class="detail-summary"><strong id="detail-calories">${integer(total.calories)}</strong><small> kcal</small><div class="detail-totals" id="detail-macros"></div><span class="confidence ${analysis.confidence}">${t('Az AI bizonyossági jelzése:')} ${{ low: t('Alacsony'), medium: t('Közepes'), high: t('Magas') }[analysis.confidence]}</span>${html(helpMarkup('confidence-help', t('Az AI bizonyossági jelzése'), t('Ez a modell saját bizonyossági jelzése, nem méréssel igazolt pontosság. A felismert neveket, mennyiségeket és forrásadatokat ettől függetlenül ellenőrizd.')))}</div></div><details id="result-adjustments" class="report-disclosure" data-meal-id="${escape(meal.id)}" ${adjustmentsOpen ? 'open' : ''}><summary>Adatok módosítása (opcionális)</summary><fieldset  class="detail-fields">${field(t('Az étel neve'), 'name', analysis.name, 'required maxlength="160"')}<div class="form-grid">${field(t('Dátum'), 'day', meal.day, 'type="date" required min="1900-01-01" max="2100-12-31"')}${field(t('Időpont'), 'time', meal.time, 'type="time" required')}<label class="full-width">Étkezés<select name="type">${TYPES.map(type => `<option value="${type}" ${type === meal.type ? 'selected' : ''}>${t(type)}</option>`).join('')}</select></label></div><div class="ingredient-heading"><h3>${t('Összetevők és adagok')} ${html(helpMarkup('edit-nutrients-help', t('Tápértékek szerkesztése'), t('A mennyiségnél a teljes naplózandó adagot add meg. A lenyitható tápértékmezőkbe 100 g-ra vagy 100 ml-re megadott adat kerül, nem az egész adag értéke. Például 150 g étel 200 kcal/100 g mellett 300 kcal-t ad a naplóhoz.')))}</h3><button type="button" class="text-button" id="add-ingredient">${icon('plus')}Hozzáadás</button></div><div id="ingredient-list">${analysis.ingredients.map((item, index) => html`<div class="ingredient-row" data-ingredient="${index}"><div class="ingredient-main">${field(t('Összetevő'), `i-${index}-name`, item.name, 'required maxlength="160"')}${field(item.quantityUnit === 'ml' ? t('Az összetevő teljes térfogata (ml)') : t('Az összetevő teljes tömege (g)'), `i-${index}-grams`, item.grams, 'type="number" step="any" min="0.001" max="5000" required')}<button class="icon-button" type="button" data-remove="${index}" aria-label="Összetevő törlése">${icon('x')}</button></div><details><summary>${t(item.quantityUnit === 'ml' ? 'Tápértékek 100 ml-ben · szerkesztés' : 'Tápértékek 100 g-ban · szerkesztés')}</summary><div class="nutrient-inputs">${NUTRIENTS.map(key => field(nutrientNames[key], `i-${index}-${key}`, item[key] ?? '', `type="number" step="any" min="0" max="${key === 'calories' ? 1000 : key === 'sodium' ? 100000 : item.quantityUnit === 'ml' ? 200 : 100}" ${OPTIONAL_NUTRIENTS.includes(key) ? 'placeholder="Ismeretlen"' : 'required'}`)).join('')}</div></details></div>`).join('')}</div><div class="detail-extra" id="detail-extra"></div><details class="report-disclosure"><summary>Megjegyzés <span>nem kötelező</span></summary><label>Megjegyzés<textarea name="notes" rows="2" maxlength="2000">${escape(meal.notes)}</textarea></label></details></fieldset></details><p class="form-error" id="detail-error" role="alert" hidden></p><div class="detail-footer">${html`<button type="button" class="delete-button" id="delete-meal">${icon('trash')}Törlés</button><button type="submit" class="button primary" id="save-meal">${meal.status === 'draft' ? t('Mentés a naplómba') : t('Módosítások mentése')}</button>`}</div></form>`;
   $('#result-adjustments').insertAdjacentHTML('beforebegin', reportMarkup(meal));
+  $('#result-adjustments').insertAdjacentHTML('beforebegin', refinementMarkup(meal));
+  $('#refinement-factor')?.addEventListener('input', event => { $('#refinement-factor-value').textContent = `${event.target.value}% · ${integer(meal.refinement.fastKcal * Number(event.target.value) / 100)} kcal`; });
+  $('#refinement-submit')?.addEventListener('click', () => answerRefinement(meal));
   $('#detail-form').addEventListener('invalid', () => { $('#result-adjustments').open = true; }, true);
   $('.ingredient-heading').insertAdjacentHTML('beforebegin', recipeMarkup(analysis, state.recipeEditing));
   if (state.recipeEditing) {
@@ -361,6 +419,30 @@ function renderDetail() {
   if (savingMeals.has(meal.id)) $('#save-meal').disabled = true;
   $('#delete-meal')?.addEventListener('click', askDelete); updateDetailTotals();
 }
+// Second, independent estimate (Food-R1) for uncertain meals: status and the question screen.
+const PREPARATION_LABELS = { raw: 'nyers', boiled: 'főtt', steamed: 'párolt', 'oven-baked': 'sütőben sült', 'pan-fried': 'serpenyőben sült', 'breaded and fried': 'rántott', grilled: 'grillezett' };
+function refinementMarkup(meal) {
+  const refinement = meal.refinement;
+  if (!refinement) return '';
+  if (refinement.state === 'pending') return `<p class="refinement-note" role="status">${escape(t('Pontosítás folyamatban: egy második, független becslés fut a háttérben. Az eredmény automatikusan frissül.'))}</p>`;
+  if (refinement.state === 'reconciled') return `<p class="refinement-note">${escape(t(refinement.applied ? 'Az eredményt egy második, független becsléssel (Food-R1: {0} kcal) pontosítottuk.' : 'Elkészült a második, független becslés (Food-R1: {0} kcal); a módosításaidat nem írtuk felül.').replace('{0}', integer(refinement.foodR1Kcal)))}</p>`;
+  if (refinement.state !== 'question' || state.recipeEditing) return '';
+  const options = Object.entries(PREPARATION_LABELS).map(([key, label]) => `<option value="${escape(key)}">${escape(t(label))}</option>`).join('');
+  return `<section class="refinement-form" aria-labelledby="refinement-title"><h3 id="refinement-title">${escape(t('Segíts pontosítani'))}</h3><p>${escape(t('A két független becslés jelentősen eltér: {0} kcal és {1} kcal. Mekkora volt az adag a becsülthöz képest?').replace('{0}', integer(refinement.fastKcal)).replace('{1}', integer(refinement.foodR1Kcal)))}</p>
+    <label>${escape(t('Adag a becsülthöz képest'))}<input type="range" id="refinement-factor" min="50" max="200" step="5" value="100"></label><output id="refinement-factor-value">100% · ${integer(refinement.fastKcal)} kcal</output>
+    <label>${escape(t('Elkészítés módja'))}<select id="refinement-preparation"><option value="">${escape(t('Nem tudom'))}</option>${options}</select></label>
+    <p class="form-error" id="refinement-error" role="alert" hidden></p><button type="button" class="button primary" id="refinement-submit">${escape(t('Pontosítás mentése'))}</button></section>`;
+}
+async function answerRefinement(meal) {
+  const button = $('#refinement-submit'); button.disabled = true; $('#refinement-error').hidden = true;
+  try {
+    const { meal: updated } = await request(`/api/meals/${meal.id}/refinement`, { method: 'POST', body: JSON.stringify({ revision: meal.revision, portionFactor: Number($('#refinement-factor').value) / 100, preparation: $('#refinement-preparation').value || null }) });
+    state.meals = [...state.meals.filter(item => item.id !== updated.id), updated];
+    if (state.edit?.id === updated.id) { state.edit = structuredClone(updated); state.dirty = false; renderDetail(); }
+    render(); toast(t('Elmentettük a pontosítást. A következő hasonló ételnél is figyelembe vesszük.'));
+  } catch (error) { if ($('#refinement-error')) errorAt('#refinement-error', error); else toast(error.message); }
+  finally { if ($('#refinement-submit')) $('#refinement-submit').disabled = false; }
+}
 function startRecipe() {
   syncDetail(); state.recipeBackup = structuredClone(state.edit.analysis);
   if (state.edit.analysis.recipe) { state.edit.analysis.ingredients = structuredClone(state.edit.analysis.recipe.ingredients); delete state.edit.analysis.recipe; }
@@ -426,6 +508,7 @@ $('#confirm-delete').addEventListener('click', async event => {
 });
 render(); await initialize();
 setInterval(() => { if (!document.hidden && state.meals.some(meal => ['uploading', 'queued', 'running'].includes(meal.job?.state))) loadMonth(); }, 3000);
+setInterval(() => { if (!document.hidden && state.meals.some(meal => meal.refinement?.state === 'pending')) loadMonth(); }, 15000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { loadMonth(); loadProfile(request, { quiet: true }); } });
 let languageSnapshot;
 window.addEventListener('languagechanging', () => {
@@ -453,3 +536,6 @@ window.addEventListener('languagechange', () => {
   }
   for (const element of document.querySelectorAll('[data-message]')) element.textContent = t(element.dataset.message);
 });
+
+// Installable web app: the service worker caches nothing (no offline mode).
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});

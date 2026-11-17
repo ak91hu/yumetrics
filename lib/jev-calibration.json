@@ -1,0 +1,425 @@
+{
+  "generatedAt": "2026-11-17T20:11:32.100Z",
+  "evaluatedAt": "2026-11-17T20:49:26.129Z",
+  "jevModel": "jev-1.14.0",
+  "item": {
+    "status": "calibrated",
+    "value": 0.3,
+    "minAccepted": 20,
+    "calibrationSplit": {
+      "n": 107,
+      "accepted": 79,
+      "precision": 1,
+      "coverage": 0.738,
+      "energyAgreement": 0.823
+    },
+    "holdoutSplit": {
+      "n": 48,
+      "accepted": 35,
+      "precision": 1,
+      "coverage": 0.729,
+      "energyAgreement": 0.971
+    },
+    "criterion": "identity (reviewed)",
+    "target": 0.95,
+    "review": {
+      "reviewedBy": "Claude (AI assistant), item by item against the ingredient name; a human spot check is recommended.",
+      "reviewedAt": "2026-11-17",
+      "labelled": 115,
+      "accepted": 115,
+      "identityPrecisionAll": 1
+    },
+    "dataset": "Nutrition5k cafe1 (weighed, CC BY 4.0); production candidate retrieval + Q2",
+    "sizes": {
+      "calibration": 107,
+      "holdout": 48
+    },
+    "noCandidates": 22,
+    "baselines": {
+      "firstHitEnergyAgreementCalibration": 0.682,
+      "firstHitEnergyAgreementHoldout": 0.729,
+      "jevEnergyAgreementAllAccepted": 0.87,
+      "noneRate": 0.239,
+      "unresolved": 3
+    },
+    "curve": [
+      {
+        "threshold": 0.3,
+        "n": 107,
+        "accepted": 79,
+        "precision": 1,
+        "coverage": 0.738
+      },
+      {
+        "threshold": 0.35,
+        "n": 107,
+        "accepted": 77,
+        "precision": 1,
+        "coverage": 0.72
+      },
+      {
+        "threshold": 0.4,
+        "n": 107,
+        "accepted": 73,
+        "precision": 1,
+        "coverage": 0.682
+      },
+      {
+        "threshold": 0.45,
+        "n": 107,
+        "accepted": 69,
+        "precision": 1,
+        "coverage": 0.645
+      },
+      {
+        "threshold": 0.5,
+        "n": 107,
+        "accepted": 65,
+        "precision": 1,
+        "coverage": 0.607
+      },
+      {
+        "threshold": 0.55,
+        "n": 107,
+        "accepted": 61,
+        "precision": 1,
+        "coverage": 0.57
+      },
+      {
+        "threshold": 0.6,
+        "n": 107,
+        "accepted": 55,
+        "precision": 1,
+        "coverage": 0.514
+      },
+      {
+        "threshold": 0.65,
+        "n": 107,
+        "accepted": 52,
+        "precision": 1,
+        "coverage": 0.486
+      },
+      {
+        "threshold": 0.7,
+        "n": 107,
+        "accepted": 51,
+        "precision": 1,
+        "coverage": 0.477
+      },
+      {
+        "threshold": 0.75,
+        "n": 107,
+        "accepted": 47,
+        "precision": 1,
+        "coverage": 0.439
+      },
+      {
+        "threshold": 0.8,
+        "n": 107,
+        "accepted": 40,
+        "precision": 1,
+        "coverage": 0.374
+      },
+      {
+        "threshold": 0.85,
+        "n": 107,
+        "accepted": 31,
+        "precision": 1,
+        "coverage": 0.29
+      },
+      {
+        "threshold": 0.9,
+        "n": 107,
+        "accepted": 17,
+        "precision": 1,
+        "coverage": 0.159
+      },
+      {
+        "threshold": 0.95,
+        "n": 107,
+        "accepted": 10,
+        "precision": 1,
+        "coverage": 0.093
+      }
+    ],
+    "energyCurve": [
+      {
+        "threshold": 0.3,
+        "n": 155,
+        "accepted": 114,
+        "precision": 0.868,
+        "coverage": 0.735
+      },
+      {
+        "threshold": 0.35,
+        "n": 155,
+        "accepted": 110,
+        "precision": 0.864,
+        "coverage": 0.71
+      },
+      {
+        "threshold": 0.4,
+        "n": 155,
+        "accepted": 105,
+        "precision": 0.857,
+        "coverage": 0.677
+      },
+      {
+        "threshold": 0.45,
+        "n": 155,
+        "accepted": 101,
+        "precision": 0.851,
+        "coverage": 0.652
+      },
+      {
+        "threshold": 0.5,
+        "n": 155,
+        "accepted": 95,
+        "precision": 0.853,
+        "coverage": 0.613
+      },
+      {
+        "threshold": 0.55,
+        "n": 155,
+        "accepted": 90,
+        "precision": 0.867,
+        "coverage": 0.581
+      },
+      {
+        "threshold": 0.6,
+        "n": 155,
+        "accepted": 80,
+        "precision": 0.863,
+        "coverage": 0.516
+      },
+      {
+        "threshold": 0.65,
+        "n": 155,
+        "accepted": 77,
+        "precision": 0.87,
+        "coverage": 0.497
+      },
+      {
+        "threshold": 0.7,
+        "n": 155,
+        "accepted": 74,
+        "precision": 0.865,
+        "coverage": 0.477
+      },
+      {
+        "threshold": 0.75,
+        "n": 155,
+        "accepted": 66,
+        "precision": 0.879,
+        "coverage": 0.426
+      },
+      {
+        "threshold": 0.8,
+        "n": 155,
+        "accepted": 55,
+        "precision": 0.855,
+        "coverage": 0.355
+      },
+      {
+        "threshold": 0.85,
+        "n": 155,
+        "accepted": 44,
+        "precision": 0.909,
+        "coverage": 0.284
+      },
+      {
+        "threshold": 0.9,
+        "n": 155,
+        "accepted": 27,
+        "precision": 0.926,
+        "coverage": 0.174
+      },
+      {
+        "threshold": 0.95,
+        "n": 155,
+        "accepted": 16,
+        "precision": 1,
+        "coverage": 0.103
+      }
+    ],
+    "rawConfidenceComparison": {
+      "threshold": 0.3,
+      "holdout": {
+        "n": 48,
+        "accepted": 33,
+        "precision": 1,
+        "coverage": 0.688
+      }
+    }
+  },
+  "dish": {
+    "status": "calibrated",
+    "value": 0.3,
+    "minAccepted": 15,
+    "calibrationSplit": {
+      "n": 39,
+      "accepted": 39,
+      "precision": 1,
+      "coverage": 1
+    },
+    "holdoutSplit": {
+      "n": 21,
+      "accepted": 21,
+      "precision": 0.857,
+      "coverage": 1
+    },
+    "criterion": "labelled dish group",
+    "target": 0.9,
+    "dataset": "calibration/hungarian-dishes.json",
+    "sizes": {
+      "calibration": 39,
+      "holdout": 21
+    },
+    "q1Accuracy": 0.95,
+    "errors": [
+      {
+        "name": "Vadas marhahús zsemlegombóccal",
+        "expected": "porkolt",
+        "predicted": "generic",
+        "confidence": 0.81
+      },
+      {
+        "name": "Káposztás tészta",
+        "expected": "teszta",
+        "predicted": "generic",
+        "confidence": 0.74
+      },
+      {
+        "name": "Krumplis tészta",
+        "expected": "teszta",
+        "predicted": "generic",
+        "confidence": 0.61
+      }
+    ],
+    "curve": [
+      {
+        "threshold": 0.3,
+        "n": 39,
+        "accepted": 39,
+        "precision": 1,
+        "coverage": 1
+      },
+      {
+        "threshold": 0.35,
+        "n": 39,
+        "accepted": 39,
+        "precision": 1,
+        "coverage": 1
+      },
+      {
+        "threshold": 0.4,
+        "n": 39,
+        "accepted": 39,
+        "precision": 1,
+        "coverage": 1
+      },
+      {
+        "threshold": 0.45,
+        "n": 39,
+        "accepted": 39,
+        "precision": 1,
+        "coverage": 1
+      },
+      {
+        "threshold": 0.5,
+        "n": 39,
+        "accepted": 39,
+        "precision": 1,
+        "coverage": 1
+      },
+      {
+        "threshold": 0.55,
+        "n": 39,
+        "accepted": 39,
+        "precision": 1,
+        "coverage": 1
+      },
+      {
+        "threshold": 0.6,
+        "n": 39,
+        "accepted": 39,
+        "precision": 1,
+        "coverage": 1
+      },
+      {
+        "threshold": 0.65,
+        "n": 39,
+        "accepted": 38,
+        "precision": 1,
+        "coverage": 0.974
+      },
+      {
+        "threshold": 0.7,
+        "n": 39,
+        "accepted": 38,
+        "precision": 1,
+        "coverage": 0.974
+      },
+      {
+        "threshold": 0.75,
+        "n": 39,
+        "accepted": 38,
+        "precision": 1,
+        "coverage": 0.974
+      },
+      {
+        "threshold": 0.8,
+        "n": 39,
+        "accepted": 36,
+        "precision": 1,
+        "coverage": 0.923
+      },
+      {
+        "threshold": 0.85,
+        "n": 39,
+        "accepted": 35,
+        "precision": 1,
+        "coverage": 0.897
+      },
+      {
+        "threshold": 0.9,
+        "n": 39,
+        "accepted": 35,
+        "precision": 1,
+        "coverage": 0.897
+      },
+      {
+        "threshold": 0.95,
+        "n": 39,
+        "accepted": 31,
+        "precision": 1,
+        "coverage": 0.795
+      }
+    ]
+  },
+  "delta": {
+    "status": "insufficient",
+    "n": 6,
+    "reason": "Legalább 20 lemért tányér kell, amelyhez gyors és Food-R1 becslés is van."
+  },
+  "checks": {
+    "q3Preparation": {
+      "scored": 29,
+      "decided": 29,
+      "correct": 29,
+      "accuracy": 1
+    },
+    "q4HiddenFat": {
+      "scored": 34,
+      "decided": 31,
+      "correct": 31,
+      "accuracy": 1
+    },
+    "q6Separable": {
+      "scored": 41,
+      "decided": 35,
+      "correct": 32,
+      "accuracy": 0.914
+    }
+  }
+}

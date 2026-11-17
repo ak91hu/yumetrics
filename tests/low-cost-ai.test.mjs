@@ -9,14 +9,14 @@ import {appSettings,validateSettings} from '../lib/settings.mjs';
 import {analyze,DEFAULT_MODEL} from '../lib/providers.mjs';
 import {FOOD_R1_REVISION} from '../lib/modal-food.mjs';
 import {estimatedCost,modelPricing} from '../lib/telemetry.mjs';
-import {photoDimensions} from '../public/photo-preparation.mjs';
+import {photoDimensions,encodingSteps} from '../public/photo-preparation.mjs';
 import {adminApi} from '../lib/admin.mjs';
 import {aiPayloadFor,multiFoodAnalysis,secondImage} from './fixtures.mjs';
 
 const photo='data:image/jpeg;base64,'+Buffer.concat([Buffer.from([255,216,255,224]),Buffer.alloc(200)]).toString('base64');
 test('low-cost default uses one compact Gemini request and skips Food-R1 for clear food identities',async()=>{
   const calls=[];
-  const result=await analyze(photo,'',{OPENCODE_API_KEY:'test',MODAL_FOOD_URL:'https://old.modal.run/recognize',MODAL_PROXY_TOKEN_ID:'test',MODAL_PROXY_TOKEN_SECRET:'test',MODAL_MONTHLY_BUDGET_USD:'15'},async(url,options)=>{
+  const result=await analyze(photo,'',{OPENCODE_MODEL:'gemini-3.5-flash-lite', OPENCODE_API_KEY:'test',MODAL_FOOD_URL:'https://old.modal.run/recognize',MODAL_PROXY_TOKEN_ID:'test',MODAL_PROXY_TOKEN_SECRET:'test',MODAL_MONTHLY_BUDGET_USD:'15'},async(url,options)=>{
     const body=JSON.parse(options.body);
     if(url==='https://old.modal.run/recognize'){
       calls.push({url,body});assert.deepEqual(body.images,[photo,secondImage]);
@@ -31,7 +31,7 @@ test('low-cost default uses one compact Gemini request and skips Food-R1 for cle
     payload.candidates[0].content.parts[0].text=JSON.stringify(raw);
     return Response.json(payload);
   },{secondImage});
-  assert.equal(calls.length,1);assert.ok(calls[0].url.endsWith(DEFAULT_MODEL+':generateContent'));
+  assert.equal(calls.length,1);assert.ok(calls[0].url.endsWith('gemini-3.5-flash-lite:generateContent'));
   assert.equal(result.usage.recognition.state,'not_needed');
   assert.equal(calls[0].body.generationConfig.maxOutputTokens,1600);
   assert.deepEqual(calls[0].body.generationConfig.thinkingConfig,{thinkingLevel:'MINIMAL'});
@@ -43,11 +43,11 @@ test('low-cost default uses one compact Gemini request and skips Food-R1 for cle
 test('truncated or rejected low-cost answers are billed once, with no repair or model fallback',async()=>{
   for(const finishReason of ['MAX_TOKENS','SAFETY']){
     let calls=0,usage;
-    await assert.rejects(analyze(photo,'',{OPENCODE_API_KEY:'test'},async()=>{
+    await assert.rejects(analyze(photo,'',{OPENCODE_MODEL:'gemini-3.5-flash-lite', OPENCODE_API_KEY:'test'},async()=>{
       calls++;return Response.json({candidates:[{finishReason,content:{parts:[]}}],usageMetadata:{promptTokenCount:4500,candidatesTokenCount:1400,thoughtsTokenCount:200}});
     },{onResponse:data=>{usage=data.usage;}}));
     assert.equal(calls,1);assert.equal(usage.thoughtsTokenCount,200);
-    assert.ok(estimatedCost(usage,modelPricing(DEFAULT_MODEL))*328.16<3);
+    assert.ok(estimatedCost(usage,modelPricing('gemini-3.5-flash-lite'))*328.16<3);
   }
 });
 test('upgrade replaces persisted expensive AI settings once and retains unrelated settings',async t=>{
@@ -55,24 +55,28 @@ test('upgrade replaces persisted expensive AI settings once and retains unrelate
   const path=join(directory,'old.db'),old=new DatabaseSync(path);
   old.exec('CREATE TABLE schema_migrations(name TEXT PRIMARY KEY);');
   const journal=JSON.parse(readFileSync(new URL('../drizzle/meta/_journal.json',import.meta.url)));
-  for(const {tag} of journal.entries.filter(e=>e.tag!=='0011_low_cost_ai')){
+  // A database from before 0011: every later migration runs on open, in order.
+  for(const {tag} of journal.entries.filter(e=>e.idx<11)){
     old.exec(readFileSync(new URL('../drizzle/'+tag+'.sql',import.meta.url),'utf8'));old.prepare('INSERT INTO schema_migrations VALUES(?)').run(tag);
   }
   old.prepare('UPDATE app_settings SET value=?,revision=7 WHERE id=1').run(JSON.stringify({model:'gemini-4-argon',maxOutputTokens:12000,registrationEnabled:false,dailyLimit:33}));old.close();
   let db=openDatabase(path),settings=await appSettings(db,{});
-  assert.equal(settings.revision,8);assert.equal(settings.settings.model,DEFAULT_MODEL);assert.equal(settings.settings.maxOutputTokens,1600);
+  // 0011 pinned the low-cost model; 0014 unpins that automatic choice so the deployment default (GPT-6 Luna) applies.
+  assert.equal(settings.revision,9);assert.equal(settings.settings.model,DEFAULT_MODEL);assert.equal(settings.settings.maxOutputTokens,3000);
   assert.equal(settings.settings.registrationEnabled,false);assert.equal(settings.settings.dailyLimit,33);
   assert.throws(()=>validateSettings({...settings.settings,maxOutputTokens:10000}));
-  await db.close();db=openDatabase(path);assert.equal((await appSettings(db,{})).revision,8);await db.close();
+  await db.close();db=openDatabase(path);assert.equal((await appSettings(db,{})).revision,9);await db.close();
 });
-test('detail photo resolution is retained, primary food photos shrink without upscaling',()=>{
-  assert.deepEqual(photoDimensions(4000,3000),{width:1600,height:1200});
-  assert.deepEqual(photoDimensions(3000,4000,true),{width:1536,height:2048});
+test('the browser uploads a near-original copy within the limit, never upscaling; the model copy is made by Cloudinary',()=>{
+  assert.deepEqual(photoDimensions(4000,3000),{width:3072,height:2304});
+  assert.deepEqual(photoDimensions(3000,4000),{width:2304,height:3072});
   assert.deepEqual(photoDimensions(600,800),{width:600,height:800});
+  const steps=[...encodingSteps(4000,3000)];assert.deepEqual(steps[0],{width:3072,height:2304,quality:.92});assert.deepEqual(steps.at(-1),{width:1600,height:1200,quality:.72});
+  assert.ok(steps.every((step,i)=>!i||step.width<steps[i-1].width||step.quality<steps[i-1].quality));
 });
 test('dated Lite pricing includes thinking/cache and preserves historical Flash prices',()=>{
-  assert.equal(modelPricing(DEFAULT_MODEL,'2026-11-11'),null);
-  const lite=modelPricing(DEFAULT_MODEL,'2026-11-12');assert.equal(lite.input,.3);assert.equal(lite.output,2.5);
+  assert.equal(modelPricing('gemini-3.5-flash-lite','2026-11-11'),null);
+  const lite=modelPricing('gemini-3.5-flash-lite','2026-11-12');assert.equal(lite.input,.3);assert.equal(lite.output,2.5);
   assert.ok(Math.abs(estimatedCost({promptTokenCount:4500,candidatesTokenCount:1400,thoughtsTokenCount:200},lite)-.00535)<1e-12);
   assert.equal(modelPricing('gemini-3.8-flash','2026-11-11').input,1.5);
   assert.equal(modelPricing('gemini-3.8-flash','2026-11-12').input,.75);

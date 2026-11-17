@@ -10,14 +10,26 @@ A nézetek ugyanazokat a tartományi tápértékszámításokat használják, am
 
 1. A felhasználó kiválaszt egy fényképet, vagy mobilon a kamera műveletét kéri.
 2. A böngésző dekódolja a fájlt. A tényleges HEIC/HEIF-támogatás a böngésző képességétől függ.
-3. Az alkalmazás a hosszabb oldalt legfeljebb **2048 pixelre** méretezi, az oldalarányt megtartva.
-4. Canvasra rajzolja, majd **0,92-es minőségi paraméterrel JPEG-ként** kódolja újra.
+3. Az első fotón, még kicsinyítés előtt, vonalkódot keres (natív `BarcodeDetector`, ennek hiányában a beépített ZXing). Találat esetén az Open Food Facts-ot közvetlenül a böngészőből kérdezi le, ha nem érhető el, a `/api/barcode/:code` proxyn át.
+4. Közel eredeti méretben, legfeljebb **3072 pixeles** hosszabb oldallal, Canvasra rajzolja, és JPEG-ként kódolja újra **0,92-es minőséggel**. Ha a 4 MB-os korlátba nem fér bele, lépésenként csökkenti a minőséget (0,86 / 0,8 / 0,72), majd a méretet (2560 / 2048 / 1600 px). A modell nem ezt kapja: a szerver a Cloudinaryban tárolt képből aláírt, kicsinyített másolatot kér (`MODEL_IMAGE_MAX_SIDE`).
 5. Az új JPEG kerül base64 data URL-ként a JSON-kérésbe. Az eredeti fájl metaadatait, EXIF- és GPS-mezőit nem másolja át.
 
 A második kép opcionális; másik nézőpont vagy olvasható termékcímke lehet. Két képnél azonos adagról kell készülnie a felvételeknek. A bájtra azonos képtartalom már a validálásnál elutasítható; a vizuálisan ismétlődő nézet felismerése az AI ellenőrzésének része.
 
 !!! note "A kamera nem kizárólagos rendszerparancs"
     A kamera számára külön fájlbemenet `accept` és `capture="environment"` attribútumot kap. A böngésző és az operációs rendszer dönti el, milyen natív választót nyit meg. Ez nem folyamatos kamerastream és nem garantál azonos viselkedést minden telefonon.
+
+## Vonalkódos termék
+
+A feltöltő ablak vonalkód-panelje mutatja a felismert terméket, 100 g-ra vagy 100 ml-re vetített energiáját és a mennyiség mezőt. Ennek alapértéke az OFF adagmérete. Bejelölt „Vonalkód alapján számolj” mellett a szerver AI-hívás nélkül készíti el az eredményt. Több kódnál választó jelenik meg; tápérték hiányában a fotó a képelemzésre megy. Kézi beírás és kamerás beolvasás (`getUserMedia`) is van. A CSP `connect-src` szabálya ezért engedi a `https://world.openfoodfacts.org` címet.
+
+## Pontosítás és kérdés
+
+Eszkalált étkezésnél a részletek között „Pontosítás folyamatban” jelzés látszik; a lista 15 másodpercenként frissül. Ha a második becslés közel van, az eredmény automatikusan frissül. Nagy eltérésnél adagcsúszka (50–200%, élő kcal-előnézettel) és elkészítési mód választó jelenik meg; a válasz a `POST /api/meals/:id/refinement` végpontra megy.
+
+## Telepíthető webalkalmazás
+
+A `manifest.webmanifest` és a 192/512 px-es, valamint maszkolható ikonok miatt telefonon a kezdőképernyőre telepíthető. A `/sw.js` service worker nem tárol semmit, offline mód nincs.
 
 ## Beküldés és háttérmunka
 

@@ -16,10 +16,14 @@ Az alap futtatási környezet `NODE_ENV=production`, `HOST=0.0.0.0`, `PORT=3000`
 | `APP_ORIGIN` | Elsődleges eredet; élesben HTTPS szükséges |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google webes OAuth-kliens |
 | `GOOGLE_REDIRECT_URI` | Opcionális, pontosan regisztrált külső vagy közvetlen callback |
-| `OPENCODE_API_KEY`, `OPENCODE_MODEL` | Új AI-elemzéshez szükséges hozzáférés és alapmodell |
-| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Fotófeltöltés, védelem, visszaolvasás és törlés |
-| `USDA_API_KEY` | Opcionális élő FDC-keresés |
-| `MODAL_FOOD_URL` | Opcionális, hitelesített ételnév-felismerő végpont |
+| `OPENCODE_API_KEY`, `OPENCODE_MODEL` | Új AI-elemzéshez szükséges hozzáférés és alapmodell; élesben `gpt-6-luna` |
+| `LUNA_REASONING_EFFORT`, `AI_MAX_OUTPUT_TOKENS` | Luna gondolkodási szint (alapérték `low`) és kimeneti keret (Luna: 3000, legfeljebb 4000) |
+| `MODEL_IMAGE_MAX_SIDE` | A modellnek küldött Cloudinary-másolat hosszabb oldala, alapérték 1600 px |
+| `JEV_API`, `JEV_MODEL` | TypeSafe Jev kulcs és rögzített modellverzió (`jev-1.14.0`); kulcs nélkül a korábbi pontos egyezéses folyamat fut |
+| `JEV_DISH_THRESHOLD`, `JEV_ITEM_THRESHOLD`, `FOOD_R1_DELTA` | Csak tudatos felülíráshoz; üresen a mért `lib/jev-calibration.json` érvényes |
+| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Fotófeltöltés, védelem, visszaolvasás, aláírt transzformáció és törlés |
+| `USDA_API_KEY` | Opcionális élő FDC-keresés; a Jev Q2-jelöltek fő forrása |
+| `MODAL_FOOD_URL` | Opcionális, hitelesített Food-R1 végpont (`/recognize`; a `/estimate` ebből képződik) |
 | `MODAL_PROXY_TOKEN_ID`, `MODAL_PROXY_TOKEN_SECRET` | A Modal HTTP-proxy hitelesítői |
 | `MODAL_MONTHLY_BUDGET_USD` | Belső segédkeret, alapérték 15; 0-val kihagyható |
 | `MKDOCS_PYTHON` | Helyi/build Python futtatható fájl; nem runtime titok |

@@ -39,8 +39,8 @@ test('benchmark input requires reference provenance, existing local images and i
   const path=resolve(directory,'cases.json'),save=cases=>writeFileSync(path,JSON.stringify({cases}));save([item]);assert.equal(loadCases(path).length,1);
   save([{...item,reference:{...item.reference,method:'weighed_components',carbohydrateBasis:'total_including_fiber'}}]);assert.equal(loadCases(path)[0].reference.method,'weighed_components');assert.equal(loadCases(path)[0].reference.carbohydrateBasis,'total_including_fiber');save([item]);
   const script=fileURLToPath(new URL('../scripts/evaluate-nutrition.mjs',import.meta.url));
-  const dryRun=spawnSync(process.execPath,[script,path],{cwd:directory,env:{...process.env,OPENCODE_API_KEY:''},encoding:'utf8',windowsHide:true});assert.equal(dryRun.status,0);assert.ok(dryRun.stdout.includes('Nem történt AI-hívás'));
-  const missingKey=spawnSync(process.execPath,[script,path,'--run'],{cwd:directory,env:{...process.env,OPENCODE_API_KEY:''},encoding:'utf8',windowsHide:true});assert.equal(missingKey.status,1);assert.ok(missingKey.stderr.includes('OPENCODE_API_KEY szükséges'));
+  const dryRun=spawnSync(process.execPath,[script,path],{cwd:directory,env:{...process.env,OPENCODE_MODEL:'gemini-3.5-flash-lite', OPENCODE_API_KEY:''},encoding:'utf8',windowsHide:true});assert.equal(dryRun.status,0);assert.ok(dryRun.stdout.includes('Nem történt AI-hívás'));
+  const missingKey=spawnSync(process.execPath,[script,path,'--run'],{cwd:directory,env:{...process.env,OPENCODE_MODEL:'gemini-3.5-flash-lite', OPENCODE_API_KEY:''},encoding:'utf8',windowsHide:true});assert.equal(missingKey.status,1);assert.ok(missingKey.stderr.includes('OPENCODE_API_KEY szükséges'));
   const provider=resolve(directory,'mock-provider.mjs');
   writeFileSync(provider,`import {aiPayloadFor} from ${JSON.stringify(new URL('./fixtures.mjs',import.meta.url).href)};
     let calls=0;

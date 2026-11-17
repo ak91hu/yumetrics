@@ -1,0 +1,5 @@
+UPDATE app_settings SET value=json_remove(value,'$.model','$.maxOutputTokens'),revision=revision+1 WHERE id=1 AND json_extract(value,'$.model')='gemini-3.5-flash-lite' AND json_extract(value,'$.maxOutputTokens')=1600;
+CREATE TABLE IF NOT EXISTS user_correction(user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,dish_key TEXT NOT NULL,portion_factor REAL,preparation TEXT,samples INTEGER NOT NULL DEFAULT 0,updated_at TEXT NOT NULL,PRIMARY KEY(user_id,dish_key));
+CREATE TABLE IF NOT EXISTS food_r1_job(meal_id TEXT PRIMARY KEY REFERENCES meals(id) ON DELETE CASCADE,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,image_ref TEXT,state TEXT NOT NULL DEFAULT 'queued',attempts INTEGER NOT NULL DEFAULT 0,next_attempt_at TEXT NOT NULL,lease_token TEXT,lease_until TEXT,base_revision INTEGER NOT NULL DEFAULT 0,error TEXT,result TEXT,created_at TEXT NOT NULL,updated_at TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS food_r1_job_queue ON food_r1_job(state,next_attempt_at);
+ALTER TABLE meals ADD COLUMN refinement TEXT;

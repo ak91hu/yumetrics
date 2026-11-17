@@ -30,7 +30,7 @@ for(const dialect of ['sqlite','postgres'])for(const viewCount of [1,2])test(`${
   t.after(async()=>{await db.prepare('DELETE FROM meals WHERE user_id=?').bind(userId).run();await db.prepare('DELETE FROM users WHERE id=?').bind(userId).run();await db.close();});
   await db.prepare('INSERT INTO users(id,google_sub,email,name,created_at,updated_at) VALUES(?,?,?,?,?,?)').bind(userId,userId,'foods@example.test','Foods test',now,now).run();
   const image='data:image/jpeg;base64,'+Buffer.concat([Buffer.from([255,216,255,224]),Buffer.alloc(200)]).toString('base64');let calls=0;
-  const result=await analyze(image,'',{OPENCODE_API_KEY:'test'},async(url,options)=>{
+  const result=await analyze(image,'',{OPENCODE_MODEL:'gemini-3.5-flash-lite', OPENCODE_API_KEY:'test'},async(url,options)=>{
     calls++;const request=JSON.parse(options.body),prompt=request.systemInstruction.parts[0].text;
     assert.ok(prompt.includes('List EVERY'));assert.ok(prompt.includes('Several foods on one plate are one meal'));assert.ok(prompt.includes('match every food to the supplied images'));
     assert.equal(request.contents[0].parts.filter(part=>part.inlineData).length,viewCount);

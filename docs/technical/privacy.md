@@ -23,7 +23,11 @@ Az üzemeltető a Northflank, Cloudinary, Modal és OpenCode DPA-jának elfogad�
 | Google `sub`, név, ellenőrzött e-mail, profilkép URL | PostgreSQL `users` |
 | Munkamenet | HttpOnly süti a kliensben, hash és lejárat az adatbázisban |
 | Étkezési metaadat, megjegyzés, elemzés és javítás | PostgreSQL `meals` és AI-archívum |
-| Képbájtok | Cloudinary védett tárolás; elemzéskor Modal és OpenCode felé továbbítva |
+| Képbájtok | Cloudinary védett tárolás; elemzéskor aláírt, kicsinyített másolat OpenCode (GPT-6 Luna, OpenAI, nem EU-ban hosztolt) és eszkalációnál Modal (Food-R1) felé |
+| Ételnevek, angol leírások, mennyiségek (kép, megjegyzés és felhasználói azonosító nélkül) | TypeSafe Jev API; a döntések felhasználói azonosító nélkül a közös `food_api_cache` táblába kerülnek |
+| Vonalkód | A felhasználó böngészője közvetlenül az Open Food Facts felé (a látogató IP-címével); tartalékként a szerver proxyja, tárolás nélkül |
+| Személyes adagszorzó | PostgreSQL `user_correction`, fióktörléskor törlődik |
+| Food-R1 eszkalációs feladat | PostgreSQL `food_r1_job`, a meglévő Cloudinary-fotóra hivatkozik, másolat nélkül |
 | Képazonosító és képmetaadat | PostgreSQL; közvetlen kép-URL nem publikus API-eredmény |
 | Kéréskorlátozás | Hash-elt bucket és lejárat; OAuth esetén hálózati címhez is kapcsolódhat |
 | Látogatottság | Kizárólag napi, dimenziónként összesített számlálók |

@@ -27,6 +27,8 @@ A SQLite-adapter a Node beépített `node:sqlite` modulját használja helyi tes
 | `visitor_stats` | Napi dimenzióérték-összesítések, egyedi látogatói rekord nélkül |
 | `weekly_challenges` | Felhasználó + hét kulcs; választás, haladás, teljesítés |
 | `weekly_activity` | Felhasználó + hét + aktivitási nap; recept- és mérésjelölések |
+| `user_correction` | Felhasználó + kanonikus ételcsoport; személyes adagszorzó, elkészítés, mintaszám |
+| `food_r1_job` | Étkezésenként egy Food-R1 eszkalációs feladat; állapot, lease, próbálkozás, következő próba, eredmény |
 | `schema_migrations` | A már sikeresen alkalmazott migrációk neve |
 
 Az elemzések és több szolgáltatói metaadat JSON-ként szerializált `TEXT` mezőkben szerepelnek. A sémát és az üzleti tartalmat az alkalmazás validálja; nem minden JSON-tulajdonságra létezik SQL CHECK-feltétel.
@@ -53,6 +55,8 @@ A PostgreSQL-séma jelenlegi sorozata `0001_initial`–`0010_food_api_cache`. A 
 | `0008_weekly_activity` | Választás előtti heti tevékenység megőrzése |
 | `0009_low_cost_ai` | Flash Lite alapmodell és 1600 tokenes keret a meglévő AI-beállítások helyett |
 | `0010_food_api_cache` | Tartós adat-API-cache, közös kéréskvóták és külön OFF-termékforrások |
+| `0011_weekly_reports` | Heti e-mailes jelentések |
+| `0012_luna_jev` | Csak additív: `user_correction`, `food_r1_job`, nullázható `meals.refinement`; a 0009-es automatikus modellrögzítés feloldása |
 
 A SQLite-fájlok számozása eltér; a `drizzle/` könyvtár és az adapter listája az irányadó. A név nem jelent futás közbeni ORM-használatot: az alkalmazás saját SQL-adapterrel dolgozik.
 

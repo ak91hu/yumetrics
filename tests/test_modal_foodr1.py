@@ -90,6 +90,33 @@ class PhotoValidation(unittest.TestCase):
                 client.post("/recognize", json={"images": [data]})
             call.cancel.aio.assert_awaited_once_with(terminate_containers=True)
 
+    def test_estimate_parser_accepts_only_bounded_item_lists(self):
+        good = '{"items":[{"name":"pork stew","grams":220,"kcal":340}],"total_kcal":340}'
+        self.assertEqual(trial.estimated_items(good), {"items": [{"name": "pork stew", "grams": 220, "kcal": 340}], "total_kcal": 340})
+        self.assertEqual(trial.estimated_items('{"items":[],"total_kcal":0}'), {"items": [], "total_kcal": 0})
+        # A missing or wrong model total is replaced by the sum of the items; trailing repetition is ignored.
+        self.assertEqual(trial.estimated_items('{"items":[{"name":"apple","grams":154,"kcal":80.1},{"name":"almonds","grams":112,"kcal":645.2}]}}\n\n{"items":['), {"items": [{"name": "apple", "grams": 154, "kcal": 80.1}, {"name": "almonds", "grams": 112, "kcal": 645.2}], "total_kcal": 725.3})
+        self.assertEqual(trial.estimated_items('{"items":[{"name":"x","grams":10,"kcal":50}],"total_kcal":999}')["total_kcal"], 50)
+        for text in ['advice ' + good, '{"items":[{"name":"x","grams":-1,"kcal":5}],"total_kcal":5}', '{"items":[{"name":"x","grams":5}],"total_kcal":5}', '{"items":[']:
+            self.assertIsNone(trial.estimated_items(text))
+
+    def test_estimate_route_validates_photos_and_uses_estimate_mode(self):
+        from fastapi.testclient import TestClient
+        with patch.object(trial, "FoodR1") as model:
+            remote = model.return_value.analyze.spawn
+            call = remote.return_value
+            call.get.aio = AsyncMock(return_value={"answer": '{"items":[],"total_kcal":0}', "mode": "estimate"})
+            call.cancel.aio = AsyncMock()
+            remote.aio = AsyncMock(return_value=call)
+            client = TestClient(trial.create_api())
+            self.assertEqual(client.post("/estimate", json={"images": []}).status_code, 422)
+            remote.aio.assert_not_called()
+            data = "data:image/jpeg;base64," + base64.b64encode(self.photo()).decode()
+            self.assertEqual(client.post("/estimate", json={"images": [data]}).status_code, 200)
+            self.assertEqual(remote.aio.call_args.args[1], "estimate")
+            self.assertEqual(client.post("/recognize", json={"images": [data]}).status_code, 200)
+            self.assertEqual(remote.aio.call_args.args[1], "recognize")
+
 
 if __name__ == "__main__":
     unittest.main()

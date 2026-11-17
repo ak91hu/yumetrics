@@ -31,7 +31,9 @@ A `/docs` a `/docs/` alakra irányít át. A dokumentáció könyvtáralapú old
 | PATCH | `/api/profile` | `{ "calorieGoal": 2000 }`; 500–10 000 egész kcal |
 | POST | `/api/weekly-challenge` | Heti választás: `{ "kind": "three_days" }`, `recipe` vagy `measured` |
 | GET | `/api/meals?month=YYYY-MM` | Saját havi bejegyzések és a függő műveletek |
-| POST | `/api/analyze` | Képek, UUID, metaadatok és kontextus; rendszerint `202` |
+| POST | `/api/analyze` | Képek, UUID, metaadatok és kontextus; rendszerint `202`. Opcionális `barcode`: `{code, name, brand, unit, per100, quantity}` – ekkor AI-hívás nélkül készül az eredmény |
+| GET | `/api/barcode/:code` | Open Food Facts proxy a böngésző tartalékaként; GTIN-ellenőrzés, felhasználónként 10 kérés/perc, tárolás nélkül |
+| POST | `/api/meals/:id/refinement` | Food-R1-eltérés esetén a kérdésre adott válasz: `{revision, portionFactor 0,5–2, preparation?}`; átskáláz és személyes priorként ment |
 | GET | `/api/meals/:id` | Saját bejegyzés, számított összesítés és jelentés |
 | PATCH | `/api/meals/:id` | Teljes szerkeszthető elemzés, metaadatok és aktuális `revision` |
 | POST | `/api/meals/:id/retry` | Hibás feldolgozás kézi újrapróbálása |

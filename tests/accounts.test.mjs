@@ -87,7 +87,7 @@ test('USDA values retain identifiers, units, nulls and immutable source snapshot
 test('bones are removed from the full image portion, never silently counted as food', async () => {
   const image = 'data:image/jpeg;base64,' + Buffer.concat([Buffer.from([255,216,255,224]),Buffer.alloc(200)]).toString('base64');
   const analysis = {name:'Hús',confidence:'medium',assumptions:'Teszt',ingredients:[{name:'Hús',grams:100,calories:200,protein:25,carbs:0,fat:11,fiber:0,sugar:0,sodium:0}]};
-  const result = await analyze(image,'',{OPENCODE_API_KEY:'test'},async (url,options)=>Response.json(aiPayloadFor(analysis,options)),{secondImage,context:{totalWeightG:600,inedibleWeightG:200}});
+  const result = await analyze(image,'',{OPENCODE_MODEL:'gemini-3.5-flash-lite', OPENCODE_API_KEY:'test'},async (url,options)=>Response.json(aiPayloadFor(analysis,options)),{secondImage,context:{totalWeightG:600,inedibleWeightG:200}});
   assert.equal(result.analysis.ingredients[0].grams,400);
   for (const context of [{totalWeightG:100,inedibleWeightG:100},{inedibleWeightG:50},{inedibleWeightG:-1}]) assert.throws(()=>analysisContext(context));
 });

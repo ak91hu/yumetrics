@@ -8,6 +8,7 @@ import { api, json } from './lib/api.mjs';
 import { authRoute, authConfigured, currentUser } from './lib/auth.mjs';
 import { openPostgresDatabase } from './lib/database.mjs';
 import { startJobRunner } from './lib/jobs.mjs';
+import { startFoodR1Runner } from './lib/refinement.mjs';
 import { SECURITY_HEADERS, STATIC_FILES, technicalDocumentation } from './lib/http.mjs';
 import { guideMarkup, requestLanguage, translateSystemMessage } from './lib/i18n.mjs';
 import { requestCountry, requestAddress } from './lib/geoip.mjs';
@@ -121,13 +122,14 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     await secureStoredPhotos(db, env);
     await logEvent(db,{category:'server',event:'server.starting',message:'Az alkalmazás indul; az adatbázis-kapcsolat létrejött.'});
   }
-  const runner = db ? startJobRunner({ db, env }) : null;
+  const refinementRunner = db ? startFoodR1Runner({ db, env }) : null;
+  const runner = db ? startJobRunner({ db, env, wakeRefinement: () => refinementRunner?.wake() }) : null;
   const reports = db ? startWeeklyReportRunner({ db, env }) : null;
   const server = createApp({ db, env, wake: () => runner?.wake() });
   server.listen(port, host, () => console.log(`Yumetrics: http://${host}:${server.address().port} · Google-belépés ${authConfigured(env, db) ? 'beállítva' : 'beállításra vár'}`));
   let stopping = false;
   for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => {
-    if (stopping) return; stopping = true; runner?.stop(); reports?.stop();
+    if (stopping) return; stopping = true; runner?.stop(); reports?.stop(); refinementRunner?.stop();
     const deadline = setTimeout(() => process.exit(0), 55_000); deadline.unref();
     server.close(async () => {
       while(runner?.working || reports?.working) await new Promise(resolve=>setTimeout(resolve,100));

@@ -13,3 +13,6 @@ try {
   const response = await fetch('/api/auth-status', { cache: 'no-store' }), status = await response.json();
   if (!status.configured) { button.removeAttribute('href'); button.setAttribute('aria-disabled', 'true'); message.hidden = false; showMessage('A bejelentkezés még nincs beállítva. A szükséges hozzáférési adatokat az alkalmazás üzemeltetője tudja megadni.'); }
 } catch { message.hidden = false; showMessage('A szerver most nem érhető el. Próbáld újra később.'); }
+
+// Installable web app: the service worker caches nothing (no offline mode).
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
