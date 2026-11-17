@@ -165,3 +165,16 @@ test('USDA candidates must share a non-generic word: a search hit matching only 
   const list = await search.candidatesFor({ name: 'Snidling', lookupQuery: 'chive, cooked', foodState: 'prepared', quantityUnit: 'g' });
   assert.deepEqual(list.filter(c => c.source === 'usda').map(c => c.id), [2]);
 });
+test('with Jev an uncertain identity escalates to the Food-R1 queue instead of an inline names-only GPU call', async () => {
+  const modalEnv = { ...env, MODAL_FOOD_URL: 'https://test-food.modal.run/recognize', MODAL_PROXY_TOKEN_ID: 'wk-test', MODAL_PROXY_TOKEN_SECRET: 'ws-test' };
+  const { calls, fetcher } = harness();
+  const uncertain = async (url, options) => {
+    if (url.startsWith('https://test-food.modal.run/')) throw Error('no inline Food-R1 call expected');
+    if (url.includes(':generateContent')) { const payload = visionPayload(); const raw = JSON.parse(payload.candidates[0].content.parts[0].text); raw.ingredients[0].identityUncertain = true; payload.candidates[0].content.parts[0].text = JSON.stringify(raw); calls.gemini++; return Response.json(payload); }
+    return fetcher(url, options);
+  };
+  const result = await analyze(photo, '', modalEnv, uncertain);
+  assert.equal(result.usage.recognition.state, 'deferred');
+  assert.equal(result.usage.pipeline.path, 'escalated'); assert.ok(result.usage.pipeline.reasons.includes('identity_uncertain'));
+  assert.equal(result.analysis.confidence, 'low');
+});

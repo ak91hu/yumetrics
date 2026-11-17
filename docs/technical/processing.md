@@ -59,10 +59,10 @@ food_r1_job:  queued → running → done
                   └── 8. hiba után: failed (a gyors eredmény marad)
 refinement:   pending → reconciled (|eltérés| ≤ δ, átlag, szélesített sáv)
                       → question → answered (adagcsúszka + elkészítés, személyes prior)
-                      → failed / unavailable
+                      → failed / unavailable / inconclusive
 ```
 
-A pontosított eredmény csak akkor írja felül a piszkozatot, ha a felhasználó még nem szerkesztette vagy mentette (a revízió nem változott). A belső havi Modal-keret elérése nem számít hibának: a feladat 6 óra múlva folytatódik.
+A pontosított eredmény csak akkor írja felül a piszkozatot, ha a felhasználó még nem szerkesztette vagy mentette (a revízió nem változott). A belső havi Modal-keret elérésekor a feladat lezárul (`unavailable`), a gyors eredmény marad. Üres Food-R1 válasznál az állapot `inconclusive`. A pontosítás alatt a részletekben sárga figyelmeztetés látszik, a mentés gomb mellett sárga felkiáltójellel, és a felület megnevezi az ellenőrző modellt.
 
 ## Törlés és leállás
 

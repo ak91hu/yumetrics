@@ -1,5 +1,19 @@
 # A megvalósított ételértékelés
 
+## Aktuális módszertan (2026-11-17, `food-v23-luna-jev`)
+
+| Lépés | Ki végzi | Mit kap | Mit ad |
+| --- | --- | --- | --- |
+| Vonalkód (ha van) | Böngésző: natív `BarcodeDetector` vagy ZXing 0.21.3; Open Food Facts | Az eredeti felbontású fotó, illetve a kód | Címke szerinti 100 g/ml-es érték × a felhasználó mennyisége, **AI nélkül** |
+| Képelemzés | **GPT-6 Luna** (OpenAI, `gpt-6-luna`), OpenCode Responses API, `reasoning.effort=low`, szigorú JSON-séma | Aláírt Cloudinary-másolat (legfeljebb 1600 px), megjegyzés, kontextus | Ételcsoport, tételek, gramm és tartomány, látható/kikövetkeztetett, állapot, angol keresőkifejezés, `separable`, `sauceOrDressing`, tartalék tápérték |
+| Jelöltek | Program: USDA FoodData Central, Canadian Nutrient File, 44 beépített USDA-rekord | Az angol keresőkifejezés | Legfeljebb 13 jelölt, „egyik sem” lehetőséggel |
+| Zárt döntések | **TypeSafe Jev** (`jev-1.14.0`), egy kérés | Csak szöveg: ételnév, tételnevek, angol leírás, állapot, mennyiség | Q1 ételcsoport, Q2 adatbázis-tétel, Q3 elkészítés, Q4 rejtett zsiradék, Q5 szósz, Q6 vegyes étel |
+| Számítás | Program (determinisztikus) | Gramm × 100 g-os érték, személyes adagszorzó | Kalória, makrók és sáv |
+| Második becslés (csak eszkalációnál) | **Food-R1 8B** (`zy12123/Food-R1`, rögzített revízió, Modal L40S GPU) | Ugyanaz a kicsinyített fotó | Tételenként gramm és kcal; az összeget a program számolja |
+| Egyeztetés | Program | A két összeg | Legfeljebb δ eltérésnél átlag, szélesített sávval; nagyobbnál felhasználói kérdés |
+
+A kalóriát egyik modell sem számolja. A Jev küszöbeit (θ_item = 0,3, θ_dish = 0,3) lemért Nutrition5k-összetevőkön és egy címkézett magyar ételkészleten mértük: [kalibrációs jelentés](JEV-CALIBRATION-2026-11-17.md). A δ még nincs kalibrálva (6 lemért tányér, legalább 20 kell), ezért 0,25. Lemért magyar tányérkészleten igazolt pontossági százalék nincs. Az alábbi szakaszok a korábbi (Gemini-alapú) változatok történeti leírásai.
+
 A mai modellválasztási következtetések, költségfeltételek és éles működés összefoglalója: [2026. november 10-i döntések](DECISIONS-2026-11-10.md). A Qwen-modellek összehasonlítási jelöltek; nincs új modellváltás vagy új pontossági mérés.
 
 A v17 az értékesített és az elkészítés utáni címkeadatokat külön kezeli. A száraz csomagtömeg nem helyettesíti a kész étel mennyiségét; az olvasható címketápérték olvashatatlan terméknév mellett is használható, a név bizonytalanságának jelzésével. A regressziós esetek és korlátok: [2026. november 10-i felülvizsgálat](CODE-REVIEW-2026-11-10.md).

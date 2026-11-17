@@ -114,3 +114,27 @@ test('first saves teach a personal portion factor that is applied only after rep
   assert.ok(personalFactor(await loadCorrection(db, userId, 'porkolt')) < 1.4, 'an unchanged save pulls the factor back toward 1');
   assert.equal(await loadCorrection(db, userId, 'generic'), null);
 });
+
+test('accepting a portion that the personal factor already adjusted confirms the factor instead of eroding it', async t => {
+  const { db, userId } = await setup(t);
+  const original = analysis(), adjusted = { ...original, ingredients: original.ingredients.map(i => i.quantityUnit === 'g' ? { ...i, grams: i.grams * 1.4 } : i) };
+  await learnFromSave(db, userId, original, adjusted); await learnFromSave(db, userId, original, adjusted);
+  assert.equal(personalFactor(await loadCorrection(db, userId, 'porkolt')), 1.4);
+  // The next analysis came out already ×1.4 and the user saved it unchanged.
+  for (let i = 0; i < 3; i++) await learnFromSave(db, userId, adjusted, adjusted, { appliedFactor: 1.4 });
+  assert.equal(personalFactor(await loadCorrection(db, userId, 'porkolt')), 1.4);
+});
+test('an empty Food-R1 estimate is inconclusive (no question), and an exhausted budget ends the wait at once', async t => {
+  const { db, mealId, meal: row, usage } = await setup(t);
+  await enqueueFoodR1(db, row, usage, env);
+  const empty = { ...r1(0), answer: JSON.stringify({ items: [], total_kcal: 0 }) };
+  await processNextFoodR1({ db, env, fetcher: fetcherFor(() => Response.json(empty)) });
+  assert.equal((await meal(db, mealId)).refinement.state, 'inconclusive');
+  assert.equal((await db.prepare('SELECT state FROM food_r1_job WHERE meal_id=?').bind(mealId).first()).state, 'done');
+  await enqueueFoodR1(db, row, usage, { ...env, MODAL_MONTHLY_BUDGET_USD: '0.0001' });
+  let modalCalls = 0;
+  await processNextFoodR1({ db, env: { ...env, MODAL_MONTHLY_BUDGET_USD: '0.0001' }, fetcher: fetcherFor(() => { modalCalls++; return Response.json(r1(780)); }) });
+  assert.equal(modalCalls, 0);
+  assert.equal((await meal(db, mealId)).refinement.state, 'unavailable');
+  assert.equal((await db.prepare('SELECT state,error FROM food_r1_job WHERE meal_id=?').bind(mealId).first()).error, 'budget');
+});

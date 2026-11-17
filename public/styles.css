@@ -34,3 +34,32 @@
 .refinement-form h3{margin:0}
 .refinement-form p{margin:0}
 .refinement-form output{font-weight:700;color:var(--olive-dark)}
+/* Second check (Food-R1) pending: prominent, with a yellow warning mark next to Save. */
+.warning-mark{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:22px;height:22px;border-radius:50%;background:#f2b705;color:#3a2a00;font-weight:800;font-size:14px;line-height:1;margin-right:8px;box-shadow:0 0 0 2px #fff3c4}
+.refinement-warning{display:flex;align-items:flex-start;gap:4px;margin:12px 0;padding:14px 16px;border:2px solid #e3a400;border-radius:14px;background:#fff7d6;color:#4a3700}
+.refinement-warning .warning-mark{width:28px;height:28px;font-size:18px}
+.refinement-warning strong{display:block;font-size:15px;margin-bottom:4px}
+.refinement-warning p{margin:0 0 6px;line-height:1.5}
+.refinement-warning .warning-hint,.refinement-form .warning-hint{font-size:13px;font-weight:700;color:#6b4e00}
+.refinement-form h3{display:flex;align-items:center}
+.save-warning{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:#f2b705;color:#3a2a00;font-weight:800;font-size:18px;cursor:help;box-shadow:0 0 0 3px #fff3c4;margin-left:auto;margin-right:8px}
+.save-warning:focus-visible{outline:3px solid #8a6500;outline-offset:2px}
+.save-warning-text{margin:6px 0 0;text-align:right;font-size:12px;font-weight:700;color:#6b4e00}
+.draft-warning{display:inline-flex;align-items:center;margin:0 0 6px;padding:3px 10px 3px 4px;border-radius:999px;background:#fff1b8;color:#4a3700;font-size:12px;font-weight:700}
+.draft-warning .warning-mark{width:18px;height:18px;font-size:12px;margin-right:6px}
+
+/* Several waiting meals: compact grid rows, one summary line. */
+.analysis-notices.is-multiple{grid-template-columns:repeat(auto-fill,minmax(260px,1fr));max-height:min(45dvh,380px);padding:2px}
+.analysis-notices .draft-summary{grid-column:1/-1;margin:0;padding:8px 12px;border-radius:10px;background:#f0f5e7;color:#354b2b;font-size:13px;font-weight:700}
+.analysis-notices.is-multiple .draft-card{flex-direction:row;align-items:center;gap:10px;padding:10px 12px}
+.analysis-notices.is-multiple .draft-card>div{flex:1 1 auto}
+.analysis-notices.is-multiple .draft-ready-title{display:none}
+.analysis-notices.is-multiple .draft-card strong{display:block;font-size:13px;line-height:1.35;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.analysis-notices.is-multiple .draft-card p{margin:2px 0 0;font-size:11px}
+.analysis-notices.is-multiple .draft-card button,.analysis-notices.is-multiple .draft-ready .button{width:auto;flex:0 0 auto;padding:8px 12px;font-size:12px;white-space:nowrap}
+@media (max-width:560px){.analysis-notices.is-multiple{grid-template-columns:1fr;max-height:min(42dvh,340px)}}
+.analysis-notices.is-multiple .draft-card p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.analysis-notices.is-multiple .draft-card strong{-webkit-line-clamp:1}
+.analysis-notices.is-multiple .draft-warning{margin:0 0 3px;padding:2px 8px 2px 3px;font-size:11px;white-space:nowrap}
+.analysis-notices.is-multiple .draft-warning .warning-mark{width:16px;height:16px;font-size:11px;margin-right:5px}
+@media (max-width:560px){.analysis-notices.is-multiple .draft-card{padding:8px 10px;gap:8px}.analysis-notices.is-multiple .draft-card button,.analysis-notices.is-multiple .draft-ready .button{padding:7px 10px;font-size:12px}.analysis-notices .draft-summary{padding:6px 10px;font-size:12px}}

@@ -5,8 +5,8 @@ Ellenőrizve: 2026-11-07. A változónevek a jelenlegi kódhoz tartoznak. Helybe
 | Szolgáltatás | Mit kell bemásolni? | Honnan? | Mire kell? | Kötelező? |
 | --- | --- | --- | --- | --- |
 | Google-belépés | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google Cloud Console → Google Auth Platform → Clients → OAuth webalkalmazás | Azonosítás, automatikus fióklétrehozás | Igen, a napló használatához |
-| OpenCode Console | `OPENCODE_API_KEY` | OpenCode Console, a megfelelő workspace API-kulcsa | A Gemini-alapú kép- és tápértékbecslés | Igen, az új fotók elemzéséhez |
-| Modal | `MODAL_PROXY_TOKEN_ID`, `MODAL_PROXY_TOKEN_SECRET` | Külön Modal Proxy Token, Northflank runtime secret groupban tárolva | Hitelesített Food-R1 ételfelismerő végpont hívása | Opcionális segéd az OpenCode mellett |
+| OpenCode Console | `OPENCODE_API_KEY` | OpenCode Console, a megfelelő workspace API-kulcsa | A GPT-6 Luna (OpenAI) kép- és tápértékbecslés az OpenCode-on át | Igen, az új fotók elemzéséhez |
+| Modal | `MODAL_PROXY_TOKEN_ID`, `MODAL_PROXY_TOKEN_SECRET` | Külön Modal Proxy Token, Northflank runtime secret groupban tárolva | Hitelesített Food-R1 8B végpont: második becslés eszkalációnál (`/estimate`) | Opcionális |
 | Cloudinary | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Cloudinary Console → Product Environment; Settings → API Keys | Képek tartós feltöltése és törlése | Igen, a fotófeltöltéshez |
 | Northflank PostgreSQL | `DATABASE_URL` | Az addon Connection details írható primary `POSTGRES_URI` értéke; secret groupban `DATABASE_URL` alias | Felhasználók, napló, munkamenetek, feladatok és források | Igen; ez kapcsolati titok, nem API-kulcs |
 | USDA FoodData Central | `USDA_API_KEY` | FoodData Central API key signup | Bővebb Foundation/SR Legacy referenciakeresés | Opcionális; a 44 beépített rekord kulcs nélkül is használható |
@@ -30,9 +30,9 @@ Az `APP_ORIGIN=http://127.0.0.1:3000` ehhez tartozik. Élesben a saját HTTPS er
 
 ## OpenCode
 
-Jelentkezz be az [OpenCode Console-ba](https://opencode.ai/console), válaszd ki a workspace-t, hozz létre API-kulcsot és ellenőrizd a modellhez rendelkezésre álló keretet/jogosultságot. Az app `OPENCODE_MODEL=gemini-3.5-flash-lite` értékkel, a natív Google `generateContent` protokollon hív. Az aktuális modell és a fiók hozzáférése a szolgáltatónál ellenőrizendő; a kulcs megadása önmagában nem igazolja a keretet. [Hivatalos modelllista](https://opencode.ai/docs/console/models/).
+Jelentkezz be az [OpenCode Console-ba](https://opencode.ai/console), válaszd ki a workspace-t, hozz létre API-kulcsot és ellenőrizd a modellhez rendelkezésre álló keretet/jogosultságot. Az app `OPENCODE_MODEL=gpt-6-luna` értékkel, az OpenCode natív OpenAI Responses végpontján (`https://opencode.ai/inference/openai/v1/responses`) hív. A Gemini (`generateContent`) és a Claude Haiku (`messages`) adapter is megmaradt, az adminban választható. Az aktuális modell és a fiók hozzáférése a szolgáltatónál ellenőrizendő; a kulcs megadása önmagában nem igazolja a keretet. [Hivatalos modelllista](https://opencode.ai/docs/console/models/).
 
-Ehhez a megvalósításhoz külön Google Gemini API-kulcs vagy OpenAI API-kulcs nem kell: az AI-kérés az OpenCode-on keresztül megy. A Google OAuth-azonosítók ettől különálló, belépési adatok.
+Ehhez a megvalósításhoz külön OpenAI- vagy Google Gemini API-kulcs nem kell: a GPT-6 Luna-kérés az OpenCode-on keresztül megy. A Google OAuth-azonosítók ettől különálló, belépési adatok.
 
 ## Modal
 
@@ -50,7 +50,7 @@ A külön PostgreSQL addon írható primary kapcsolati URI-ját használd. Az ap
 
 **Ellenőrizve 2026-11-13:** a meglévő USDA-kulcs a Northflank `yumetrics-runtime` titokcsoportjában megvan. A tényleges kulccsal a rekordlekérés, valamint a helyi alkalmazás új HTTP-keresőjében a USDA-keresés és kiválasztás is sikerült. Új USDA-kulcs vagy regisztráció nem szükséges; a kulcs értékét nem tároljuk a repositoryban.
 
-A `FREE_FOOD_APIS=1` alapérték bekapcsolja a USDA/FNDDS, CNF, svéd, norvég és Open Food Facts adaptereket. A `FREE_FOOD_SOURCES` vesszővel elválasztva szűkítheti a forrásokat. CNF, svéd, norvég és OFF olvasáshoz nincs API-kulcs; az USDA élő kereséséhez szükséges a lent leírt saját ingyenes kulcs. Hiányában a 44 helyi USDA-referencia és a többi ingyenes forrás használható. Az adat-API-k nem kapnak fotót, fiókazonosítót vagy szabad megjegyzést. A Food-R1 csak bizonytalan ételazonosságnál indul a Gemini után; nem történik újabb Gemini-elemzés. [Részletes működés](FREE-FOOD-INTEGRATION-2026-11-13.md).
+A `FREE_FOOD_APIS=1` alapérték bekapcsolja a USDA/FNDDS, CNF, svéd, norvég és Open Food Facts adaptereket. A `FREE_FOOD_SOURCES` vesszővel elválasztva szűkítheti a forrásokat. CNF, svéd, norvég és OFF olvasáshoz nincs API-kulcs; az USDA élő kereséséhez szükséges a lent leírt saját ingyenes kulcs. Hiányában a 44 helyi USDA-referencia és a többi ingyenes forrás használható. Az adat-API-k nem kapnak fotót, fiókazonosítót vagy szabad megjegyzést. A Food-R1 csak eszkalációnál, a háttérben fut (a GPT-6 Luna és a TypeSafe Jev után); nem történik újabb Luna-elemzés. [Részletes működés](FREE-FOOD-INTEGRATION-2026-11-13.md).
 
 ## USDA
 

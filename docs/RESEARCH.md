@@ -1,5 +1,7 @@
 # Hitelesebb kalóriaszámítás: kutatási döntések
 
+> **Aktuális modellek (2026-11-17):** képelemzés GPT-6 Luna (OpenAI, OpenCode), zárt döntések TypeSafe Jev 1.14.0, második becslés Food-R1 8B (Modal). Az alábbi kutatási döntések a korábbi Gemini-alapú változatokhoz készültek; részletek: [AI-fejezet](technical/ai.md), [kalibráció](JEV-CALIBRATION-2026-11-17.md).
+
 A mai modellválasztási következtetések, költségfeltételek és éles működés összefoglalója: [2026. november 10-i döntések](DECISIONS-2026-11-10.md). A Qwen-modellek összehasonlítási jelöltek; nincs új modellváltás vagy új pontossági mérés.
 
 Frissítve: 2026-11-09. A cél ellenőrizhető számítás és látható bizonytalanság. Saját, lemért magyar étkezéseken végzett modellbenchmark még nincs; ezért nem állítunk mért pontossági százalékot vagy bizonyítottan legpontosabb modellt. Négy valódi Nutrition5k-tányéron és négy külön ellenőrző bemeneten már történt szolgáltatói próba: [módszer, eredmények és fennmaradó hibák](AI-VALIDATION-2026-11-09.md).

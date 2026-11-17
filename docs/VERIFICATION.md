@@ -1,5 +1,21 @@
 # Ellenőrzés
 
+## Review és naplóelemzés utáni javítások, 2026-11-18
+
+**247 Node-teszt sikeres, 0 hiba; build és strict MkDocs sikeres; böngészős ellenőrzés magyarul és angolul, mobilon és asztalon.**
+
+- **Éles Modal-napló:** az elemzés közbeni Food-R1 névsegéd (`/recognize`) hidegindításnál 6 hívásból 3-szor 504-et adott (45 s-os korlát), fizetett GPU-idővel. Jev mellett már nem fut: a bizonytalan ételazonosság eszkalációs ok, és a teljes második becslés a háttérben készül. Az `/estimate` hívások 200-zal futottak (20–75 s).
+- **Northflank-napló:** az indulás óta nincs hibasor, és nincs 5xx válasz.
+- **Személyes adagszorzó:** visszacsatolási hiba javítva. Az elfogadott, már szorzóval igazított adag eddig 1 felé húzta a szorzót, most megerősíti; a pontosító kérdésre adott választ a mentés nem tanulja meg újra.
+- **Food-R1 feladatsor:**
+  - az üres második becslés `inconclusive`, nem indít kérdést;
+  - kimerült havi keretnél a feladat azonnal lezárul, a felhasználó nem vár napokig.
+- **Felület:**
+  - futó második ellenőrzésnél hangsúlyos sárga figyelmeztetés látszik, a mentés gomb mellett sárga felkiáltójellel;
+  - a figyelmeztetés megnevezi az ellenőrző és az eredeti modelleket (Food-R1 8B; GPT-6 Luna + TypeSafe Jev 1.14.0);
+  - több várakozó étkezésnél a felső sáv tömör rácsot mutat (mobilon 3 kártya 289 px-en, asztalon egy sorban).
+- **Dokumentáció:** az útmutató, a „Hogyan számolunk” ablak, a módszertan, a technikai fejezetek, a kulcsleírás és az adatkezelési tervezetek megnevezik a konkrét modelleket.
+
 ## GPT-6 Luna + Jev + Food-R1 eszkaláció, vonalkód, PWA, 2026-11-17
 
 **244 Node-teszt sikeres (31 PostgreSQL-teszt környezeti változó nélkül kihagyva), 9 Python-teszt sikeres a Modal-alkalmazásra, 0 hiba.** Új tesztfájlok: `jev`, `luna`, `refinement`, `barcode`, `calibration`, `photo-transformation`.

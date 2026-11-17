@@ -1,5 +1,8 @@
 # Tápértékszámítás és adatforrások
 
+!!! note "Ki dönt, és ki számol (2026-11-17)"
+    Az összetevőket és a grammokat a **GPT-6 Luna** (OpenAI, az OpenCode-on át) becsüli. Azt, hogy melyik adatbázisrekord ugyanaz az étel, a **TypeSafe Jev 1.14.0** dönti el zárt kérdésben, „egyik sem” lehetőséggel; a választott rekordot energia-biztonsági korlát ellenőrzi. Bizonytalanságnál a **Food-R1 8B** (Modal) ad független második becslést. A kalóriát és a makrókat mindig az alábbi determinisztikus kód számolja; modell soha.
+
 ## Az összetevő mint számítási egység
 
 Minden felismert étel, ital, köret és szósz önálló, névvel ellátott összetevőként jelenhet meg. Az összetevő tárolt mennyiségi mezője történeti okból `grams`; a `quantityUnit` dönti el, hogy a szám **g** vagy **ml** egységű. Milliliterből a program nem képez automatikusan grammot, mert ehhez ismeretlen sűrűséget kellene feltételeznie.

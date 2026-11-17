@@ -1,5 +1,12 @@
 # AI-szolgáltatók és Modal
 
+| Szerep | Modell | Szolgáltató / elérés | Mikor fut |
+| --- | --- | --- | --- |
+| Képelemzés | GPT-6 Luna (`gpt-6-luna`) | OpenAI, az OpenCode Responses API-n át | Minden fotós elemzésnél (vonalkódos ágon nem) |
+| Zárt döntések | TypeSafe Jev 1.14.0 (`jev-1.14.0`) | TypeSafe System One API | Minden fotós elemzésnél, egy kérésben |
+| Második becslés | Food-R1 8B (`zy12123/Food-R1`, rögzített revízió) | Saját Modal-alkalmazás, L40S GPU | Csak eszkalációnál, a háttérben |
+| Választható alternatívák | Gemini 3.5 Flash Lite, Gemini 3.8 Flash, Claude Haiku 5.5 | OpenCode | Az admin modellbeállításával |
+
 ## Jev döntési réteg: 2026-11-17
 
 Az architektúraterv („Kalóriafelismerő app – architektúra- és költségterv”) szerint a fotónkénti folyamat: **képelemzés → ingyenes adat-API-k → egy Jev-kérés → determinisztikus számítás**. A kalóriát mindig kód számolja (gramm × 100 g-os tápérték); a Jev csak zárt döntéseket hoz. A folyamat verziója `jev-decisions-v1` (`usage.pipeline.version`), kódja `lib/jev.mjs`.
@@ -46,7 +53,7 @@ A Jev csak szöveget kap (ételnév, tételnevek, angol leírás, állapot, menn
 - Ha a relatív eltérés legfeljebb δ (mért érték a `lib/jev-calibration.json` fájlban; amíg nincs, 0,25): a látható grammos tételek arányosan az átlaghoz igazodnak, a sáv szélesedik, és a pontosított eredmény automatikusan felváltja a gyorsat, amíg a felhasználó nem szerkesztette vagy mentette.
 - Nagyobb eltérésnél a felület kérdést tesz fel: adagcsúszka (50–200%) és elkészítési mód. A válasz átskálázza az étkezést, és személyes priorként mentődik.
 
-Hibánál növekvő várakozással jön az újrapróbálkozás (30 s-tól 6 óráig). A 4. sikertelen próbánál `food_r1.stuck` hibanapló jelzi, hogy kézi beavatkozás kell, a 8. után `failed`, és a gyors eredmény marad. A belső havi Modal-keret elérésekor a feladat 6 óra múlva folytatódik. Az `/estimate` 2026-11-17 óta telepítve van. Ha egy régebbi Modal-telepítés 404-et adna, a feladat `unavailable` állapotba kerül, `food_r1.unsupported` hibanapló-bejegyzéssel, újrapróbálkozási vihar nélkül.
+Hibánál növekvő várakozással jön az újrapróbálkozás (30 s-tól 6 óráig). A 4. sikertelen próbánál `food_r1.stuck` hibanapló jelzi, hogy kézi beavatkozás kell, a 8. után `failed`, és a gyors eredmény marad. A belső havi Modal-keret elérésekor a feladat azonnal lezárul (`unavailable`), és a gyors eredmény marad; a felhasználó nem vár napokig. Ha a Food-R1 nem lát ételt (üres lista), az eredmény `inconclusive`, kérdés nélkül. Ha a TypeSafe Jev be van állítva, az elemzés közben nem fut külön Food-R1 névsegéd: a bizonytalan ételazonosság (`identity_uncertain`) eszkalációs ok lesz, és a második becslés a háttérben készül. Az éles Modal-napló szerint a régi névsegéd hidegindításnál a 45 másodperces korlát miatt 6 hívásból 3-szor 504-gyel szállt el. Az `/estimate` 2026-11-17 óta telepítve van. Ha egy régebbi Modal-telepítés 404-et adna, a feladat `unavailable` állapotba kerül, `food_r1.unsupported` hibanapló-bejegyzéssel, újrapróbálkozási vihar nélkül.
 
 Az élő próbán két hibát javítottunk:
 - **Időtúllépés hidegindításnál.** A gateway az `/estimate`-re 160 másodpercig vár (a `/recognize`-re továbbra is 45-ig), a Node-hívás 175 másodpercig.
@@ -69,7 +76,7 @@ Még nincs megvalósítva a tervből:
 - δ mért értéke: ehhez legalább 20 lemért tányérhoz kell gyors és Food-R1 becslés is (`scripts/collect-delta-pairs.mjs`, a Modal `/estimate` telepítése után);
 - magyar, mérlegen lemért tányérkészlet: a θ_item ma Nutrition5k-összetevőkön, a θ_dish egy címkézett magyar ételkészleten alapul.
 
-## Aktuális folyamat: 2026-11-13
+## Korábbi folyamat: 2026-11-13 (Gemini 3.5 Flash Lite)
 
 Az aktuális prompt `food-v22-required-nutrient-fallback`. A forráslekérés, egyeztetés és számítás automatikus; a felhasználó csak a kész összesítést kapja. A pontosító kérdések és a Food-R1 nyers jelöltjei nem jelennek meg feldolgozási lépésként. Bizonytalan azonosságnál a fő ételhipotézishez választott, pontosan illeszkedő tápértékforrás feltételes marad, és alacsony bizonyosságot eredményez. A forrás- és szerkesztőfelület opcionális, alapból csukva van. A lentebb részletezett v20-as háttéradapterek továbbra is működnek.
 

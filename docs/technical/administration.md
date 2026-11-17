@@ -38,7 +38,7 @@ A normális indulási INFO-sor vagy a telepítés közbeni 0-s folyamatkilépés
 
 Az `ai_requests` hívásonként tárol modellt, állapotot, HTTP-státuszt, késleltetést, tokenhasználatot és árazási pillanatképet. A bővített mezők: `request_meta`, `response_text`, `response_meta`, `response_truncated`, `result_analysis`, `reviewed_analysis`, `reviewed_at`, `reviewed_revision`.
 
-Az adminban a Food-R1 és a hozzá tartozó OpenCode-válasz kereshető, egymás mellett összevethető és JSON-ként exportálható. A nyers szöveg HTML-ként nem fut le. Hibás vagy csonka válasz is diagnosztikai alap maradhat. A legutóbbi felhasználói jóváhagyás nem teljes szerkesztési verziótörténet és nem leméréssel igazolt ground truth.
+Az adminban a GPT-6 Luna (OpenCode), a TypeSafe Jev és a Food-R1 (Modal) hívásai modellnév szerint szűrhetők. Eszkalációnál `food_r1.queued`, `food_r1.completed`, tartós hibánál `food_r1.stuck` és `food_r1.failed` naplóesemény keletkezik. Az egy étkezéshez tartozó válaszok kereshetők, egymás mellett összevethető és JSON-ként exportálható. A nyers szöveg HTML-ként nem fut le. Hibás vagy csonka válasz is diagnosztikai alap maradhat. A legutóbbi felhasználói jóváhagyás nem teljes szerkesztési verziótörténet és nem leméréssel igazolt ground truth.
 
 Az archiválás szűri a konfigurációban ismert titkokat, a tipikus tokenmezőket és a képadatot. A belső gondolatmenet nem kerül a megjelenített válaszszövegbe. A megőrzésről és a méretkorlátokról az [adatvédelmi fejezet](privacy.md) ír részletesen.
 
@@ -52,7 +52,14 @@ USD = ((input − cached) × input_rate
 
 A cached token az input részhalmaza, ezért a normál bemeneti részből le kell vonni. A gondolkodási token a szolgáltatói kimeneti számlálás külön mezője. A hiányos vagy ellentmondó használati adat költsége `null`, nem nulla. A díjszabás a híváskor elmentett pillanatkép; az ismeretlen modellhez vagy régi időszakhoz nem készül kitalált ár.
 
-A kód 2026. november 9-i Gemini 3.8 Flash-pillanatképe 1,50 USD normál bemenetet, 0,15 USD cache-bemenetet és 7,50 USD kimenetet használ millió tokenenként. Ezek a beégetett számítási adatok, nem örök érvényű árígéretek; változáskor a `modelPricing()` és a forrásellenőrzés frissítendő.
+Aktuális díjpillanatképek (millió tokenenként):
+
+| Modell | Bemenet | Cache-olvasás | Cache-írás | Kimenet (gondolkodással együtt) |
+| --- | ---: | ---: | ---: | ---: |
+| GPT-6 Luna, 2026-11-17-től | 0,10 USD | 0,01 USD | 0,125 USD | 0,50 USD |
+| TypeSafe Jev `jev-1.14.0` | 0,042 USD | – | – | ingyenes |
+
+A Luna-díj egyezik az OpenCode saját `usage.cost` értékével (élő próba: 0,00118405 USD). Minden valódi Jev-kérés saját `ai_requests` sort kap; gyorsítótár-találatnál nincs sor. A korábbi Gemini 3.8 Flash-pillanatkép 1,50 USD normál bemenetet, 0,15 USD cache-bemenetet és 7,50 USD kimenetet használt millió tokenenként. Ezek a beégetett számítási adatok, nem örök érvényű árígéretek; változáskor a `modelPricing()` és a forrásellenőrzés frissítendő.
 
 ## Modal-erőforrás és belső keret
 
